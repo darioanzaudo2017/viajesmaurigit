@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: rgb(19, 236, 109);
+  --color-background-light: rgb(246, 248, 247);
+  --color-background-dark: rgb(16, 34, 24);
+
+  --color-trek-dark-green: rgb(26, 51, 37);
+  --color-trek-border: rgb(35, 72, 51);
+  --color-trek-text-muted: rgb(146, 201, 169);
+
+  --font-display: "Inter", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+/* Fix for html2canvas oklch error */
+:root {
+  --primary: 19, 236, 109;
+  --background-dark: 16, 34, 24;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom scrollbar for tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 500ms;
+    animation-fill-mode: both;
+  }
+
+  .no-animations,
+  .no-animations * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

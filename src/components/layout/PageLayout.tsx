@@ -1,0 +1,21 @@
+import React from 'react';
+import Header from './Header';
+import Footer from './Footer';
+
+interface PageLayoutProps {
+    children: React.ReactNode;
+}
+
+const PageLayout: React.FC<PageLayoutProps> = ({ children }) => {
+    return (
+        <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-grow max-w-[1280px] w-full mx-auto px-4 md:px-10 py-8 mb-16">
+                {children}
+            </main>
+            <Footer />
+        </div>
+    );
+};
+
+export default PageLayout;
