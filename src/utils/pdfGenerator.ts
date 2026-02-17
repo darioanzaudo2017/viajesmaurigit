@@ -15,28 +15,54 @@ export const generateMedicalPDF = async (elementId: string, fileName: string, bg
         const originalScrollTop = element.scrollTop;
         element.scrollTop = 0;
 
-        console.log("Starting html2canvas with grayscale mode");
+        console.log("Starting html2canvas with smart grayscale");
 
         // Configuration for html2canvas
         const canvas = await html2canvas(element, {
             scale: 2, // Higher scale for better quality
-            useCORS: true, // Allow loading cross-origin images (like Unsplash)
+            useCORS: true, // Allow loading cross-origin images
             backgroundColor: bgColor,
             logging: true,
-            windowWidth: 1200, // Force desktop width for consistent layout
-            imageTimeout: 15000, // Longer timeout for images
+            windowWidth: 1200,
+            imageTimeout: 15000,
             onclone: (clonedDoc) => {
                 const clonedElement = clonedDoc.getElementById(elementId);
 
                 if (clonedElement) {
                     clonedElement.style.opacity = '1';
                     clonedElement.style.visibility = 'visible';
-                    // Force grayscale filter on the entire cloned element
-                    // This is the key: it converts ALL colors to grayscale visually
-                    // effectively bypassing the color parsing issues with modern CSS
-                    clonedElement.style.filter = 'grayscale(100%) contrast(120%)';
-                    clonedElement.style.color = '#000000'; // Force base text to black
-                    clonedElement.style.backgroundColor = '#ffffff'; // Force background to white
+
+                    // --- SMART GRAYSCALE ---
+                    // 1. Apply High Contrast Grayscale Filter
+                    // brighten the image significantly to make text pop against dark backgrounds
+                    clonedElement.style.filter = 'grayscale(100%) contrast(150%) brightness(130%)';
+
+                    // 2. Force text contrast manually
+                    // We iterate through all elements to ensure text is light enough
+                    const allElements = clonedElement.getElementsByTagName('*');
+                    for (let i = 0; i < allElements.length; i++) {
+                        const el = allElements[i] as HTMLElement;
+
+                        // Safely get computed style from the clone's window context
+                        const computedStyle = el.ownerDocument.defaultView?.getComputedStyle(el) || window.getComputedStyle(el);
+
+                        const color = computedStyle.color;
+
+                        // Heuristic: If it has a color (is text/icon) and we are in a dark theme context,
+                        // force it to white to ensure it survives the grayscale filter with max contrast.
+                        // We skip transparent elements or those that might be invisible.
+                        if (color && color !== 'transparent' && color !== 'rgba(0, 0, 0, 0)') {
+                            el.style.color = '#ffffff';
+                            el.style.textShadow = 'none';
+                            el.style.setProperty('text-decoration-color', '#ffffff', 'important');
+                        }
+
+                        // Ensure borders are visible too
+                        const borderColor = computedStyle.borderColor;
+                        if (borderColor && borderColor !== 'transparent' && borderColor !== 'rgba(0, 0, 0, 0)') {
+                            el.style.borderColor = 'rgba(255, 255, 255, 0.3)'; // Settle for a light gray border
+                        }
+                    }
                 }
             }
         });
@@ -51,7 +77,7 @@ export const generateMedicalPDF = async (elementId: string, fileName: string, bg
         const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'px',
-            format: [canvas.width / 2, canvas.height / 2] // Match PDF size to canvas size (scaled down)
+            format: [canvas.width / 2, canvas.height / 2]
         });
 
         pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
