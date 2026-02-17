@@ -33,13 +33,27 @@ function App() {
         return;
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', sessionUser.id)
-        .single();
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', sessionUser.id)
+          .single();
 
-      setUser({ ...sessionUser, profile });
+        if (error) throw error;
+
+        // Cache profile to localStorage for offline use
+        if (profile) {
+          localStorage.setItem('cached_user_profile', JSON.stringify(profile));
+        }
+        setUser({ ...sessionUser, profile });
+      } catch {
+        // Offline or fetch failed — use cached profile
+        const cachedProfile = localStorage.getItem('cached_user_profile');
+        const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
+        console.log('[App] Using cached profile (offline):', profile?.role);
+        setUser({ ...sessionUser, profile });
+      }
     };
 
     // Check current session
