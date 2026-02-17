@@ -205,12 +205,20 @@ export const useRegistration = (tripId: string, userId: string) => {
         setSubmitting(true);
         try {
             // 0. Ensure Profile exists
+            // 0. Ensure Profile exists
             const { data: userData } = await supabase.auth.getUser();
             if (userData?.user) {
+                // Fetch existing profile to preserve role
+                const { data: existingProfile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', userData.user.id)
+                    .single();
+
                 await supabase.from('profiles').upsert({
                     id: userData.user.id,
                     full_name: userData.user.user_metadata?.full_name || userData.user.email?.split('@')[0],
-                    role: 'user'
+                    role: existingProfile?.role || 'user'
                 }, { onConflict: 'id' });
             }
 
