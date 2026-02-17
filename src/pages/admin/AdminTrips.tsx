@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
+import { db } from '../../api/db';
+import { useOfflineSync } from '../../hooks/useOfflineSync';
 import TripModal from '../../components/admin/TripModal';
 
 interface Trip {
@@ -30,6 +32,8 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
         status: 'Any Status',
         difficulty: 'Any Difficulty'
     });
+    const { isOnline, syncing, syncAllAdminData } = useOfflineSync();
+    const [isDataFromCache, setIsDataFromCache] = useState(false);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,18 +46,56 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
     const fetchTrips = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase
-                .from('viajes')
-                .select('*')
-                .order('fecha_inicio', { ascending: true });
+            setIsDataFromCache(false);
 
-            if (error) throw error;
-            setTrips(data || []);
+            if (isOnline) {
+                const { data, error } = await supabase
+                    .from('viajes')
+                    .select('*')
+                    .order('fecha_inicio', { ascending: true });
+
+                if (error) throw error;
+                setTrips(data || []);
+
+                // Auto-cache to Dexie for offline use
+                if (data && data.length > 0) {
+                    await db.trips.clear();
+                    await db.trips.bulkPut(data.map(t => ({
+                        id: t.id,
+                        titulo: t.titulo,
+                        descripcion: t.descripcion,
+                        fecha_inicio: t.fecha_inicio,
+                        fecha_fin: t.fecha_fin,
+                        cupos_totales: t.cupos_totales,
+                        cupos_disponibles: t.cupos_disponibles,
+                        min_participantes: t.min_participantes || 0,
+                        estado: t.estado,
+                        dificultad: t.dificultad || '',
+                        ubicacion: t.ubicacion || '',
+                        imagen_url: t.imagen_url || '',
+                        updated_at: t.updated_at || new Date().toISOString()
+                    })));
+                }
+            } else {
+                // OFFLINE: Load from local DB
+                const localTrips = await db.trips.orderBy('fecha_inicio').toArray();
+                setTrips(localTrips as any[] || []);
+                setIsDataFromCache(true);
+            }
         } catch (error) {
             console.error("Error fetching trips:", error);
+            // Fallback to local DB even if we thought we were online
+            const localTrips = await db.trips.orderBy('fecha_inicio').toArray();
+            setTrips(localTrips as any[] || []);
+            setIsDataFromCache(true);
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSyncAll = async () => {
+        await syncAllAdminData();
+        await fetchTrips();
     };
 
     const handleCreate = () => {
@@ -108,8 +150,25 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                     </div>
                     <h1 className="text-slate-900 dark:text-white text-4xl lg:text-5xl font-black tracking-tight uppercase italic">Expedition Hub</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-lg max-w-xl leading-relaxed font-medium italic">Gestión logística de travesías, monitoreo de inscripciones y coordinación de salidas.</p>
+                    {isDataFromCache && (
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 text-amber-500 rounded-full mt-2 border border-amber-500/10">
+                            <span className="material-symbols-outlined text-sm">cloud_off</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Modo Montaña — Datos Locales</span>
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-3">
+                    {isOnline && (
+                        <button
+                            onClick={handleSyncAll}
+                            disabled={syncing}
+                            className={`flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-6 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-black uppercase tracking-widest text-[10px] ${syncing ? 'animate-pulse opacity-50' : ''}`}
+                            title="Descargar todo para uso offline"
+                        >
+                            <span className="material-symbols-outlined">{syncing ? 'sync' : 'cloud_download'}</span>
+                            <span>{syncing ? 'Sincronizando...' : 'Sincronizar'}</span>
+                        </button>
+                    )}
                     <button className="flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-6 bg-neutral-900 text-white font-bold hover:bg-neutral-800 transition-all border border-white/5 hover:border-primary/30">
                         <span className="material-symbols-outlined">file_download</span>
                         <span>Exportar CSV</span>

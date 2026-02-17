@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Sidebar from './components/layout/Sidebar';
 import TripsPage from './pages/TripsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -12,6 +12,7 @@ import AdminTrips from './pages/admin/AdminTrips';
 import AdminEnrollments from './pages/admin/AdminEnrollments';
 import AdminSoapPage from './pages/admin/AdminSoapPage';
 import { supabase } from './api/supabase';
+import { useOfflineSync } from './hooks/useOfflineSync';
 import Logo from './components/common/Logo';
 import './index.css';
 
@@ -22,6 +23,8 @@ function App() {
   const [selectedSoapEnrollmentId, setSelectedSoapEnrollmentId] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { isOnline, syncAllAdminData } = useOfflineSync();
+  const hasSynced = useRef(false);
 
   useEffect(() => {
     const fetchProfile = async (sessionUser: any) => {
@@ -51,6 +54,15 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Auto-sync admin data when admin user is online
+  useEffect(() => {
+    if (user?.profile?.role === 'admin' && isOnline && !hasSynced.current) {
+      hasSynced.current = true;
+      console.log('[App] Admin online — sincronizando datos para uso offline...');
+      syncAllAdminData().catch(console.error);
+    }
+  }, [user, isOnline, syncAllAdminData]);
 
   const renderContent = () => {
     if (selectedTripId && activeTab !== 'register') {

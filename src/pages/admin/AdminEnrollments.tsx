@@ -67,6 +67,24 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                 const { data, error } = await query;
                 if (error) throw error;
                 setEnrollments(data || []);
+
+                // Auto-cache to Dexie for offline use
+                if (data && data.length > 0) {
+                    if (tripId) {
+                        await db.enrollments.where('viaje_id').equals(tripId).delete();
+                    }
+                    await db.enrollments.bulkPut(data.map(e => ({
+                        id: e.id,
+                        viaje_id: e.viaje_id,
+                        user_id: e.user_id,
+                        estado: e.estado,
+                        created_at: e.created_at,
+                        menu: e.menu,
+                        profiles: e.profiles,
+                        viajes: e.viajes,
+                        soap_creada: e.soap_creada
+                    })));
+                }
             } else {
                 // FALLBACK TO DEXIE
                 let localData;
@@ -80,7 +98,12 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
         } catch (error) {
             console.error("Error fetching enrollments:", error);
             // Fallback to local if fetch fails even if "online"
-            const localData = await db.enrollments.toArray();
+            let localData;
+            if (tripId) {
+                localData = await db.enrollments.where('viaje_id').equals(tripId).toArray();
+            } else {
+                localData = await db.enrollments.toArray();
+            }
             setEnrollments(localData as any[] || []);
         } finally {
             setLoading(false);

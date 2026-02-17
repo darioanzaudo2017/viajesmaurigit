@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
+import { db } from '../../api/db';
+import { useOfflineSync } from '../../hooks/useOfflineSync';
 
 interface AdminStats {
     totalTrips: number;
@@ -21,6 +23,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const { isOnline } = useOfflineSync();
+    const [isDataFromCache, setIsDataFromCache] = useState(false);
 
     useEffect(() => {
         fetchAdminData();
@@ -29,39 +33,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     const fetchAdminData = async () => {
         try {
             setLoading(true);
+            setIsDataFromCache(false);
 
-            // 1. Get stats
-            const { count: tripsCount } = await supabase.from('viajes').select('*', { count: 'exact', head: true });
-            const { count: participantsCount } = await supabase.from('inscripciones').select('*', { count: 'exact', head: true });
+            if (isOnline) {
+                // 1. Get stats
+                const { count: tripsCount } = await supabase.from('viajes').select('*', { count: 'exact', head: true });
+                const { count: participantsCount } = await supabase.from('inscripciones').select('*', { count: 'exact', head: true });
 
-            // For now, let's just use some placeholder logic for revenue and pending medical 
-            // until we have more real data.
-            setStats({
-                totalTrips: tripsCount || 0,
-                totalParticipants: participantsCount || 0,
-                pendingMedical: 12, // Placeholder for now
-                totalRevenue: 42.8 // Placeholder
-            });
+                setStats({
+                    totalTrips: tripsCount || 0,
+                    totalParticipants: participantsCount || 0,
+                    pendingMedical: 12,
+                    totalRevenue: 42.8
+                });
 
-            // 2. Get recent activity
-            const { data: latestInscriptions } = await supabase
-                .from('inscripciones')
-                .select(`
-                    id,
-                    created_at,
-                    estado,
-                    profiles:user_id (full_name),
-                    viajes:viaje_id (titulo)
-                `)
-                .order('created_at', { ascending: false })
-                .limit(5);
+                // 2. Get recent activity
+                const { data: latestInscriptions } = await supabase
+                    .from('inscripciones')
+                    .select(`
+                        id,
+                        created_at,
+                        estado,
+                        profiles:user_id (full_name),
+                        viajes:viaje_id (titulo)
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
 
-            if (latestInscriptions) {
-                setRecentActivity(latestInscriptions);
+                if (latestInscriptions) {
+                    setRecentActivity(latestInscriptions);
+                }
+            } else {
+                // OFFLINE: compute from local DB
+                const localTrips = await db.trips.count();
+                const localEnrollments = await db.enrollments.count();
+                const localRecent = await db.enrollments.orderBy('created_at').reverse().limit(5).toArray();
+
+                setStats({
+                    totalTrips: localTrips,
+                    totalParticipants: localEnrollments,
+                    pendingMedical: 0,
+                    totalRevenue: 0
+                });
+                setRecentActivity(localRecent);
+                setIsDataFromCache(true);
             }
-
         } catch (error) {
             console.error("Error fetching admin data:", error);
+            // Fallback to local data
+            try {
+                const localTrips = await db.trips.count();
+                const localEnrollments = await db.enrollments.count();
+                const localRecent = await db.enrollments.orderBy('created_at').reverse().limit(5).toArray();
+
+                setStats({
+                    totalTrips: localTrips,
+                    totalParticipants: localEnrollments,
+                    pendingMedical: 0,
+                    totalRevenue: 0
+                });
+                setRecentActivity(localRecent);
+                setIsDataFromCache(true);
+            } catch { /* ignore */ }
         } finally {
             setLoading(false);
         }
@@ -82,6 +115,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                 <div>
                     <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Panel de Control Admin</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Monitoreo en tiempo real de operaciones de trekking</p>
+                    {isDataFromCache && (
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-500/20 text-amber-500 rounded-full mt-2 border border-amber-500/10">
+                            <span className="material-symbols-outlined text-sm">cloud_off</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Modo Montaña — Datos Locales</span>
+                        </div>
+                    )}
                 </div>
                 <button className="bg-primary hover:bg-primary/90 text-background-dark font-black py-3 px-8 rounded-xl transition-all flex items-center gap-3 text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
                     <span className="material-symbols-outlined font-black">add_circle</span>

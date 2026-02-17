@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../api/supabase';
 import { db } from '../api/db';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -107,11 +107,120 @@ export const useOfflineSync = () => {
         }
     };
 
+    // ─── NEW: Download ALL trips to local DB ───────────────────────
+    const downloadAllTrips = useCallback(async () => {
+        try {
+            const { data: trips, error } = await supabase
+                .from('viajes')
+                .select('*')
+                .order('fecha_inicio', { ascending: true });
+
+            if (error) throw error;
+            if (!trips || trips.length === 0) return { success: true, count: 0 };
+
+            // Replace all local trips with fresh data
+            await db.trips.clear();
+            await db.trips.bulkPut(trips.map(t => ({
+                id: t.id,
+                titulo: t.titulo,
+                descripcion: t.descripcion,
+                fecha_inicio: t.fecha_inicio,
+                fecha_fin: t.fecha_fin,
+                cupos_totales: t.cupos_totales,
+                cupos_disponibles: t.cupos_disponibles,
+                min_participantes: t.min_participantes || 0,
+                estado: t.estado,
+                dificultad: t.dificultad || '',
+                ubicacion: t.ubicacion || '',
+                imagen_url: t.imagen_url || '',
+                updated_at: t.updated_at || new Date().toISOString()
+            })));
+
+            console.log(`[OfflineSync] ${trips.length} viajes cacheados localmente.`);
+            return { success: true, count: trips.length };
+        } catch (err) {
+            console.error('[OfflineSync] Error descargando viajes:', err);
+            return { success: false, error: err };
+        }
+    }, []);
+
+    // ─── NEW: Download ALL enrollments with profile & trip title ───
+    const downloadAllEnrollments = useCallback(async () => {
+        try {
+            const { data: enrollments, error } = await supabase
+                .from('inscripciones')
+                .select('*,profiles(full_name,phone),viajes(titulo)')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (!enrollments || enrollments.length === 0) return { success: true, count: 0 };
+
+            await db.enrollments.clear();
+            await db.enrollments.bulkPut(enrollments.map(e => ({
+                id: e.id,
+                viaje_id: e.viaje_id,
+                user_id: e.user_id,
+                estado: e.estado,
+                created_at: e.created_at,
+                menu: e.menu,
+                profiles: e.profiles,
+                viajes: e.viajes,
+                soap_creada: e.soap_creada
+            })));
+
+            // Also cache medical records for all enrolled users
+            const userIds = [...new Set(enrollments.map(e => e.user_id))];
+            if (userIds.length > 0) {
+                // Supabase IN filter has a limit, batch in chunks of 50
+                for (let i = 0; i < userIds.length; i += 50) {
+                    const chunk = userIds.slice(i, i + 50);
+                    const { data: medRecords } = await supabase
+                        .from('fichas_medicas')
+                        .select('*')
+                        .in('user_id', chunk);
+
+                    if (medRecords && medRecords.length > 0) {
+                        await db.medicalRecords.bulkPut(medRecords.map(m => ({
+                            user_id: m.user_id,
+                            data: m
+                        })));
+                    }
+                }
+            }
+
+            console.log(`[OfflineSync] ${enrollments.length} inscripciones cacheadas localmente.`);
+            return { success: true, count: enrollments.length };
+        } catch (err) {
+            console.error('[OfflineSync] Error descargando inscripciones:', err);
+            return { success: false, error: err };
+        }
+    }, []);
+
+    // ─── NEW: Sync everything for admin offline use ───────────────
+    const syncAllAdminData = useCallback(async () => {
+        if (syncing) return;
+        setSyncing(true);
+        console.log('[OfflineSync] Iniciando sincronización completa para admin...');
+
+        try {
+            await downloadAllTrips();
+            await downloadAllEnrollments();
+            console.log('[OfflineSync] Sincronización completa exitosa.');
+        } catch (err) {
+            console.error('[OfflineSync] Error en sincronización completa:', err);
+        } finally {
+            setSyncing(false);
+        }
+    }, [syncing, downloadAllTrips, downloadAllEnrollments]);
+
     return {
         isOnline,
         syncing,
         pendingReportsCount: pendingReports?.length || 0,
         downloadTripData,
+        downloadAllTrips,
+        downloadAllEnrollments,
+        syncAllAdminData,
         syncPendingReports
     };
 };

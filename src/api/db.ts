@@ -8,7 +8,11 @@ export interface LocalTrip {
     fecha_fin: string;
     cupos_totales: number;
     cupos_disponibles: number;
+    min_participantes: number;
     estado: 'published' | 'confirmed' | 'cancelled' | 'finished';
+    dificultad: string;
+    ubicacion: string;
+    imagen_url: string;
     updated_at: string;
 }
 
@@ -47,9 +51,14 @@ export interface LocalEnrollment {
     viaje_id: string;
     user_id: string;
     estado: string;
+    created_at?: string;
+    menu?: string;
     profiles: {
         full_name: string;
         phone?: string;
+    };
+    viajes?: {
+        titulo: string;
     };
     soap_creada?: boolean;
 }
@@ -78,6 +87,16 @@ export class TrekDatabase extends Dexie {
     constructor() {
         super('TrekPWA_DB');
         this.version(2).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status'
+        });
+        // v3: Added dificultad, ubicacion, imagen_url, min_participantes to trips
+        //     Added created_at, menu, viajes to enrollments
+        this.version(3).stores({
             trips: 'id, fecha_inicio, estado',
             registrations: '++id, trip_id, user_id, status',
             conditions: 'id, condicion',
