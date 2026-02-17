@@ -12,6 +12,7 @@ import AdminTrips from './pages/admin/AdminTrips';
 import AdminEnrollments from './pages/admin/AdminEnrollments';
 import AdminSoapPage from './pages/admin/AdminSoapPage';
 import { supabase } from './api/supabase';
+import Logo from './components/common/Logo';
 import './index.css';
 
 function App() {
@@ -155,12 +156,12 @@ function App() {
           >
             <span className="material-symbols-outlined">menu</span>
           </button>
-          <div className="bg-primary/20 p-2 rounded-lg text-primary sm:hidden" onClick={() => setActiveTab('home')}>
-            <span className="material-symbols-outlined">terrain</span>
-          </div>
+
+          <Logo className="h-8" showText={false} onClick={() => setActiveTab('home')} />
+
           <div className="hidden sm:flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Sistema de Expediciones v2.0</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">TrekLogix Precision System</p>
           </div>
         </div>
 

@@ -1,0 +1,18 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#0c1a14"/>
+  
+  <!-- Background Peak -->
+  <path d="M128 358.4 L256 51.2 L384 358.4" stroke="#13ec6d" stroke-width="15" stroke-opacity="0.4" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Side Supports -->
+  <path d="M76.8 358.4 L153.6 230.4 L204.8 281.6" stroke="#13ec6d" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M307.2 281.6 L358.4 230.4 L435.2 358.4" stroke="#13ec6d" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Main Pulse -->
+  <path d="M25.6 358.4 H153.6 L194.56 358.4 L230.4 179.2 L256 409.6 L281.6 102.4 L317.44 358.4 L486.4 358.4" 
+        stroke="#13ec6d" 
+        stroke-width="25" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        style="filter: drop-shadow(0 0 20px rgba(19,236,109,0.8))"/>
+</svg>

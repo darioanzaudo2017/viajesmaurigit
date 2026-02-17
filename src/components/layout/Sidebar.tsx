@@ -1,5 +1,6 @@
 import React from 'react';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
+import Logo from '../common/Logo';
 
 interface SidebarProps {
     activeTab: string;
@@ -42,15 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
 
             <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-[#112218] h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-primary/20 p-2 rounded-lg text-primary">
-                            <span className="material-symbols-outlined">terrain</span>
-                        </div>
-                        <div>
-                            <h1 className="text-slate-900 dark:text-white text-base font-bold leading-tight">Trek PWA</h1>
-                            <p className="text-[#92c9a9] text-xs">Listo para la Aventura</p>
-                        </div>
-                    </div>
+                    <Logo className="h-10" />
                 </div>
                 <nav className="flex-1 px-4 space-y-1">
                     {menuItems.map((item) => (

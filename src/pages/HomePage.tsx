@@ -15,6 +15,11 @@ interface Viaje {
     imagen_url?: string;
 }
 
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 interface HomePageProps {
     onDiscoverClick?: () => void;
     onTrekClick?: (trekId: string) => void;
@@ -26,6 +31,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
     const [discoveryRoutes, setDiscoveryRoutes] = useState<Viaje[]>([]);
     const [userTreks, setUserTreks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
     const isAdmin = user?.profile?.role === 'admin';
 
@@ -79,6 +85,30 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
         fetchHomeData();
     }, [user]);
 
+    useEffect(() => {
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setInstallPrompt(e as BeforeInstallPromptEvent);
+        };
+
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        };
+    }, []);
+
+    const handleInstallClick = () => {
+        if (!installPrompt) return;
+        installPrompt.prompt();
+        installPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+                setInstallPrompt(null);
+            }
+        });
+    };
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center bg-background-light dark:bg-background-dark">
@@ -127,7 +157,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                 <div className="flex gap-4">
                                     <div
                                         className="bg-center bg-no-repeat aspect-square bg-cover rounded-lg size-16 flex-shrink-0"
-                                        style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=200'}")` }}
+                                        style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'}")` }}
                                     ></div>
                                     <div className="flex flex-col justify-center overflow-hidden">
                                         <p className="text-slate-900 dark:text-white text-base font-bold truncate uppercase tracking-tight">{trek.title}</p>
@@ -189,7 +219,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     >
                                         <div
                                             className="bg-center bg-no-repeat aspect-square bg-cover rounded-2xl size-20 flex-shrink-0"
-                                            style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=200'}")` }}
+                                            style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'}")` }}
                                         ></div>
                                         <div className="flex flex-col justify-center overflow-hidden">
                                             <p className="text-slate-900 dark:text-white text-lg font-black truncate uppercase tracking-tight leading-none mb-1">{trek.title}</p>
@@ -204,6 +234,30 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {installPrompt && (
+                        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-[#0c1a14] to-[#112218] border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/10 transition-colors"></div>
+
+                            <div className="relative z-10 flex items-center gap-4">
+                                <div className="size-12 bg-primary/20 rounded-xl flex items-center justify-center text-primary">
+                                    <span className="material-symbols-outlined text-2xl">download</span>
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-bold uppercase tracking-wide">Instala la App Nativa</h3>
+                                    <p className="text-[#92c9a9] text-xs">Acceso offline, notificaciones y mayor rendimiento.</p>
+                                </div>
+                            </div>
+
+                            <button
+                                onClick={handleInstallClick}
+                                className="relative z-10 bg-primary hover:bg-primary/90 text-background-dark px-6 py-2.5 rounded-xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-lg shadow-primary/20 flex items-center gap-2"
+                            >
+                                <span className="material-symbols-outlined text-sm">install_mobile</span>
+                                Instalar Ahora
+                            </button>
                         </div>
                     )}
 

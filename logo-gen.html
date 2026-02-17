@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a1610; /* Dark Obsidian Green from the image */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 512px;
+            height: 512px;
+            overflow: hidden;
+        }
+        .container {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        svg {
+            width: 250px;
+            height: 250px;
+            margin-bottom: 20px;
+        }
+        .text {
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: 48px;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            font-style: italic;
+        }
+        .text span {
+            color: #13ec6d;
+        }
+        .subtext {
+            color: #92c9a9;
+            font-family: 'Inter', sans-serif;
+            font-weight: 900;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-top: 5px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 80 L45 25 L55 35 L65 15 L85 80" stroke="#13ec6d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 60 H35 L42 45 L50 75 L58 40 L65 60 H90" stroke="#13ec6d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 0 10px rgba(19,236,109,0.9))"/>
+        </svg>
+        <div class="text">TREK<span>LOGIX</span></div>
+        <div class="subtext">Wilderness Navigation</div>
+    </div>
+</body>
+</html>
