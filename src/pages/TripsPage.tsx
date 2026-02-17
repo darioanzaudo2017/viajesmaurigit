@@ -57,7 +57,7 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
                         placeholder="Buscar por destino o nombre..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all dark:text-white"
+                        className="w-full bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-2xl pl-12 pr-6 py-4 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all dark:text-white"
                     />
                 </div>
             </div>
@@ -77,7 +77,7 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
                             <div
                                 key={viaje.id}
                                 onClick={() => onViewDetails(viaje.id)}
-                                className="group bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[32px] overflow-hidden hover:border-primary/40 transition-all duration-500 flex flex-col shadow-2xl shadow-primary/5 hover:translate-y-[-8px] cursor-pointer"
+                                className="group bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[32px] overflow-hidden hover:border-primary/40 transition-all duration-500 flex flex-col shadow-2xl shadow-primary/5 hover:translate-y-[-8px] cursor-pointer"
                             >
                                 <div className="relative h-64 w-full overflow-hidden">
                                     <div className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: `url("${viaje.imagen_url || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=800'}")` }}></div>
@@ -97,11 +97,11 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
                                     <h3 className="text-slate-900 dark:text-white text-2xl font-black leading-tight group-hover:text-primary transition-colors uppercase tracking-tight mb-3">{viaje.titulo}</h3>
 
                                     <div className="space-y-3 mb-8">
-                                        <div className="flex items-center gap-3 text-slate-500 dark:text-[#92c9a9] text-sm font-bold">
+                                        <div className="flex items-center gap-3 text-slate-500 dark:text-trek-text-muted text-sm font-bold">
                                             <span className="material-symbols-outlined text-[20px] text-primary">location_on</span>
                                             <p className="uppercase tracking-widest text-[10px]">{viaje.ubicacion || 'Córdoba, AR'}</p>
                                         </div>
-                                        <div className="flex items-center gap-3 text-slate-500 dark:text-[#92c9a9] text-sm font-bold">
+                                        <div className="flex items-center gap-3 text-slate-500 dark:text-trek-text-muted text-sm font-bold">
                                             <span className="material-symbols-outlined text-[20px] text-primary">calendar_today</span>
                                             <p className="uppercase tracking-widest text-[10px]">{new Date(viaje.fecha_inicio).toLocaleDateString()}</p>
                                         </div>
@@ -110,10 +110,10 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
                                     <div className="mt-auto space-y-6">
                                         <div className="space-y-3">
                                             <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]">
-                                                <span className="text-slate-400 dark:text-[#92c9a9]/60">Disponibilidad</span>
+                                                <span className="text-slate-400 dark:text-trek-text-muted/60">Disponibilidad</span>
                                                 <span className="text-slate-900 dark:text-white">{viaje.cupos_disponibles} Libres</span>
                                             </div>
-                                            <div className="w-full h-2.5 bg-slate-100 dark:bg-[#1a3124] border border-slate-200 dark:border-white/5 rounded-full overflow-hidden">
+                                            <div className="w-full h-2.5 bg-slate-100 dark:bg-trek-surface border border-slate-200 dark:border-white/5 rounded-full overflow-hidden">
                                                 <div className="h-full bg-primary transition-all duration-1000 ease-out rounded-full shadow-[0_0_12px_rgba(19,236,109,0.4)]" style={{ width: `${percentage}%` }}></div>
                                             </div>
                                         </div>
@@ -147,7 +147,7 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
             ) : (
                 <div className="py-24 text-center space-y-4">
                     <span className="material-symbols-outlined text-6xl text-slate-200 dark:text-[#234833]">explore_off</span>
-                    <p className="text-slate-500 dark:text-[#92c9a9] font-black uppercase tracking-[0.2em]">No encontramos expediciones para esa búsqueda.</p>
+                    <p className="text-slate-500 dark:text-trek-text-muted font-black uppercase tracking-[0.2em]">No encontramos expediciones para esa búsqueda.</p>
                 </div>
             )}
         </div>

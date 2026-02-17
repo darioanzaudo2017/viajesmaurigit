@@ -17,7 +17,7 @@ const DashboardPage: React.FC = () => {
                     <span>Panel de Control de Expedición</span>
                 </div>
                 <h1 className="text-slate-900 dark:text-white text-4xl font-black leading-tight tracking-tight uppercase">Dashboard Operativo</h1>
-                <p className="text-slate-500 dark:text-[#92c9a9] text-base font-normal">Estado actual de tus rutas, participantes y sincronización offline.</p>
+                <p className="text-slate-500 dark:text-trek-text-muted text-base font-normal">Estado actual de tus rutas, participantes y sincronización offline.</p>
             </div>
 
             {/* Stats Row */}
@@ -56,15 +56,15 @@ const DashboardPage: React.FC = () => {
                         </div>
                         <button className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline border border-primary/20 bg-primary/5 px-3 py-1.5 rounded-lg transition-all">Ver Todo</button>
                     </div>
-                    <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[24px] overflow-hidden shadow-2xl shadow-primary/5">
+                    <div className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[24px] overflow-hidden shadow-2xl shadow-primary/5">
                         <div className="overflow-x-auto no-scrollbar">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50 dark:bg-[#1f3d2b] border-b border-slate-200 dark:border-[#234833]">
+                                <thead className="bg-slate-50 dark:bg-trek-elevated border-b border-slate-200 dark:border-trek-border">
                                     <tr>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60">Viaje</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60">Fechas</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60">Guía Líder</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60 text-center">Estado</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60">Viaje</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60">Fechas</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60">Guía Líder</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60 text-center">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-[#234833]">
@@ -103,7 +103,7 @@ const DashboardPage: React.FC = () => {
                             <h3 className="text-xl font-black uppercase tracking-tight text-slate-900 dark:text-white">Estado de Datos</h3>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[24px] p-8 shadow-2xl shadow-primary/5 flex flex-col gap-8 relative overflow-hidden">
+                    <div className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[24px] p-8 shadow-2xl shadow-primary/5 flex flex-col gap-8 relative overflow-hidden">
                         {/* Status Pattern Background */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
 
@@ -125,29 +125,29 @@ const DashboardPage: React.FC = () => {
                         </div>
 
                         <div className="space-y-6 relative z-10">
-                            <div className="p-5 bg-slate-50 dark:bg-[#1f3d2b] rounded-2xl border border-slate-100 dark:border-white/5 space-y-4">
+                            <div className="p-5 bg-slate-50 dark:bg-trek-elevated rounded-2xl border border-slate-100 dark:border-white/5 space-y-4">
                                 <div className="flex items-center gap-4">
                                     <div className="p-2 bg-primary/20 rounded-lg text-primary">
                                         <span className="material-symbols-outlined text-xl">database</span>
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Salud del Cache Local</p>
-                                        <p className="text-[10px] text-slate-400 dark:text-[#92c9a9]/60 font-bold uppercase tracking-widest">Almacenamiento activo en dispositivo</p>
+                                        <p className="text-[10px] text-slate-400 dark:text-trek-text-muted/60 font-bold uppercase tracking-widest">Almacenamiento activo en dispositivo</p>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
                                     <div className="flex justify-between items-end">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-[#92c9a9]">Integridad de Datos</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-trek-text-muted">Integridad de Datos</p>
                                         <p className="text-[10px] font-black text-primary uppercase">95%</p>
                                     </div>
-                                    <div className="w-full bg-slate-200 dark:bg-[#1a3124] h-2 rounded-full overflow-hidden">
+                                    <div className="w-full bg-slate-200 dark:bg-trek-surface h-2 rounded-full overflow-hidden">
                                         <div className="bg-primary h-full w-[95%] rounded-full shadow-[0_0_8px_rgba(19,236,109,0.5)]"></div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
-                                <p className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9]/60 uppercase tracking-[0.3em] pl-2">Sincronizaciones Pendientes ({pendingRegistrations?.length || 0})</p>
+                                <p className="text-[10px] font-black text-slate-400 dark:text-trek-text-muted/60 uppercase tracking-[0.3em] pl-2">Sincronizaciones Pendientes ({pendingRegistrations?.length || 0})</p>
                                 <div className="space-y-3">
                                     {pendingRegistrations && pendingRegistrations.length > 0 ? (
                                         pendingRegistrations.map(reg => (
@@ -161,7 +161,7 @@ const DashboardPage: React.FC = () => {
                                         ))
                                     ) : (
                                         <div className="text-center py-6 bg-slate-50 dark:bg-white/5 rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                                            <p className="text-[10px] text-slate-400 dark:text-[#92c9a9]/40 font-black uppercase tracking-widest">No hay datos esperando sincronización</p>
+                                            <p className="text-[10px] text-slate-400 dark:text-trek-text-muted/40 font-black uppercase tracking-widest">No hay datos esperando sincronización</p>
                                         </div>
                                     )}
                                 </div>
@@ -186,9 +186,9 @@ const DashboardPage: React.FC = () => {
 };
 
 const StatCard = ({ title, value, change, icon, trend }: any) => (
-    <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] p-8 rounded-[24px] flex flex-col gap-4 shadow-sm hover:shadow-xl transition-all group">
+    <div className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border p-8 rounded-[24px] flex flex-col gap-4 shadow-sm hover:shadow-xl transition-all group">
         <div className="flex justify-between items-start">
-            <div className="p-3 bg-slate-50 dark:bg-[#1f3d2b] rounded-2xl border border-slate-100 dark:border-white/5 text-slate-400 dark:text-[#92c9a9] group-hover:text-primary transition-colors">
+            <div className="p-3 bg-slate-50 dark:bg-trek-elevated rounded-2xl border border-slate-100 dark:border-white/5 text-slate-400 dark:text-trek-text-muted group-hover:text-primary transition-colors">
                 <span className="material-symbols-outlined text-2xl font-black">{icon}</span>
             </div>
             <div className={`${trend === 'warning' ? 'bg-orange-500/10 text-orange-500' : trend === 'up' ? 'bg-primary/10 text-primary' : 'bg-slate-100 dark:bg-white/5 text-slate-400'} px-3 py-1.5 rounded-xl border border-white/5`}>
@@ -199,7 +199,7 @@ const StatCard = ({ title, value, change, icon, trend }: any) => (
             </div>
         </div>
         <div>
-            <p className="text-slate-400 dark:text-[#92c9a9] text-[10px] font-black uppercase tracking-[0.2em] mb-1">{title}</p>
+            <p className="text-slate-400 dark:text-trek-text-muted text-[10px] font-black uppercase tracking-[0.2em] mb-1">{title}</p>
             <p className="text-slate-900 dark:text-white text-4xl font-black tabular-nums">{value}</p>
         </div>
         <p className={`${trend === 'warning' ? 'text-orange-500' : trend === 'up' ? 'text-primary' : 'text-slate-400'} text-[9px] font-black uppercase tracking-widest mt-2`}>
@@ -209,11 +209,11 @@ const StatCard = ({ title, value, change, icon, trend }: any) => (
 );
 
 const TableRow = ({ name, location, dates, guide, status }: any) => (
-    <tr className="hover:bg-slate-50/50 dark:hover:bg-[#1f3d2b]/50 transition-colors group">
+    <tr className="hover:bg-slate-50/50 dark:hover:bg-trek-elevated/50 transition-colors group">
         <td className="px-6 py-6 border-b border-transparent">
             <div className="flex flex-col">
                 <span className="font-black text-slate-900 dark:text-white uppercase tracking-tight text-base group-hover:text-primary transition-colors">{name}</span>
-                <span className="text-[10px] font-bold text-slate-400 dark:text-[#92c9a9]/60 uppercase tracking-widest mt-0.5">{location}</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-trek-text-muted/60 uppercase tracking-widest mt-0.5">{location}</span>
             </div>
         </td>
         <td className="px-6 py-6 border-b border-transparent">
@@ -231,14 +231,14 @@ const TableRow = ({ name, location, dates, guide, status }: any) => (
 );
 
 const PendingItem = ({ name, time, type, status }: any) => (
-    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${status === 'error' ? 'border-red-500/50 bg-red-500/5' : 'border-slate-200 dark:border-[#234833] bg-white dark:bg-[#1a3124] hover:shadow-lg shadow-primary/5 hover:scale-[1.02]'}`}>
+    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${status === 'error' ? 'border-red-500/50 bg-red-500/5' : 'border-slate-200 dark:border-trek-border bg-white dark:bg-trek-surface hover:shadow-lg shadow-primary/5 hover:scale-[1.02]'}`}>
         <div className="flex items-center gap-4">
             <div className={`p-2 rounded-lg ${status === 'error' ? 'bg-red-500/20 text-red-500' : 'bg-primary/20 text-primary'}`}>
                 <span className="material-symbols-outlined text-lg font-black">{type}</span>
             </div>
             <div>
                 <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{name}</p>
-                <p className="text-[9px] text-slate-400 dark:text-[#92c9a9]/60 font-bold uppercase tracking-widest mt-0.5">Capturado: {time}</p>
+                <p className="text-[9px] text-slate-400 dark:text-trek-text-muted/60 font-bold uppercase tracking-widest mt-0.5">Capturado: {time}</p>
             </div>
         </div>
         <span className={`text-[9px] px-3 py-1.5 rounded-xl font-black uppercase tracking-widest border ${status === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-primary/10 text-primary border-primary/20'}`}>

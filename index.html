@@ -6,17 +6,107 @@
   <link rel="icon" type="image/svg+xml" href="/pwa-icon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TrekManager - Manage Trekking Trips</title>
+
+  <!-- Preconnect for faster font loading -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- Inter Font: swap is fine here, system font fallback is acceptable -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
     rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+
+  <!-- Material Symbols: BLOCK display to prevent raw icon names from showing -->
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=block"
     rel="stylesheet" />
+
+  <style>
+    /* Critical inline styles to prevent FOUC */
+    html,
+    body,
+    #root {
+      background-color: rgb(16, 34, 24);
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Splash screen while app + fonts load */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background-color: rgb(16, 34, 24);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      transition: opacity 0.4s ease-out;
+    }
+
+    #splash-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #splash-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(19, 236, 109, 0.2);
+      border-top-color: rgb(19, 236, 109);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    #splash-text {
+      color: rgb(19, 236, 109);
+      font-family: system-ui, sans-serif;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.3em;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
 </head>
 
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white transition-colors duration-200">
+<body>
+  <!-- Splash screen shown while fonts + app load -->
+  <div id="splash-screen">
+    <div id="splash-spinner"></div>
+    <p id="splash-text">Cargando TrekLogix...</p>
+  </div>
+
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
+
+  <script>
+    // Wait for fonts to be fully loaded, then fade out splash
+    document.fonts.ready.then(function() {
+      var splash = document.getElementById('splash-screen');
+      if (splash) {
+        splash.classList.add('fade-out');
+        setTimeout(function() {
+          splash.remove();
+        }, 500);
+      }
+    });
+
+    // Safety timeout: remove splash after 4 seconds max (in case fonts fail)
+    setTimeout(function() {
+      var splash = document.getElementById('splash-screen');
+      if (splash) {
+        splash.classList.add('fade-out');
+        setTimeout(function() {
+          splash.remove();
+        }, 500);
+      }
+    }, 4000);
+  </script>
 </body>
 
 </html>

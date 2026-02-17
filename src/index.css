@@ -5,7 +5,13 @@
   --color-background-light: rgb(246, 248, 247);
   --color-background-dark: rgb(16, 34, 24);
 
+  /* Dark theme surface hierarchy */
+  --color-trek-surface: rgb(26, 46, 35);
+  /* Cards, panels, sidebars */
+  --color-trek-elevated: rgb(31, 61, 43);
+  /* Table headers, hovers, raised elements */
   --color-trek-dark-green: rgb(26, 51, 37);
+  /* Legacy alias */
   --color-trek-border: rgb(35, 72, 51);
   --color-trek-text-muted: rgb(146, 201, 169);
 
@@ -57,4 +63,21 @@ body {
     animation: none !important;
     transition: none !important;
   }
+}
+
+/* Smooth page transition - avoids gray flash by not going fully transparent */
+@keyframes pageEnter {
+  from {
+    opacity: 0.85;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main>* {
+  animation: pageEnter 0.25s ease-out;
 }

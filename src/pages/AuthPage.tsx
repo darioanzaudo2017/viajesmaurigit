@@ -68,7 +68,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                     </div>
                 </div>
 
-                <div className="bg-white dark:bg-[#1a2e23] rounded-3xl border border-slate-200 dark:border-[#234833] shadow-2xl overflow-hidden relative">
+                <div className="bg-white dark:bg-trek-surface rounded-3xl border border-slate-200 dark:border-trek-border shadow-2xl overflow-hidden relative">
                     {/* Decorative Gradient */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
 
@@ -77,7 +77,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                             <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
                                 {isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta'}
                             </h2>
-                            <p className="text-slate-500 dark:text-[#92c9a9] text-sm">
+                            <p className="text-slate-500 dark:text-trek-text-muted text-sm">
                                 {isLogin
                                     ? 'Carga tus datos para continuar tu expedición.'
                                     : 'Únete a nuestra comunidad de exploradores.'}
@@ -95,7 +95,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
 
                             {!isLogin && (
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60 ml-1">Nombre Completo</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60 ml-1">Nombre Completo</label>
                                     <div className="relative group">
                                         <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">person</span>
                                         <input
@@ -103,7 +103,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                             type="text"
                                             value={fullName}
                                             onChange={(e) => setFullName(e.target.value)}
-                                            className="w-full bg-slate-50 dark:bg-[#102218] border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                            className="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                                             placeholder="Ej: Juan Pérez"
                                         />
                                     </div>
@@ -111,7 +111,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                             )}
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60 ml-1">Correo Electrónico</label>
+                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60 ml-1">Correo Electrónico</label>
                                 <div className="relative group">
                                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">mail</span>
                                     <input
@@ -119,7 +119,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                         type="email"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-[#102218] border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                        className="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                                         placeholder="juan@ejemplo.com"
                                     />
                                 </div>
@@ -127,7 +127,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
 
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center ml-1">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-[#92c9a9]/60">Contraseña</label>
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60">Contraseña</label>
                                     {isLogin && <button type="button" className="text-[10px] text-primary font-black uppercase tracking-widest hover:brightness-125 transition-all">¿La olvidaste?</button>}
                                 </div>
                                 <div className="relative group">
@@ -137,7 +137,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                         type="password"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
-                                        className="w-full bg-slate-50 dark:bg-[#102218] border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                        className="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                                         placeholder="••••••••"
                                     />
                                 </div>
@@ -159,7 +159,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                             </button>
 
                             <div className="text-center pt-2">
-                                <p className="text-slate-500 dark:text-[#92c9a9]/60 text-xs font-medium uppercase tracking-wider">
+                                <p className="text-slate-500 dark:text-trek-text-muted/60 text-xs font-medium uppercase tracking-wider">
                                     {isLogin ? "¿No tienes cuenta aún?" : "¿Ya tienes cuenta?"}
                                     <button
                                         type="button"
@@ -180,7 +180,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                 <div className="w-full border-t border-slate-200 dark:border-[#2a4435]"></div>
                             </div>
                             <div className="relative flex justify-center text-[10px] uppercase">
-                                <span className="bg-white dark:bg-[#1a2e23] px-4 text-slate-400 dark:text-[#92c9a9]/40 font-black tracking-widest">O continúa con</span>
+                                <span className="bg-white dark:bg-trek-surface px-4 text-slate-400 dark:text-trek-text-muted/40 font-black tracking-widest">O continúa con</span>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
@@ -196,7 +196,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                     </div>
                 </div>
 
-                <p className="text-center text-slate-400 dark:text-[#92c9a9]/40 text-[9px] leading-relaxed uppercase tracking-[0.2em] px-10">
+                <p className="text-center text-slate-400 dark:text-trek-text-muted/40 text-[9px] leading-relaxed uppercase tracking-[0.2em] px-10">
                     Al continuar, aceptas los términos de explorador y la política de privacidad de Trek PWA.
                 </p>
             </div>

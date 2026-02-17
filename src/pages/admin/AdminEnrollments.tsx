@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../api/supabase';
 import MedicalViewModal from '../../components/admin/MedicalViewModal';
-import MedicalProfilePage from '../../pages/MedicalProfilePage';
 import { generateMedicalPDF } from '../../utils/pdfGenerator';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { db } from '../../api/db';
@@ -117,52 +116,92 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
 
     const handleDirectPDFDownload = async (userId: string, userName: string) => {
         try {
-            console.log("Iniciando descarga de PDF para:", userName, userId);
+            console.log("Iniciando descarga nativa de PDF para:", userName, userId);
             setDownloadingUser({ userId, userName });
 
-            // Aumentamos el tiempo para asegurar que el componente oculto cargue los datos (Supabase)
-            setTimeout(async () => {
-                try {
-                    const elementId = `medical-profile-download-${userId}`;
-                    const element = document.getElementById(elementId);
+            // Fetch medical profile data
+            let profileData: any = null;
 
-                    console.log("Checking DOM for elementId:", elementId);
-                    if (element) {
-                        console.log("Element FOUND. OffsetHeight:", element.offsetHeight, "OffsetWidth:", element.offsetWidth);
-                    } else {
-                        console.error("Element NOT FOUND in DOM yet.");
+            if (isOnline) {
+                const { data, error } = await supabase
+                    .from('fichas_medicas')
+                    .select('*, user:user_id(full_name)')
+                    .eq('user_id', userId)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') throw error;
+                profileData = data;
+            } else {
+                const cached = await db.medicalRecords.get(userId);
+                if (cached) profileData = cached.data;
+            }
+
+            if (!profileData) {
+                alert("No se encontró ficha médica para este participante.");
+                setDownloadingUser(null);
+                return;
+            }
+
+            // Conditions catalog for resolving IDs to names
+            const conditions_catalog = [
+                { id: 1, condicion: 'COVID-19' }, { id: 2, condicion: 'Síntomas de COVID-19' },
+                { id: 3, condicion: 'Dificultad visual' }, { id: 4, condicion: 'Problemas auditivos' },
+                { id: 5, condicion: 'Alergias' }, { id: 6, condicion: 'Afecciones del corazón' },
+                { id: 7, condicion: 'Epilepsia' }, { id: 8, condicion: 'Asma' },
+                { id: 9, condicion: 'Diabetes' }, { id: 10, condicion: 'Hipertensión' },
+                { id: 11, condicion: 'Problemas respiratorios' }, { id: 12, condicion: 'Convulsiones' },
+                { id: 13, condicion: 'Enfermedades de la sangre' },
+                { id: 14, condicion: 'Hepatitis u otras enfermedades del hígado' },
+                { id: 15, condicion: 'Limitaciones en actividad diaria' }, { id: 16, condicion: 'Celiaquía' },
+                { id: 17, condicion: 'Luxaciones' }, { id: 18, condicion: 'Problemas de la columna' },
+                { id: 19, condicion: 'Lesiones de cintura, rodillas o tobillos' },
+                { id: 20, condicion: 'Lesiones de hombros o brazos' },
+                { id: 21, condicion: 'Bajo cuidado médico' }, { id: 22, condicion: 'Toma medicación actualmente' },
+                { id: 23, condicion: 'Embarazo' }, { id: 24, condicion: 'Otra condición' },
+            ];
+
+            const getConditionName = (id: number) =>
+                conditions_catalog.find(c => c.id === id)?.condicion || `Condición ${id}`;
+
+            // Build structured data
+            const pdfData = {
+                fullName: profileData.user?.full_name || userName,
+                bloodType: profileData.grupo_sanguineo || 'N/A',
+                bloodPressure: profileData.tension_arterial || '120/80',
+                height: String(profileData.estatura || ''),
+                weight: String(profileData.peso || ''),
+                insurance: profileData.obra_social || 'N/A',
+                allergies: profileData.alergias || 'Ninguna',
+                observations: profileData.observaciones || 'Sin observaciones',
+                lastUpdate: profileData.updated_at ? new Date(profileData.updated_at).toLocaleDateString() : undefined,
+                conditions: (profileData.condiciones || []).map((id: number) => getConditionName(id)),
+                medications: (profileData.medicamentos || []).map((m: any) => ({
+                    name: m.name || 'Sin nombre',
+                    dosage: m.dosage || 'Sin dosis'
+                })),
+                emergencyContacts: [
+                    {
+                        name: profileData.contacto_emergencia_1 || 'No registrado',
+                        phone: profileData.telefono_emergencia_1 || 'N/A',
+                        relation: 'Primario'
+                    },
+                    {
+                        name: profileData.contacto_emergencia_2 || 'No registrado',
+                        phone: profileData.telefono_emergencia_2 || 'N/A',
+                        relation: 'Secundario'
                     }
+                ]
+            };
 
-                    if (!element) {
-                        const errorMsg = "No se encontró el elemento para capturar el PDF.";
-                        console.error(errorMsg, elementId);
-                        alert(errorMsg);
-                        setDownloadingUser(null);
-                        return;
-                    }
+            const fileName = `Ficha_Medica_${userName.replace(/\s+/g, '_')}`;
+            await generateMedicalPDF('', fileName, '#ffffff', { type: 'medical', content: pdfData });
+            console.log("PDF nativo generado con éxito");
 
-                    // Log visibility check
-                    const rect = element.getBoundingClientRect();
-                    console.log("Final check - Rect:", rect.top, rect.left, rect.width, rect.height);
-
-                    const fileName = `Ficha_Medica_${userName.replace(/\s+/g, '_')}`;
-                    await generateMedicalPDF(elementId, fileName);
-                    console.log("PDF generado con éxito");
-                } catch (err: any) {
-                    console.error("Error detallado en PDF:", err);
-                    if (err.message?.includes('oklch') || err.message?.includes('oklab') || err.message?.includes('unsupported color function')) {
-                        alert(`Error Técnico: Tu navegador o el motor de captura no soporta el formato de color moderno de Tailwind v4 (${err.message.includes('oklch') ? 'oklch' : 'oklab'}). He aplicado una limpieza de estilos, intenta de nuevo ahora.`);
-                    } else {
-                        alert(`Error al generar el PDF: ${err.message || 'Error en el motor de captura'}`);
-                    }
-                } finally {
-                    setDownloadingUser(null);
-                }
-            }, 4000);
         } catch (error: any) {
-            console.error("Error al iniciar PDF:", error);
+            console.error("Error generando PDF:", error);
+            alert(`Error al generar el PDF: ${error.message || 'Error desconocido'}`);
+        } finally {
             setDownloadingUser(null);
-            alert(`No se pudo iniciar la descarga: ${error.message}`);
         }
     };
 
@@ -175,7 +214,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-[#102218] backdrop-blur-sm">
+            <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                     <p className="text-primary font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">Cargando Participantes...</p>
@@ -185,7 +224,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
     }
 
     return (
-        <div className="min-h-screen bg-[#102218] text-white p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
+        <div className="min-h-screen p-8 text-slate-900 dark:text-white max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500 pb-20">
             <MedicalViewModal
                 isOpen={medicalModal.isOpen}
                 userId={medicalModal.userId}
@@ -365,26 +404,6 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                     </tbody>
                 </table>
             </div>
-            {/* Contenedor Oculto para Generación de PDF (Fuera de la vista pero visible para el motor) */}
-            {downloadingUser && (
-                <div style={{
-                    position: 'absolute',
-                    top: '-9999px',
-                    left: '0',
-                    width: '1200px',
-                    background: '#102218',
-                    color: '#ffffff',
-                    pointerEvents: 'none'
-                }}>
-                    <div id={`medical-profile-download-${downloadingUser.userId}`} style={{
-                        width: '1200px',
-                        background: '#102218',
-                        color: '#ffffff'
-                    }}>
-                        <MedicalProfilePage userId={downloadingUser.userId} fullView={true} />
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

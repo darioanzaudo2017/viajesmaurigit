@@ -101,7 +101,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
 
     if (checkingStatus) {
         return (
-            <div className="flex-1 flex items-center justify-center min-h-screen bg-[#102218]">
+            <div className="flex-1 flex items-center justify-center min-h-screen bg-background-dark">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                     <p className="text-primary font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">Verificando Estado...</p>
@@ -117,7 +117,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                     <span className="material-symbols-outlined text-5xl">verified</span>
                 </div>
                 <h2 className="text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Ya estás Inscrito</h2>
-                <p className="text-[#92c9a9] text-lg font-medium">Ya registramos tu participación para <b>{tripInfo?.titulo || 'esta expedición'}</b>. No es necesario completar el formulario nuevamente.</p>
+                <p className="text-trek-text-muted text-lg font-medium">Ya registramos tu participación para <b>{tripInfo?.titulo || 'esta expedición'}</b>. No es necesario completar el formulario nuevamente.</p>
                 <div className="pt-6">
                     <button
                         onClick={() => onComplete?.()}
@@ -168,7 +168,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                     <span className="material-symbols-outlined text-primary">event_available</span>
                                     Selecciona tu Expedición
                                 </h2>
-                                <p className="text-[#92c9a9] text-sm mb-6">Para completar la inscripción, por favor elige a qué viaje deseas anotarte.</p>
+                                <p className="text-trek-text-muted text-sm mb-6">Para completar la inscripción, por favor elige a qué viaje deseas anotarte.</p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {availableTrips.map(t => (
                                         <button
@@ -176,7 +176,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                             onClick={() => setSelectedTripId(t.id)}
                                             className={`p-4 rounded-xl border-2 text-left transition-all ${selectedTripId === t.id
                                                 ? 'border-primary bg-primary/10 text-slate-900 dark:text-white'
-                                                : 'border-white/10 hover:border-primary/50 text-[#92c9a9]'}`}
+                                                : 'border-white/10 hover:border-primary/50 text-trek-text-muted'}`}
                                         >
                                             <p className="font-bold uppercase tracking-tight">{t.titulo}</p>
                                         </button>
@@ -185,7 +185,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                         onClick={() => setSelectedTripId('GENERAL')}
                                         className={`p-4 rounded-xl border-2 text-left transition-all ${selectedTripId === 'GENERAL'
                                             ? 'border-white/40 bg-white/5 text-slate-900 dark:text-white'
-                                            : 'border-white/10 hover:border-white/30 text-[#92c9a9]'}`}
+                                            : 'border-white/10 hover:border-white/30 text-trek-text-muted'}`}
                                     >
                                         <p className="font-bold uppercase tracking-tight">Solo Actualizar Ficha Médica</p>
                                     </button>
@@ -194,7 +194,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                         )}
 
                         {/* Residence Information */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl border border-[#e7f3ec] dark:border-[#1e3a2a] shadow-sm overflow-hidden">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl border border-[#e7f3ec] dark:border-trek-border shadow-sm overflow-hidden">
                             <div className="bg-zinc-50 dark:bg-zinc-800/50 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
                                 <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                                     <span className="material-symbols-outlined text-primary">home_pin</span>
@@ -239,7 +239,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                         </section>
 
                         {/* Emergency Contacts */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl border border-[#e7f3ec] dark:border-[#1e3a2a] shadow-sm overflow-hidden">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl border border-[#e7f3ec] dark:border-trek-border shadow-sm overflow-hidden">
                             <div className="bg-zinc-50 dark:bg-zinc-800/50 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
                                 <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                                     <span className="material-symbols-outlined text-primary">contact_emergency</span>
@@ -303,7 +303,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Food preference */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl shadow-sm border border-[#e7f3ec] dark:border-[#1e3a2a] p-6">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl shadow-sm border border-[#e7f3ec] dark:border-trek-border p-6">
                             <h2 className="text-slate-900 dark:text-white text-[22px] font-bold leading-tight mb-6">Preferencia de Menú</h2>
                             <div className="flex flex-wrap gap-3">
                                 {menuOptions.map(m => (
@@ -312,7 +312,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                         onClick={() => updateField('menu', m)}
                                         className={`px-6 py-3 rounded-xl border-2 font-bold transition-all ${formData.menu === m
                                             ? 'border-primary bg-primary/10 text-slate-900 dark:text-white'
-                                            : 'border-[#2a4435] text-[#92c9a9] hover:border-primary'}`}
+                                            : 'border-[#2a4435] text-trek-text-muted hover:border-primary'}`}
                                     >
                                         {m}
                                     </button>
@@ -321,7 +321,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                         </section>
 
                         {/* Blood Type Section */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl shadow-sm border border-[#e7f3ec] dark:border-[#1e3a2a] p-6">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl shadow-sm border border-[#e7f3ec] dark:border-trek-border p-6">
                             <div className="flex items-center gap-2 mb-6">
                                 <h2 className="text-slate-900 dark:text-white text-[22px] font-bold leading-tight mb-6">Grupo Sanguíneo</h2>
                             </div>
@@ -332,7 +332,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                         onClick={() => updateField('grupo_sanguineo', type)}
                                         className={`flex flex-col items-center justify-center p-4 border-2 rounded-lg transition-all ${formData.grupo_sanguineo === type
                                             ? 'border-primary bg-primary/10 text-slate-900 dark:text-white'
-                                            : 'border-[#2a4435] hover:border-primary text-[#92c9a9]'
+                                            : 'border-[#2a4435] hover:border-primary text-trek-text-muted'
                                             }`}
                                     >
                                         <span className="font-bold text-lg">{type}</span>
@@ -342,7 +342,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                         </section>
 
                         {/* Allergies Section */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl shadow-sm border border-[#e7f3ec] dark:border-[#1e3a2a] p-6">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl shadow-sm border border-[#e7f3ec] dark:border-trek-border p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-slate-900 dark:text-white text-[22px] font-bold leading-tight">Alergias Críticas</h2>
                                 <label className="flex items-center gap-2 cursor-pointer">
@@ -352,11 +352,11 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                         checked={formData.alergias === 'Ninguna'}
                                         onChange={(e) => updateField('alergias', e.target.checked ? 'Ninguna' : '')}
                                     />
-                                    <span className="text-sm font-medium text-[#92c9a9]">Sin alergias</span>
+                                    <span className="text-sm font-medium text-trek-text-muted">Sin alergias</span>
                                 </label>
                             </div>
                             <textarea
-                                className="w-full bg-background-light dark:bg-[#102218] border border-[#2a4435] rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none min-h-[100px]"
+                                className="w-full bg-background-light dark:bg-background-dark border border-[#2a4435] rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none min-h-[100px]"
                                 placeholder="Ej: Penicilina, Maní, Abejas..."
                                 value={formData.alergias === 'Ninguna' ? '' : formData.alergias}
                                 disabled={formData.alergias === 'Ninguna'}
@@ -365,7 +365,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                         </section>
 
                         {/* Medications */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl shadow-sm border border-[#e7f3ec] dark:border-[#1e3a2a] p-6">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl shadow-sm border border-[#e7f3ec] dark:border-trek-border p-6">
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-slate-900 dark:text-white text-[22px] font-bold leading-tight">Medicación Actual</h2>
                                 <button onClick={addMedication} className="flex items-center gap-1 text-primary text-sm font-bold">
@@ -377,13 +377,13 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                 {(formData.medications || []).map((med, index) => (
                                     <div key={index} className="flex gap-4">
                                         <input
-                                            className="flex-1 bg-background-light dark:bg-[#102218] border border-[#2a4435] rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
+                                            className="flex-1 bg-background-light dark:bg-background-dark border border-[#2a4435] rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
                                             placeholder="Medicamento"
                                             value={med.name}
                                             onChange={(e) => updateMedication(index, 'name', e.target.value)}
                                         />
                                         <input
-                                            className="w-48 bg-background-light dark:bg-[#102218] border border-[#2a4435] rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
+                                            className="w-48 bg-background-light dark:bg-background-dark border border-[#2a4435] rounded-lg px-4 py-3 text-slate-900 dark:text-white outline-none"
                                             placeholder="Dosis"
                                             value={med.dosage}
                                             onChange={(e) => updateMedication(index, 'dosage', e.target.value)}
@@ -401,7 +401,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                 return (
                     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         {/* Physical Stats section */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl border border-[#e7f3ec] dark:border-[#1e3a2a] shadow-sm overflow-hidden">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl border border-[#e7f3ec] dark:border-trek-border shadow-sm overflow-hidden">
                             <div className="bg-zinc-50 dark:bg-zinc-800/50 px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
                                 <h2 className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
                                     <span className="material-symbols-outlined text-primary">analytics</span>
@@ -425,12 +425,12 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                         </section>
 
                         {/* Conditions Section */}
-                        <section className="bg-white dark:bg-[#1a2e23] rounded-xl border border-[#e7f3ec] dark:border-[#1e3a2a] shadow-sm overflow-hidden">
+                        <section className="bg-white dark:bg-trek-surface rounded-xl border border-[#e7f3ec] dark:border-trek-border shadow-sm overflow-hidden">
                             <div className="p-6">
                                 <h2 className="text-slate-900 dark:text-white text-xl font-bold mb-4">Condiciones Preexistentes</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {conditions_catalog.map((item) => (
-                                        <label key={item.id} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.condiciones.includes(item.id) ? 'bg-primary/10 border-primary block text-slate-900 dark:text-white' : 'border-[#2a4435] text-[#92c9a9]'}`}>
+                                        <label key={item.id} className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${formData.condiciones.includes(item.id) ? 'bg-primary/10 border-primary block text-slate-900 dark:text-white' : 'border-[#2a4435] text-trek-text-muted'}`}>
                                             <input type="checkbox" className="hidden" checked={formData.condiciones.includes(item.id)} onChange={() => toggleCondition(item.id)} />
                                             <span className="material-symbols-outlined text-sm">{formData.condiciones.includes(item.id) ? 'check_box' : 'check_box_outline_blank'}</span>
                                             <span className="text-sm font-medium">{item.condicion}</span>
@@ -455,7 +455,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                 <span className="material-symbols-outlined text-6xl">cloud_done</span>
                             </div>
                             <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">¡Registro Completado!</h3>
-                            <p className="text-[#92c9a9] max-w-md mx-auto">Tus datos médicos y de inscripción para <b>{selectedTripId !== 'GENERAL' ? tripInfo?.titulo : 'tu perfil general'}</b> han sido guardados con éxito.</p>
+                            <p className="text-trek-text-muted max-w-md mx-auto">Tus datos médicos y de inscripción para <b>{selectedTripId !== 'GENERAL' ? tripInfo?.titulo : 'tu perfil general'}</b> han sido guardados con éxito.</p>
                             <button
                                 onClick={() => onComplete?.()}
                                 className="mt-8 px-12 py-4 bg-primary text-black font-black rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all"
@@ -481,7 +481,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
     };
 
     return (
-        <div className="relative min-h-screen bg-background-light dark:bg-[#102218] text-slate-900 dark:text-white pb-20 transition-colors duration-300">
+        <div className="relative min-h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-white pb-20 transition-colors duration-300">
             <main className="relative z-10 max-w-[1280px] mx-auto px-6 py-10">
                 <div className="max-w-[1100px] mx-auto">
                     <div className="mb-10 space-y-4">
@@ -489,7 +489,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                             {selectedTripId !== 'GENERAL' ? `Inscripción: ${tripInfo?.titulo || '...'}` : 'Actualización Ficha Médica'}
                         </h1>
                         <div className="flex items-center gap-6">
-                            <div className="h-2 flex-1 bg-[#2a4435] rounded-full overflow-hidden">
+                            <div className="h-2 flex-1 bg-trek-border rounded-full overflow-hidden">
                                 <div className="h-full bg-primary transition-all duration-700" style={{ width: `${(step / 4) * 100}%` }}></div>
                             </div>
                             <span className="text-primary font-black text-sm">{Math.round((step / 4) * 100)}%</span>
@@ -502,7 +502,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                             {renderStepContent()}
 
                             {step < 4 && (
-                                <div className="flex items-center justify-between pt-6 border-t border-[#1e3a2a]">
+                                <div className="flex items-center justify-between pt-6 border-t border-trek-border">
                                     <button
                                         onClick={() => step > 1 && setStep(step - 1)}
                                         className="px-8 py-4 rounded-xl border border-zinc-700 font-bold text-sm text-slate-900 dark:text-white hover:bg-zinc-800 disabled:opacity-20"
@@ -524,7 +524,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
 
                         {/* Right Sidebar Summary */}
                         <aside className="w-full lg:w-[320px] shrink-0 sticky top-28 h-fit">
-                            <div className="bg-[#1a2e23] border border-[#1e3a2a] rounded-xl p-6 space-y-6">
+                            <div className="bg-trek-surface border border-trek-border rounded-xl p-6 space-y-6">
                                 <h3 className="text-slate-900 dark:text-white font-bold text-sm uppercase tracking-widest flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary">verified_user</span>
                                     Seguridad Trek
@@ -536,7 +536,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                     </div>
                                 )}
                                 <div className="space-y-2">
-                                    <p className="text-[10px] text-[#92c9a9] uppercase font-black">Estado del Proceso</p>
+                                    <p className="text-[10px] text-trek-text-muted uppercase font-black">Estado del Proceso</p>
                                     <div className="flex items-center gap-2">
                                         <div className="size-2 rounded-full bg-primary animate-pulse"></div>
                                         <p className="text-xs text-slate-900 dark:text-white font-bold">Inscripción en Curso</p>
@@ -544,7 +544,7 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                                 </div>
                                 <div className="space-y-4">
                                     <div className="p-3 bg-white/5 rounded-lg border border-white/5">
-                                        <p className="text-[10px] text-[#92c9a9] uppercase font-black mb-1">Borrador</p>
+                                        <p className="text-[10px] text-trek-text-muted uppercase font-black mb-1">Borrador</p>
                                         <p className="text-xs text-primary font-bold">Autoguardado Local Activo</p>
                                     </div>
                                 </div>

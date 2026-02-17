@@ -32,6 +32,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
     const [userTreks, setUserTreks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+    const [showAllTreks, setShowAllTreks] = useState(false);
 
     const isAdmin = user?.profile?.role === 'admin';
 
@@ -123,23 +124,23 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
     return (
         <div className="flex flex-1 overflow-hidden h-full">
             {/* Left Sidebar: My Upcoming Treks */}
-            <aside className="w-[320px] border-r border-slate-200 dark:border-[#234833] flex flex-col bg-background-light dark:bg-background-dark hidden lg:flex">
+            <aside className="w-[320px] border-r border-white/10 flex flex-col bg-slate-50 hidden lg:flex">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Mis Expediciones</h2>
+                        <h2 className="text-slate-900 text-xl font-bold tracking-tight">Mis Expediciones</h2>
                         {userTreks.length > 0 && (
                             <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded font-bold">{userTreks.length} Activas</span>
                         )}
                     </div>
-                    <p className="text-slate-500 dark:text-[#92c9a9] text-sm">Tus rutas y equipo confirmado.</p>
+                    <p className="text-slate-500 text-sm">Tus rutas y equipo confirmado.</p>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-4">
                     {!user ? (
                         <div className="py-12 text-center px-6 space-y-4">
-                            <div className="size-16 bg-slate-100 dark:bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                <span className="material-symbols-outlined text-3xl text-slate-400 dark:text-[#234833]">lock_open</span>
+                            <div className="size-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                <span className="material-symbols-outlined text-3xl text-slate-400">lock_open</span>
                             </div>
-                            <p className="text-slate-500 dark:text-[#92c9a9] text-xs font-black uppercase tracking-widest leading-relaxed">Ingresa para gestionar tus expediciones</p>
+                            <p className="text-slate-500 text-xs font-black uppercase tracking-widest leading-relaxed">Ingresa para gestionar tus expediciones</p>
                             <button
                                 onClick={onDiscoverClick}
                                 className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline"
@@ -152,7 +153,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             <div
                                 key={trek.id}
                                 onClick={() => onTrekClick?.(trek.id)}
-                                className="group bg-white dark:bg-[#1a2e22] rounded-xl border border-slate-200 dark:border-[#234833] p-4 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                className="group bg-neutral-900 rounded-xl border border-white/5 p-4 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow-md"
                             >
                                 <div className="flex gap-4">
                                     <div
@@ -160,8 +161,8 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                         style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'}")` }}
                                     ></div>
                                     <div className="flex flex-col justify-center overflow-hidden">
-                                        <p className="text-slate-900 dark:text-white text-base font-bold truncate uppercase tracking-tight">{trek.title}</p>
-                                        <p className="text-slate-500 dark:text-[#92c9a9] text-[10px] font-bold uppercase tracking-widest">{trek.details}</p>
+                                        <p className="text-white text-base font-bold truncate uppercase tracking-tight">{trek.title}</p>
+                                        <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{trek.details}</p>
                                         <div className="mt-2 flex items-center gap-2">
                                             <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${trek.status === 'confirmed' ? 'bg-primary/20 text-primary' : 'bg-orange-500/20 text-orange-500'}`}>
                                                 {trek.status === 'confirmed' ? 'Confirmado' : 'Pendiente'}
@@ -173,23 +174,23 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                         ))
                     ) : (
                         <div className="py-12 text-center px-6">
-                            <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-[#234833] mb-4">hiking</span>
-                            <p className="text-slate-500 dark:text-[#92c9a9] text-xs font-bold uppercase tracking-widest leading-relaxed">No tienes inscripciones activas aún. ¡Empieza a explorar!</p>
+                            <span className="material-symbols-outlined text-4xl text-slate-300 mb-4">hiking</span>
+                            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest leading-relaxed">No tienes inscripciones activas aún. ¡Empieza a explorar!</p>
                         </div>
                     )}
 
                     {isAdmin && (
                         <div
                             onClick={onCreateTrekClick}
-                            className="border-2 border-dashed border-slate-200 dark:border-[#234833] rounded-xl p-8 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 hover:border-primary/50 cursor-pointer transition-all mt-4"
+                            className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 hover:border-primary/50 cursor-pointer transition-all mt-4"
                         >
                             <span className="material-symbols-outlined text-4xl mb-2 text-primary">add_circle</span>
-                            <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-white">Crear Nueva Expedición</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-900">Crear Nueva Expedición</p>
                         </div>
                     )}
                 </div>
                 {isAdmin && (
-                    <div className="p-4 bg-slate-50 dark:bg-[#162a1e] border-t border-slate-200 dark:border-[#234833]">
+                    <div className="p-4 bg-white border-t border-slate-200">
                         <button
                             onClick={onCreateTrekClick}
                             className="w-full bg-primary hover:bg-primary/90 text-background-dark h-12 rounded-xl font-bold transition-transform active:scale-[0.98] flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest"
@@ -201,39 +202,56 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
             </aside>
 
             {/* Main Content: Discover New Adventures */}
-            <section className="flex-1 overflow-y-auto bg-slate-50 dark:bg-background-dark p-4 md:p-8">
+            <section className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
                 <div className="max-w-6xl mx-auto">
-                    {/* User's Active Treks (Visible everywhere) */}
+                    {/* User's Active Treks (Only on mobile where sidebar is hidden) */}
                     {userTreks.length > 0 && (
-                        <div className="mb-12">
-                            <div className="flex items-center gap-2 mb-6">
-                                <span className="material-symbols-outlined text-primary">verified</span>
-                                <h2 className="text-slate-900 dark:text-white text-xl font-black uppercase tracking-tight">Mis Próximas Expediciones</h2>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {userTreks.map((trek) => (
+                        <div className="mb-8 lg:hidden">
+                            <button
+                                onClick={() => setShowAllTreks(!showAllTreks)}
+                                className="flex items-center justify-between w-full mb-4"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary text-lg">verified</span>
+                                    <h2 className="text-slate-900 text-base font-black uppercase tracking-tight">Mis Expediciones</h2>
+                                    <span className="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full font-black">{userTreks.length}</span>
+                                </div>
+                                <span className={`material-symbols-outlined text-slate-400 text-lg transition-transform duration-300 ${showAllTreks ? 'rotate-180' : ''}`}>expand_more</span>
+                            </button>
+
+                            {/* Always show first 2, rest toggleable */}
+                            <div className="space-y-2">
+                                {(showAllTreks ? userTreks : userTreks.slice(0, 2)).map((trek) => (
                                     <div
                                         key={trek.id}
                                         onClick={() => onTrekClick?.(trek.id)}
-                                        className="group bg-white dark:bg-[#1a2e22] rounded-3xl border border-slate-200 dark:border-primary/20 p-5 hover:border-primary/50 transition-all cursor-pointer shadow-xl flex items-center gap-5"
+                                        className="group bg-neutral-900 rounded-2xl border border-white/5 px-4 py-3 hover:border-primary/50 transition-all cursor-pointer flex items-center gap-3"
                                     >
                                         <div
-                                            className="bg-center bg-no-repeat aspect-square bg-cover rounded-2xl size-20 flex-shrink-0"
+                                            className="bg-center bg-no-repeat bg-cover rounded-xl size-12 flex-shrink-0"
                                             style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'}")` }}
                                         ></div>
-                                        <div className="flex flex-col justify-center overflow-hidden">
-                                            <p className="text-slate-900 dark:text-white text-lg font-black truncate uppercase tracking-tight leading-none mb-1">{trek.title}</p>
-                                            <p className="text-[#92c9a9] text-[10px] font-bold uppercase tracking-widest">{trek.details}</p>
-                                            <div className="mt-3 flex items-center justify-between">
-                                                <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${trek.status === 'confirmed' ? 'bg-primary text-background-dark' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
-                                                    {trek.status === 'confirmed' ? 'Confirmado' : 'Inscrito'}
-                                                </span>
-                                                <span className="material-symbols-outlined text-sm text-primary group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                                            </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-white text-sm font-bold truncate uppercase tracking-tight">{trek.title}</p>
+                                            <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest truncate">{trek.details}</p>
                                         </div>
+                                        <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0 ${trek.status === 'confirmed' ? 'bg-primary text-background-dark' : 'bg-orange-500/20 text-orange-400'}`}>
+                                            {trek.status === 'confirmed' ? 'OK' : 'Pend.'}
+                                        </span>
+                                        <span className="material-symbols-outlined text-sm text-primary/50 flex-shrink-0">chevron_right</span>
                                     </div>
                                 ))}
                             </div>
+
+                            {userTreks.length > 2 && !showAllTreks && (
+                                <button
+                                    onClick={() => setShowAllTreks(true)}
+                                    className="w-full mt-2 py-2 text-primary text-[10px] font-black uppercase tracking-widest hover:underline transition-all flex items-center justify-center gap-1"
+                                >
+                                    Ver {userTreks.length - 2} más
+                                    <span className="material-symbols-outlined text-xs">expand_more</span>
+                                </button>
+                            )}
                         </div>
                     )}
 
@@ -247,7 +265,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                 </div>
                                 <div>
                                     <h3 className="text-white font-bold uppercase tracking-wide">Instala la App Nativa</h3>
-                                    <p className="text-[#92c9a9] text-xs">Acceso offline, notificaciones y mayor rendimiento.</p>
+                                    <p className="text-trek-text-muted text-xs">Acceso offline, notificaciones y mayor rendimiento.</p>
                                 </div>
                             </div>
 
@@ -268,11 +286,11 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             ) : (
                                 <p className="text-primary font-black uppercase tracking-[0.4em] text-[10px]">Explora el Mundo</p>
                             )}
-                            <h1 className="text-slate-900 dark:text-white text-4xl font-black tracking-tighter uppercase italic leading-none">Rutas Destacadas</h1>
+                            <h1 className="text-slate-900 text-4xl font-black tracking-tighter uppercase italic leading-none">Rutas Destacadas</h1>
                         </div>
                         <button
                             onClick={onDiscoverClick}
-                            className="bg-white dark:bg-[#234833] border border-slate-200 dark:border-transparent px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all text-slate-700 dark:text-white flex items-center gap-2 hover:text-primary"
+                            className="bg-neutral-900 border border-white/5 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all text-white flex items-center gap-2 hover:text-primary"
                         >
                             Ver Todas
                             <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -285,7 +303,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             <div
                                 key={route.id}
                                 onClick={() => onTrekClick?.(route.id)}
-                                className="group relative flex flex-col rounded-[32px] bg-white dark:bg-[#1a2e22] border border-slate-200 dark:border-[#234833] overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer"
+                                className="group relative flex flex-col rounded-[32px] bg-neutral-900 border border-white/5 overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer"
                             >
                                 <div className="relative aspect-[4/3] overflow-hidden">
                                     <div
@@ -298,8 +316,8 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     </div>
                                 </div>
                                 <div className="p-6">
-                                    <h3 className="text-slate-900 dark:text-white font-black text-xl leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">{route.titulo}</h3>
-                                    <div className="flex gap-4 text-slate-500 dark:text-[#92c9a9]/60 text-[10px] font-black uppercase tracking-widest mt-4">
+                                    <h3 className="text-white font-black text-xl leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">{route.titulo}</h3>
+                                    <div className="flex gap-4 text-slate-400 text-[10px] font-black uppercase tracking-widest mt-4">
                                         <div className="flex items-center gap-1">
                                             <span className="material-symbols-outlined text-sm text-primary">location_on</span> {route.ubicacion?.split(',')[0]}
                                         </div>
@@ -313,7 +331,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                     </div>
 
                     {/* Featured Exp */}
-                    <div className="mt-16 relative w-full h-[450px] rounded-[40px] overflow-hidden border border-slate-200 dark:border-[#234833] group shadow-2xl">
+                    <div className="mt-16 relative w-full h-[450px] rounded-[40px] overflow-hidden border border-white/5 group shadow-2xl">
                         <div
                             className="absolute inset-0 bg-center bg-no-repeat bg-cover group-hover:scale-[1.02] transition-transform duration-1000"
                             style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=80&w=1200")' }}
@@ -322,7 +340,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                         <div className="absolute inset-0 p-12 flex flex-col justify-center max-w-xl space-y-6">
                             <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">Expedición Premium</span>
                             <h3 className="text-white text-5xl font-black uppercase italic leading-none tracking-tighter">Ascenso al Fitz Roy</h3>
-                            <p className="text-[#92c9a9] text-sm md:text-base leading-relaxed font-medium italic">Vive el desafío definitivo en el corazón de la Patagonia. Una ruta técnica diseñada para exploradores que buscan superar sus límites.</p>
+                            <p className="text-trek-text-muted text-sm md:text-base leading-relaxed font-medium italic">Vive el desafío definitivo en el corazón de la Patagonia. Una ruta técnica diseñada para exploradores que buscan superar sus límites.</p>
                             <div className="flex gap-4 pt-4">
                                 <button
                                     onClick={onDiscoverClick}

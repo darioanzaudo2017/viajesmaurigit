@@ -69,7 +69,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-background-dark">
+            <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">
                 <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
             </div>
         );
@@ -80,8 +80,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-8">
                 <div>
-                    <h2 className="text-3xl font-black text-white tracking-tight uppercase">Panel de Control Admin</h2>
-                    <p className="text-slate-400 text-sm">Monitoreo en tiempo real de operaciones de trekking</p>
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Panel de Control Admin</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Monitoreo en tiempo real de operaciones de trekking</p>
                 </div>
                 <button className="bg-primary hover:bg-primary/90 text-background-dark font-black py-3 px-8 rounded-xl transition-all flex items-center gap-3 text-xs uppercase tracking-widest shadow-lg shadow-primary/20">
                     <span className="material-symbols-outlined font-black">add_circle</span>

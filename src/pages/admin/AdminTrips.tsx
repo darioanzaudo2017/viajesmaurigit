@@ -81,7 +81,7 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
 
     if (loading) {
         return (
-            <div className="flex h-screen items-center justify-center bg-background-dark/50 backdrop-blur-sm">
+            <div className="flex h-screen items-center justify-center bg-background-light dark:bg-background-dark">
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                     <p className="text-primary font-black animate-pulse uppercase tracking-[0.3em] text-[10px]">Cargando Expediciones...</p>
@@ -91,7 +91,7 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
     }
 
     return (
-        <div className="min-h-screen bg-background-dark text-white p-4 lg:p-10 space-y-8 max-w-[1440px] mx-auto w-full animate-in fade-in duration-500 pb-32">
+        <div className="min-h-screen p-4 lg:p-10 text-slate-900 dark:text-white space-y-8 max-w-[1440px] mx-auto w-full animate-in fade-in duration-500 pb-32">
             <TripModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
@@ -106,11 +106,11 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                         <span className="material-symbols-outlined text-sm font-bold">dashboard</span>
                         <span>Management Console</span>
                     </div>
-                    <h1 className="text-white text-4xl lg:text-5xl font-black tracking-tight uppercase italic">Expedition Hub</h1>
-                    <p className="text-text-muted text-lg max-w-xl leading-relaxed font-medium italic">Gestión logística de travesías, monitoreo de inscripciones y coordinación de salidas.</p>
+                    <h1 className="text-slate-900 dark:text-white text-4xl lg:text-5xl font-black tracking-tight uppercase italic">Expedition Hub</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-lg max-w-xl leading-relaxed font-medium italic">Gestión logística de travesías, monitoreo de inscripciones y coordinación de salidas.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button className="flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-6 bg-surface-dark text-white font-bold hover:bg-surface-dark/70 transition-all border border-border-dark hover:border-primary/30">
+                    <button className="flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-6 bg-neutral-900 text-white font-bold hover:bg-neutral-800 transition-all border border-white/5 hover:border-primary/30">
                         <span className="material-symbols-outlined">file_download</span>
                         <span>Exportar CSV</span>
                     </button>
@@ -125,22 +125,22 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
             </div>
 
             {/* Filters */}
-            <div className="bg-surface-dark/40 border border-border-dark rounded-2xl p-6 lg:p-8 space-y-6">
-                <div className="flex flex-wrap items-center gap-6 border-b border-border-dark pb-4">
+            <div className="bg-neutral-900 border border-white/5 rounded-2xl p-6 lg:p-8 space-y-6">
+                <div className="flex flex-wrap items-center gap-6 border-b border-white/5 pb-4">
                     <button className="px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-primary text-white">Todos los Viajes ({trips.length})</button>
-                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest text-text-muted hover:text-white transition-colors">Activos</button>
-                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest text-text-muted hover:text-white transition-colors">Pendientes</button>
+                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-white transition-colors">Activos</button>
+                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-white transition-colors">Pendientes</button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Búsqueda</label>
+                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-1">Búsqueda</label>
                         <div className="relative">
-                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-muted text-[18px]">search</span>
+                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400 text-[18px]">search</span>
                             <input
                                 type="text"
                                 placeholder="Buscar..."
-                                className="w-full bg-background-dark border border-border-dark rounded-xl pl-12 pr-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium placeholder:text-text-muted/50"
+                                className="w-full bg-background-dark border border-white/10 rounded-xl pl-12 pr-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium placeholder:text-slate-500"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -148,9 +148,9 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Región</label>
+                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-1">Región</label>
                         <select
-                            className="bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-sm font-medium cursor-pointer"
+                            className="bg-background-dark border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-sm font-medium cursor-pointer"
                             value={filters.region}
                             onChange={(e) => setFilters({ ...filters, region: e.target.value })}
                         >
@@ -162,9 +162,9 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Estado</label>
+                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-1">Estado</label>
                         <select
-                            className="bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-sm font-medium cursor-pointer"
+                            className="bg-background-dark border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-sm font-medium cursor-pointer"
                             value={filters.status}
                             onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                         >
@@ -176,9 +176,9 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Dificultad</label>
+                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-1">Dificultad</label>
                         <select
-                            className="bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-sm font-medium cursor-pointer"
+                            className="bg-background-dark border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-sm font-medium cursor-pointer"
                             value={filters.difficulty}
                             onChange={(e) => setFilters({ ...filters, difficulty: e.target.value })}
                         >
@@ -205,13 +205,13 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
 
                 <div
                     onClick={handleCreate}
-                    className="border-2 border-dashed border-border-dark rounded-[32px] flex flex-col items-center justify-center p-12 group hover:border-primary/50 cursor-pointer transition-all min-h-[450px] bg-surface-dark/20"
+                    className="border-2 border-dashed border-white/10 rounded-[32px] flex flex-col items-center justify-center p-12 group hover:border-primary/50 cursor-pointer transition-all min-h-[450px] bg-neutral-900/30"
                 >
-                    <div className="size-20 rounded-full bg-surface-dark flex items-center justify-center text-text-muted group-hover:bg-primary group-hover:text-background-dark transition-all mb-6">
+                    <div className="size-20 rounded-full bg-white/5 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-background-dark transition-all mb-6">
                         <span className="material-symbols-outlined text-5xl font-black">add</span>
                     </div>
                     <h3 className="text-white text-2xl font-black uppercase tracking-tight italic">Nueva Expedición</h3>
-                    <p className="text-text-muted text-center text-sm mt-3 max-w-[240px] font-medium leading-relaxed italic">Comienza a planificar una nueva aventura para la próxima temporada.</p>
+                    <p className="text-slate-500 dark:text-slate-400 text-center text-sm mt-3 max-w-[240px] font-medium leading-relaxed italic">Comienza a planificar una nueva aventura para la próxima temporada.</p>
                 </div>
             </div>
 
@@ -245,7 +245,7 @@ const TripCard = ({ trip, onEdit, onViewInscriptos }: { trip: Trip, onEdit: () =
     const isConfirmable = inscriptions >= trip.min_participantes;
 
     return (
-        <div className="group bg-surface-dark border border-border-dark rounded-[32px] overflow-hidden hover:border-primary/50 transition-all duration-500 flex flex-col shadow-2xl">
+        <div className="group bg-neutral-900 border border-white/5 rounded-[32px] overflow-hidden hover:border-primary/50 transition-all duration-500 flex flex-col shadow-2xl">
             <div className="relative h-56 overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
@@ -274,19 +274,19 @@ const TripCard = ({ trip, onEdit, onViewInscriptos }: { trip: Trip, onEdit: () =
 
             <div className="p-8 space-y-6 flex-1 flex flex-col">
                 <div className="flex justify-between items-center text-xs">
-                    <div className="flex items-center gap-2 text-text-muted">
+                    <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
                         <span className="material-symbols-outlined text-lg">calendar_today</span>
                         <span className="font-bold italic uppercase">{new Date(trip.fecha_inicio).toLocaleDateString()}</span>
                     </div>
-                    <span className="text-text-muted font-black uppercase tracking-widest">MIN: {trip.min_participantes}</span>
+                    <span className="text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">MIN: {trip.min_participantes}</span>
                 </div>
 
                 <div className="space-y-3">
                     <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">Progreso de Inscripción</span>
-                        <span className="text-sm font-black text-white italic">{inscriptions} <span className="text-text-muted text-xs">/ {trip.cupos_totales}</span></span>
+                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Progreso de Inscripción</span>
+                        <span className="text-sm font-black text-white italic">{inscriptions} <span className="text-slate-500 dark:text-slate-400 text-xs">/ {trip.cupos_totales}</span></span>
                     </div>
-                    <div className="w-full h-2.5 bg-background-dark/50 rounded-full overflow-hidden border border-border-dark p-[1px]">
+                    <div className="w-full h-2.5 bg-background-dark/50 rounded-full overflow-hidden border border-white/10 p-[1px]">
                         <div
                             className={`h-full rounded-full transition-all duration-1000 ${trip.cupos_disponibles === 0 ? 'bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.5)]' : 'bg-primary shadow-[0_0_12px_rgba(19,236,109,0.5)]'
                                 }`}
@@ -295,10 +295,10 @@ const TripCard = ({ trip, onEdit, onViewInscriptos }: { trip: Trip, onEdit: () =
                     </div>
                 </div>
 
-                <div className="pt-6 mt-auto border-t border-border-dark flex gap-3">
+                <div className="pt-6 mt-auto border-t border-white/5 flex gap-3">
                     <button
                         onClick={onEdit}
-                        className="flex-1 bg-surface-dark border border-border-dark text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-border-dark/60 transition-all font-display"
+                        className="flex-1 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest py-3 rounded-xl hover:bg-white/10 transition-all font-display"
                     >
                         Editar Viaje
                     </button>

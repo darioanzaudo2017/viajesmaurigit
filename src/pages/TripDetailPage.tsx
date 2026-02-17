@@ -116,7 +116,7 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
             {/* Navigation Back */}
             <button
                 onClick={onBack}
-                className="flex items-center gap-2 text-[#92c9a9] hover:text-primary transition-colors mb-6 group uppercase tracking-widest text-[10px] font-black"
+                className="flex items-center gap-2 text-trek-text-muted hover:text-primary transition-colors mb-6 group uppercase tracking-widest text-[10px] font-black"
             >
                 <span className="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
                 Volver a Expediciones
@@ -176,33 +176,33 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                 {/* Left Column: Content */}
                 <div className="lg:col-span-2 space-y-12">
                     {/* Description Card */}
-                    <section className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[32px] p-10 shadow-2xl shadow-primary/5">
+                    <section className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[32px] p-10 shadow-2xl shadow-primary/5">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="p-3 bg-primary/10 rounded-2xl text-primary">
                                 <span className="material-symbols-outlined text-2xl font-black">info</span>
                             </div>
                             <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Descripción de la Expedición</h3>
                         </div>
-                        <div className="prose prose-invert max-w-none text-slate-500 dark:text-[#92c9a9] font-medium leading-relaxed space-y-6 text-lg italic mt-4">
+                        <div className="prose prose-invert max-w-none text-slate-500 dark:text-trek-text-muted font-medium leading-relaxed space-y-6 text-lg italic mt-4">
                             {trip.descripcion || 'No hay descripción detallada disponible para esta expedición.'}
                         </div>
                     </section>
 
                     {/* Participant List */}
-                    <section className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[32px] overflow-hidden shadow-2xl shadow-primary/5">
-                        <div className="p-8 border-b border-slate-200 dark:border-[#234833] flex items-center justify-between">
+                    <section className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[32px] overflow-hidden shadow-2xl shadow-primary/5">
+                        <div className="p-8 border-b border-slate-200 dark:border-trek-border flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 bg-primary/10 rounded-2xl text-primary">
                                     <span className="material-symbols-outlined text-2xl font-black">group</span>
                                 </div>
                                 <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Compañeros de Aventura</h3>
                             </div>
-                            {isAdmin && <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#92c9a9] bg-white/5 px-4 py-2 rounded-full border border-white/5">Vista de Admin</span>}
+                            {isAdmin && <span className="text-[10px] font-black uppercase tracking-[0.3em] text-trek-text-muted bg-white/5 px-4 py-2 rounded-full border border-white/5">Vista de Admin</span>}
                         </div>
                         <div className="overflow-x-auto no-scrollbar">
                             <table className="w-full text-left order-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-[#1f3d2b] text-slate-400 dark:text-[#92c9a9]/60 text-[10px] uppercase font-black tracking-[0.2em]">
+                                    <tr className="bg-slate-50 dark:bg-trek-elevated text-slate-400 dark:text-trek-text-muted/60 text-[10px] uppercase font-black tracking-[0.2em]">
                                         <th className="px-8 py-5">Participante</th>
                                         <th className="px-8 py-5">Fecha Reg.</th>
                                         {isAdmin && <th className="px-8 py-5">Estado Pago</th>}
@@ -211,19 +211,19 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-[#234833]">
                                     {participants.length > 0 ? participants.map((p) => (
-                                        <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-[#1f3d2b]/50 transition-colors">
+                                        <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-trek-elevated/50 transition-colors">
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-[#1f3d2b] overflow-hidden border border-slate-200 dark:border-white/10 flex items-center justify-center">
+                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-trek-elevated overflow-hidden border border-slate-200 dark:border-white/10 flex items-center justify-center">
                                                         <span className="material-symbols-outlined text-slate-400">person</span>
                                                     </div>
                                                     <div>
                                                         <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{p.full_name}</div>
-                                                        <div className="text-[10px] text-[#92c9a9] font-bold uppercase tracking-widest">{p.role}</div>
+                                                        <div className="text-[10px] text-trek-text-muted font-bold uppercase tracking-widest">{p.role}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-[11px] font-bold text-slate-500 dark:text-[#92c9a9] uppercase tracking-widest italic">{new Date(p.created_at).toLocaleDateString()}</td>
+                                            <td className="px-8 py-6 text-[11px] font-bold text-slate-500 dark:text-trek-text-muted uppercase tracking-widest italic">{new Date(p.created_at).toLocaleDateString()}</td>
                                             {isAdmin && (
                                                 <td className="px-8 py-6">
                                                     <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-xl border ${p.status === 'Confirmado' ? 'bg-primary/20 text-primary border-primary/30' : 'bg-orange-500/20 text-orange-500 border-orange-500/30'}`}>
@@ -241,7 +241,7 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={isAdmin ? 4 : 2} className="px-8 py-10 text-center text-slate-400 dark:text-[#92c9a9]/40 font-black uppercase tracking-[0.2em] italic">No hay participantes registrados aún.</td>
+                                            <td colSpan={isAdmin ? 4 : 2} className="px-8 py-10 text-center text-slate-400 dark:text-trek-text-muted/40 font-black uppercase tracking-[0.2em] italic">No hay participantes registrados aún.</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -261,7 +261,7 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                 {/* Right Column: Logistics Sidebar */}
                 <aside className="space-y-8">
                     {/* Logistics Card */}
-                    <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[32px] p-8 sticky top-24 shadow-2xl shadow-primary/5 space-y-8">
+                    <div className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[32px] p-8 sticky top-24 shadow-2xl shadow-primary/5 space-y-8">
                         <div className="flex items-center gap-3">
                             <span className="material-symbols-outlined text-primary font-black">inventory_2</span>
                             <h4 className="text-xs font-black uppercase tracking-[0.3em] text-primary">Detalles de Expedición</h4>
@@ -274,9 +274,9 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                                     <span className="material-symbols-outlined font-black">calendar_today</span>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-slate-400 dark:text-[#92c9a9]/60 uppercase font-black tracking-[0.2em]">Rango de Fechas</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-trek-text-muted/60 uppercase font-black tracking-[0.2em]">Rango de Fechas</p>
                                     <p className="text-slate-900 dark:text-white font-black text-lg tracking-tight uppercase">{new Date(trip.fecha_inicio).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })} – {new Date(trip.fecha_fin).toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}</p>
-                                    <p className="text-[10px] text-[#92c9a9] font-black uppercase tracking-widest italic leading-none">Vario días de travesía</p>
+                                    <p className="text-[10px] text-trek-text-muted font-black uppercase tracking-widest italic leading-none">Vario días de travesía</p>
                                 </div>
                             </div>
 
@@ -286,7 +286,7 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                                     <span className="material-symbols-outlined font-black">trending_up</span>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] text-slate-400 dark:text-[#92c9a9]/60 uppercase font-black tracking-[0.2em]">Dificultad Técnica</p>
+                                    <p className="text-[10px] text-slate-400 dark:text-trek-text-muted/60 uppercase font-black tracking-[0.2em]">Dificultad Técnica</p>
                                     <div className="flex items-center gap-3">
                                         <p className="text-slate-900 dark:text-white font-black text-lg uppercase tracking-tight">{trip.dificultad || 'Moderada'}</p>
                                         <div className="flex gap-1">
@@ -295,15 +295,15 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                                             ))}
                                         </div>
                                     </div>
-                                    <p className="text-[10px] text-[#92c9a9] font-black uppercase tracking-widest italic leading-none">Requiere aptitud física media</p>
+                                    <p className="text-[10px] text-trek-text-muted font-black uppercase tracking-widest italic leading-none">Requiere aptitud física media</p>
                                 </div>
                             </div>
 
                             {/* Capacity */}
                             <div className="pt-8 border-t border-slate-200 dark:border-white/5 space-y-4">
                                 <div className="flex justify-between items-end">
-                                    <p className="text-[10px] text-slate-400 dark:text-[#92c9a9]/60 uppercase font-black tracking-[0.2em]">Cupos Confirmados</p>
-                                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{enrolledCount}/{trip.cupos_totales} <span className="text-[#92c9a9]/40 font-bold ml-1">Inscriptos</span></p>
+                                    <p className="text-[10px] text-slate-400 dark:text-trek-text-muted/60 uppercase font-black tracking-[0.2em]">Cupos Confirmados</p>
+                                    <p className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{enrolledCount}/{trip.cupos_totales} <span className="text-trek-text-muted/40 font-bold ml-1">Inscriptos</span></p>
                                 </div>
                                 <div className="h-3 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden border border-slate-200 dark:border-white/5">
                                     <div className="h-full bg-primary rounded-full transition-all duration-1000 shadow-[0_0_12px_rgba(19,236,109,0.3)]" style={{ width: `${progress}%` }}></div>
@@ -326,18 +326,18 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
 
                             {/* Action Area */}
                             <div className="pt-8 space-y-4">
-                                <div className="bg-slate-50 dark:bg-[#1f3d2b] rounded-2xl p-5 border border-slate-100 dark:border-white/5 space-y-2">
+                                <div className="bg-slate-50 dark:bg-trek-elevated rounded-2xl p-5 border border-slate-100 dark:border-white/5 space-y-2">
                                     <div className="flex items-center gap-3 text-slate-900 dark:text-white font-black text-[10px] uppercase tracking-widest">
                                         <span className="material-symbols-outlined text-primary text-lg font-black">map</span>
                                         Ubicación
                                     </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-[#92c9a9] font-bold uppercase tracking-tight leading-relaxed">{trip.ubicacion || 'Región de Córdoba, Argentina'}</p>
+                                    <p className="text-[11px] text-slate-500 dark:text-trek-text-muted font-bold uppercase tracking-tight leading-relaxed">{trip.ubicacion || 'Región de Córdoba, Argentina'}</p>
                                 </div>
                                 <button className="w-full bg-slate-900 dark:bg-primary text-white dark:text-background-dark py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[11px] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
                                     <span className="material-symbols-outlined font-black">download</span>
                                     Descargar Lista de Equipo
                                 </button>
-                                <p className="text-center text-[9px] text-[#92c9a9]/40 uppercase tracking-[0.4em] font-black pt-4">
+                                <p className="text-center text-[9px] text-trek-text-muted/40 uppercase tracking-[0.4em] font-black pt-4">
                                     ID EXPEDICIÓN: #{trip.id.slice(0, 8).toUpperCase()}
                                 </p>
                             </div>
@@ -353,7 +353,7 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                         <div className="flex items-center gap-6">
                             <p className="text-5xl font-black text-white">-2°C</p>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-black uppercase tracking-widest text-[#92c9a9]">Máx: 8°C</p>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-trek-text-muted">Máx: 8°C</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mín: -5°C</p>
                             </div>
                         </div>

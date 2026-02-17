@@ -41,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                 />
             )}
 
-            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-[#112218] h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6">
                     <Logo className="h-10" />
                 </div>
@@ -55,7 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                             }}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${activeTab === item.id
                                 ? 'bg-primary/10 text-primary font-bold'
-                                : 'hover:bg-slate-100 dark:hover:bg-[#234833] text-slate-600 dark:text-slate-300'
+                                : 'hover:bg-slate-100 dark:hover:bg-trek-elevated text-slate-600 dark:text-slate-300'
                                 }`}
                         >
                             <span className="material-symbols-outlined">{item.icon}</span>
@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                                     <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                         {user.profile?.full_name || user.email?.split('@')[0]}
                                     </p>
-                                    <p className="text-[10px] text-[#92c9a9] font-black uppercase tracking-widest">
+                                    <p className="text-[10px] text-trek-text-muted font-black uppercase tracking-widest">
                                         {user.profile?.role === 'admin' ? 'Administrador' : 'Senderista'}
                                     </p>
                                 </div>

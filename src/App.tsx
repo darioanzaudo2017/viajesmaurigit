@@ -148,7 +148,7 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
-      <header className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white dark:bg-[#112218] transition-colors duration-300 z-50">
+      <header className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white dark:bg-background-dark transition-colors duration-300 z-50">
         <div className="flex items-center gap-4">
           <button
             className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors"
@@ -232,7 +232,7 @@ function App() {
           />
         )}
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
           {renderContent()}
         </main>
       </div>

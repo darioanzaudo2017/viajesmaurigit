@@ -65,8 +65,8 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                 <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-6">
                     <span className="material-symbols-outlined text-4xl font-black">clinical_notes</span>
                 </div>
-                <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">Sin Ficha Médica</h2>
-                <p className="text-[#92c9a9] max-w-md mb-8">No hemos encontrado una ficha médica vinculada a tu cuenta. Debes completar una inscripción para generar tu perfil de seguridad.</p>
+                <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Sin Ficha Médica</h2>
+                <p className="text-slate-400 max-w-md mb-8">No hemos encontrado una ficha médica vinculada a tu cuenta. Debes completar una inscripción para generar tu perfil de seguridad.</p>
                 <button
                     onClick={() => onEdit?.()}
                     className="bg-primary text-background-dark px-8 py-3 rounded-xl font-black uppercase tracking-widest text-sm hover:scale-105 transition-all shadow-lg shadow-primary/20"
@@ -85,27 +85,27 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
             <MetricCard label="Presión" value={profile.tension_arterial || '120/80'} icon="monitor_heart" />
             <MetricCard label="Obra Social" value={profile.obra_social || 'OSDE 310'} icon="medication_liquid" />
 
-            <div className="md:col-span-2 bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] p-8 rounded-[32px] space-y-4">
-                <div className="flex items-center gap-3 text-slate-400 dark:text-[#92c9a9] mb-4">
+            <div className="md:col-span-2 bg-neutral-900 border border-white/5 p-8 rounded-[32px] space-y-4">
+                <div className="flex items-center gap-3 text-slate-400 mb-4">
                     <span className="material-symbols-outlined font-black">clinical_notes</span>
                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">Observaciones Clínicas</h3>
                 </div>
-                <p className="text-slate-700 dark:text-white font-bold leading-relaxed italic">"{profile.observaciones || 'Sin observaciones registradas.'}"</p>
+                <p className="text-white font-bold leading-relaxed italic">"{profile.observaciones || 'Sin observaciones registradas.'}"</p>
             </div>
         </div>
     );
 
     const ConditionsSection = () => (
-        <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] p-8 rounded-[32px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Condiciones Médicas</h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Condiciones Médicas</h3>
                 <span className="bg-primary/10 text-primary text-[10px] font-black px-3 py-1 rounded-full uppercase">
                     {(profile.condiciones?.length || 0)} Hallazgos Detectados
                 </span>
             </div>
             <div className="space-y-4">
                 {(!profile.condiciones || profile.condiciones.length === 0) ? (
-                    <p className="text-slate-400 dark:text-[#92c9a9] font-medium">No se registran condiciones preexistentes del catálogo de seguridad de montaña.</p>
+                    <p className="text-slate-400 font-medium">No se registran condiciones preexistentes del catálogo de seguridad de montaña.</p>
                 ) : (
                     <div className="flex flex-wrap gap-2 pt-2">
                         {profile.condiciones.map((cId: number) => (
@@ -118,11 +118,11 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
 
                 {profile.medicamentos?.length > 0 && (
                     <div className="pt-6 space-y-4">
-                        <h4 className="text-[10px] font-black uppercase tracking-widest text-[#92c9a9]">Medicación Activa</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Medicación Activa</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {profile.medicamentos.map((m: any, idx: number) => (
-                                <div key={idx} className="p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-white/5">
-                                    <p className="font-bold text-slate-900 dark:text-white uppercase tracking-tight">{m.name}</p>
+                                <div key={idx} className="p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <p className="font-bold text-white uppercase tracking-tight">{m.name}</p>
                                     <p className="text-[10px] text-primary font-black uppercase tracking-widest">{m.dosage}</p>
                                 </div>
                             ))}
@@ -149,7 +149,7 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
     );
 
     return (
-        <div id={`medical-profile-${userId}`} className={`max-w-[1200px] mx-auto p-4 md:p-8 space-y-10 bg-white dark:bg-background-dark ${fullView ? 'pdf-layout no-animations' : 'animate-in fade-in duration-700'}`}>
+        <div id={`medical-profile-${userId}`} className={`max-w-[1200px] mx-auto p-4 md:p-8 space-y-10 ${fullView ? 'bg-white pdf-layout no-animations' : 'animate-in fade-in duration-700'}`}>
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
@@ -157,13 +157,13 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                         <span className="material-symbols-outlined text-sm font-black">verified_user</span>
                         <p className="text-[10px] font-black uppercase tracking-[0.2em]">Perfil de Seguridad Verificado</p>
                     </div>
-                    <h1 className="text-slate-900 dark:text-white text-4xl font-black uppercase tracking-tight italic">Ficha Médica Digital</h1>
-                    <p className="text-slate-500 dark:text-[#92c9a9] text-base">Datos vitales para tu seguridad en expediciones de montaña.</p>
+                    <h1 className="text-white text-4xl font-black uppercase tracking-tight italic">Ficha Médica Digital</h1>
+                    <p className="text-slate-400 text-base">Datos vitales para tu seguridad en expediciones de montaña.</p>
                 </div>
                 {onEdit && !fullView && (
                     <button
                         onClick={() => onEdit?.()}
-                        className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-[#1a2e23] border border-slate-200 dark:border-[#1e3a2a] text-slate-700 dark:text-white rounded-xl font-black uppercase tracking-widest text-[11px] hover:bg-slate-50 dark:hover:bg-[#234833] transition-all"
+                        className="flex items-center gap-2 px-6 py-3 bg-neutral-800 border border-white/5 text-white rounded-xl font-black uppercase tracking-widest text-[11px] hover:bg-neutral-700 transition-all"
                     >
                         <span className="material-symbols-outlined text-sm">edit</span>
                         Actualizar Datos
@@ -172,12 +172,12 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
             </div>
 
             {/* Profile Overview Card */}
-            <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] rounded-[32px] p-8 shadow-2xl shadow-primary/5 flex flex-col md:flex-row gap-8 items-center md:items-start justify-between">
+            <div className="bg-neutral-900 border border-white/5 rounded-[32px] p-8 shadow-2xl shadow-primary/5 flex flex-col md:flex-row gap-8 items-center md:items-start justify-between">
                 <div className="flex flex-col md:flex-row gap-8 items-center">
                     <div className="h-32 w-32 rounded-[24px] overflow-hidden border-4 border-primary/20 bg-cover bg-center shadow-xl" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200')" }}></div>
                     <div className="text-center md:text-left space-y-3">
                         <div className="flex flex-col md:flex-row items-center gap-3">
-                            <h2 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{profile.user?.full_name || 'Senderista'}</h2>
+                            <h2 className="text-3xl font-black text-white uppercase tracking-tight">{profile.user?.full_name || 'Senderista'}</h2>
                             <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-primary/30">Verificado</span>
                         </div>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
@@ -190,7 +190,7 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                                 <p className="text-sm font-black uppercase tracking-tight">Alergia a: {profile.alergias || 'Ninguna'}</p>
                             </div>
                         </div>
-                        <p className="text-[10px] text-slate-400 dark:text-[#92c9a9]/60 font-black uppercase tracking-[0.2em]">Última Actualización: {new Date(profile.updated_at).toLocaleDateString()} • ID: TG-{profile.id.slice(0, 4)}-{userId.slice(0, 3).toUpperCase()}</p>
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Última Actualización: {new Date(profile.updated_at).toLocaleDateString()} • ID: TG-{profile.id.slice(0, 4)}-{userId.slice(0, 3).toUpperCase()}</p>
                     </div>
                 </div>
                 {!fullView && (
@@ -222,14 +222,14 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                 </div>
             ) : (
                 <div className="space-y-8">
-                    <nav className="flex gap-4 p-2 bg-slate-100 dark:bg-[#1a3124] rounded-2xl w-fit border border-slate-200 dark:border-[#234833]">
+                    <nav className="flex gap-4 p-2 bg-neutral-900 rounded-2xl w-fit border border-white/5">
                         {menuItems.map((item) => (
                             <button
                                 key={item.id}
                                 onClick={() => setActiveSection(item.id)}
                                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === item.id
                                     ? 'bg-primary text-background-dark shadow-lg shadow-primary/10'
-                                    : 'text-slate-500 hover:text-primary dark:hover:text-white hover:bg-white/5'
+                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
                                     }`}
                             >
                                 <span className="material-symbols-outlined text-lg">{item.icon}</span>
@@ -246,7 +246,7 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                         </div>
 
                         <div className="space-y-6">
-                            <div className="bg-slate-900 dark:bg-[#102218] rounded-[32px] p-8 border border-white/5 shadow-2xl relative overflow-hidden group">
+                            <div className="bg-neutral-900 rounded-[32px] p-8 border border-white/5 shadow-2xl relative overflow-hidden group">
                                 <div className="absolute top-0 right-0 p-4 opacity-20"><span className="material-symbols-outlined text-4xl">lock</span></div>
                                 <h3 className="text-white text-xl font-black uppercase tracking-tight mb-8">Acceso Médico Offline</h3>
 
@@ -280,27 +280,27 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
 };
 
 const MetricCard = ({ label, value, icon }: any) => (
-    <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] p-8 rounded-[32px] flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
-        <div className="size-16 bg-slate-50 dark:bg-[#1f3d2b] border border-slate-100 dark:border-white/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-500">
+    <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
+        <div className="size-16 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-500">
             <span className="material-symbols-outlined text-3xl font-black">{icon}</span>
         </div>
         <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-[#92c9a9]/60 mb-1">{label}</p>
-            <p className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{value}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">{label}</p>
+            <p className="text-2xl font-black text-white uppercase tracking-tight">{value}</p>
         </div>
     </div>
 );
 
 const ContactCard = ({ name, phone, relation }: any) => (
-    <div className="bg-white dark:bg-[#1a3124] border border-slate-200 dark:border-[#234833] p-8 rounded-[32px] space-y-4 hover:border-primary/40 transition-all duration-300">
+    <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] space-y-4 hover:border-primary/40 transition-all duration-300">
         <div className="flex justify-between items-start">
             <div className="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                 <span className="material-symbols-outlined font-black">perm_contact_calendar</span>
             </div>
-            <span className="bg-slate-100 dark:bg-white/5 border border-white/5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-[#92c9a9]">{relation}</span>
+            <span className="bg-white/5 border border-white/5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest text-slate-400">{relation}</span>
         </div>
         <div>
-            <p className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">{name}</p>
+            <p className="text-xl font-black text-white uppercase tracking-tight">{name}</p>
             <p className="text-primary font-mono font-bold text-lg mt-1">{phone}</p>
         </div>
         <button className="flex items-center gap-2 text-primary text-[10px] font-black uppercase tracking-widest hover:underline pt-2">

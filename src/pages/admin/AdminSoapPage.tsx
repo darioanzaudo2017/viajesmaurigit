@@ -164,8 +164,38 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
     const handleDownloadPDF = async () => {
         try {
             setIsGenerating(true);
-            const fileName = `SOAP_${enrollmentData?.profiles?.full_name?.replace(/\s+/g, '_')}_${new Date().toLocaleDateString().replace(/\//g, '-')}`;
-            await generateMedicalPDF('soap-report-printable', fileName, '#ffffff');
+            const patientName = enrollmentData?.profiles?.full_name || 'Paciente';
+            const fileName = `SOAP_${patientName.replace(/\s+/g, '_')}_${new Date().toLocaleDateString().replace(/\//g, '-')}`;
+
+            // Build structured data for native PDF generation
+            const soapData = {
+                patientName: patientName,
+                incidentTime: report.hora_incidente || 'N/A',
+                location: report.referencia_viaje || 'N/A',
+                severity: report.severity || 'mod',
+                scene: report.escena || 'No especificada',
+                symptoms: report.e_sintoma || 'N/A',
+                allergies: report.e_alergias || 'Ninguna conocida',
+                medications: report.e_medicacion || 'N/A',
+                history: report.e_historia_pa || 'N/A',
+                lastIntake: report.e_ultima_inge || 'N/A',
+                events: report.e_eventos || 'N/A',
+                vitals: report.signos_vitales.map(sv => ({
+                    time: sv.hora,
+                    pulse: sv.pulso || '-',
+                    resp: sv.respiracion || '-',
+                    bp: sv.presion || '-',
+                    spo2: sv.spo2 || '-',
+                    temp: sv.temperatura || '-',
+                    avdi: sv.avdi || '-'
+                })),
+                skin: report.sv_piel || 'No especificado',
+                assessment: report.evaluacion_guia || 'Sin evaluación',
+                plan: report.observacione || 'Sin plan',
+                responsibleId: report.responsable_id || 'N/A'
+            };
+
+            await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });
         } catch (error: any) {
             console.error("Error generating PDF:", error);
             alert("Error al generar el PDF.");
@@ -249,15 +279,15 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-slate-200 dark:border-white/5 pb-8">
                     <div>
                         <div className="flex items-center gap-2 mb-3">
-                            <button onClick={onBack} className="bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 p-2 rounded-xl text-primary transition-all shadow-sm border border-slate-200 dark:border-white/5 mr-2">
+                            <button onClick={onBack} className="bg-neutral-800 hover:bg-neutral-700 p-2 rounded-xl text-primary transition-all border border-white/5 mr-2">
                                 <span className="material-symbols-outlined">arrow_back</span>
                             </button>
                             <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] ${report.estado === 'finalizado' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
                                 {report.id ? (report.estado === 'finalizado' ? 'Reporte Finalizado' : 'Borrador Guardado') : 'Nuevo Reporte'}
                             </span>
-                            <span className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest hidden sm:inline">ID: {enrollmentData?.id?.substring(0, 8)}</span>
+                            <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest hidden sm:inline">ID: {enrollmentData?.id?.substring(0, 8)}</span>
                         </div>
-                        <h1 className="text-slate-900 dark:text-white text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight sm:leading-none mb-2">
+                        <h1 className="text-white text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight sm:leading-none mb-2">
                             Ficha SOAP <span className="text-primary block sm:inline italic">Incidente</span>
                         </h1>
                         <p className="text-primary/70 text-sm font-black uppercase tracking-widest flex items-center gap-2">
@@ -269,11 +299,11 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                         <button
                             disabled={isGenerating}
                             onClick={handleDownloadPDF}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white dark:bg-white/5 hover:bg-slate-100 dark:hover:bg-white/10 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-600 dark:text-slate-300 transition-all border border-slate-200 dark:border-white/5 shadow-sm disabled:opacity-50"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-neutral-800 hover:bg-neutral-700 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 transition-all border border-white/5"
                         >
                             <span className="material-symbols-outlined text-lg">{isGenerating ? 'sync' : 'download'}</span> {isGenerating ? 'Generando...' : 'PDF'}
                         </button>
-                        <button onClick={onBack} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/10">
+                        <button onClick={onBack} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/10">
                             <span className="material-symbols-outlined text-lg">close</span> Descartar
                         </button>
                     </div>
@@ -282,7 +312,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 {/* Progress Indicator */}
                 <div className="mb-12">
                     <div className="flex justify-between items-center relative">
-                        <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 dark:bg-white/5 -translate-y-1/2 z-0"></div>
+                        <div className="absolute top-1/2 left-0 w-full h-1 bg-white/10 -translate-y-1/2 z-0"></div>
                         <div
                             className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 z-0 transition-all duration-500"
                             style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
@@ -291,9 +321,9 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                             <button
                                 key={idx}
                                 onClick={() => setCurrentStep(idx)}
-                                className={`relative z-10 flex flex-col items-center gap-2 transition-all duration-300 ${idx <= currentStep ? 'text-primary' : 'text-slate-400 dark:text-slate-600'}`}
+                                className={`relative z-10 flex flex-col items-center gap-2 transition-all duration-300 ${idx <= currentStep ? 'text-primary' : 'text-slate-600'}`}
                             >
-                                <div className={`size-10 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${idx <= currentStep ? 'bg-primary text-slate-900 shadow-[0_0_20px_rgba(19,236,109,0.4)]' : 'bg-slate-100 dark:bg-white/5 text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-white/5'}`}>
+                                <div className={`size-10 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${idx <= currentStep ? 'bg-primary text-slate-900 shadow-[0_0_20px_rgba(19,236,109,0.4)]' : 'bg-neutral-800 text-slate-600 border border-white/5'}`}>
                                     <span className="material-symbols-outlined font-black">{step.icon}</span>
                                 </div>
                                 <span className="text-[9px] font-black uppercase tracking-widest absolute -bottom-6 whitespace-nowrap hidden sm:block">
@@ -310,18 +340,18 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                         <div className="space-y-8">
                             {/* Summary Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[24px] p-5 flex items-center gap-4 shadow-sm">
+                                <div className="bg-neutral-900 border border-white/5 rounded-[24px] p-5 flex items-center gap-4">
                                     <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                                         <span className="material-symbols-outlined">location_on</span>
                                     </div>
                                     <div>
-                                        <p className="text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Referencia Lugar</p>
-                                        <p className="text-slate-900 dark:text-white font-black text-sm uppercase tracking-tight">{enrollmentData?.viajes?.titulo}</p>
+                                        <p className="text-slate-500 text-[9px] font-black uppercase tracking-widest mb-1">Referencia Lugar</p>
+                                        <p className="text-white font-black text-sm uppercase tracking-tight">{enrollmentData?.viajes?.titulo}</p>
                                     </div>
                                 </div>
-                                <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[24px] p-5">
-                                    <p className="text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-4 text-center">Gravedad</p>
-                                    <div className="flex bg-slate-100 dark:bg-black/40 p-1 rounded-xl">
+                                <div className="bg-neutral-900 border border-white/5 rounded-[24px] p-5">
+                                    <p className="text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-4 text-center">Gravedad</p>
+                                    <div className="flex bg-neutral-800 p-1 rounded-xl">
                                         {(['low', 'mod', 'high', 'critical'] as const).map((s) => (
                                             <button
                                                 key={s}
@@ -330,7 +360,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                                                     ? s === 'low' ? 'bg-green-500 text-white' :
                                                         s === 'mod' ? 'bg-amber-500 text-white' :
                                                             s === 'high' ? 'bg-red-500 text-white' : 'bg-purple-600 text-white'
-                                                    : 'text-slate-400 dark:text-slate-500'
+                                                    : 'text-slate-500'
                                                     }`}
                                             >
                                                 {s}
@@ -340,23 +370,23 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                                 </div>
                             </div>
                             {/* Detailed Info */}
-                            <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[32px] p-8 relative overflow-hidden group shadow-sm">
+                            <div className="bg-neutral-900 border border-white/5 rounded-[32px] p-8 relative overflow-hidden group">
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary mb-8 flex items-center gap-2">
                                     <span className="material-symbols-outlined text-base">person_pin_circle</span>
                                     Datos Paciente y Escena
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Referencia Viaje</label>
-                                        <input value={report.referencia_viaje} onChange={(e) => setReport({ ...report, referencia_viaje: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-sm text-slate-900 dark:text-white shadow-inner" placeholder="Lugar del evento" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referencia Viaje</label>
+                                        <input value={report.referencia_viaje} onChange={(e) => setReport({ ...report, referencia_viaje: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Lugar del evento" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Hora Incidente</label>
-                                        <input type="time" value={report.hora_incidente} onChange={(e) => setReport({ ...report, hora_incidente: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-sm text-slate-900 dark:text-white shadow-inner" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hora Incidente</label>
+                                        <input type="time" value={report.hora_incidente} onChange={(e) => setReport({ ...report, hora_incidente: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" />
                                     </div>
                                     <div className="col-span-full space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Escena (Descripción del lugar)</label>
-                                        <textarea value={report.escena} onChange={(e) => setReport({ ...report, escena: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-5 text-sm text-slate-900 dark:text-white min-h-[120px] shadow-inner font-medium" placeholder="Condiciones del terreno, riesgos, clima..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Escena (Descripción del lugar)</label>
+                                        <textarea value={report.escena} onChange={(e) => setReport({ ...report, escena: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 text-sm text-white min-h-[120px] font-medium outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Condiciones del terreno, riesgos, clima..." />
                                     </div>
                                 </div>
                             </div>
@@ -365,35 +395,35 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
 
                     {currentStep === 1 && (
                         <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[32px] p-8 shadow-sm">
+                            <div className="bg-neutral-900 border border-white/5 rounded-[32px] p-8">
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary mb-8 flex items-center gap-2">
                                     <span className="material-symbols-outlined text-base">forum</span>
                                     Subjetivo (S) - Historia SAMPLE
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Síntomas / Queja Principal</label>
-                                        <textarea value={report.e_sintoma} onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-5 text-sm text-slate-900 dark:text-white min-h-[100px] shadow-inner" placeholder="Descripción de síntomas..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Síntomas / Queja Principal</label>
+                                        <textarea value={report.e_sintoma} onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Descripción de síntomas..." />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Alergias</label>
-                                        <textarea value={report.e_alergias} onChange={(e) => setReport({ ...report, e_alergias: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-5 text-sm text-slate-900 dark:text-white min-h-[100px] shadow-inner" placeholder="Alergias conocidas..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Alergias</label>
+                                        <textarea value={report.e_alergias} onChange={(e) => setReport({ ...report, e_alergias: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Alergias conocidas..." />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Medicamentos Habituales</label>
-                                        <textarea value={report.e_medicacion} onChange={(e) => setReport({ ...report, e_medicacion: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-5 text-sm text-slate-900 dark:text-white min-h-[100px] shadow-inner" placeholder="Medicación actual..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Medicamentos Habituales</label>
+                                        <textarea value={report.e_medicacion} onChange={(e) => setReport({ ...report, e_medicacion: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Medicación actual..." />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Historia Médica Pasada</label>
-                                        <textarea value={report.e_historia_pa} onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-5 text-sm text-slate-900 dark:text-white min-h-[100px] shadow-inner" placeholder="Cirugías, enfermedades crónicas..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Historia Médica Pasada</label>
+                                        <textarea value={report.e_historia_pa} onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-5 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Cirugías, enfermedades crónicas..." />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Última Ingesta</label>
-                                        <input value={report.e_ultima_inge} onChange={(e) => setReport({ ...report, e_ultima_inge: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-sm text-slate-900 dark:text-white shadow-inner" placeholder="Hora y contenido de ingesta" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Última Ingesta</label>
+                                        <input value={report.e_ultima_inge} onChange={(e) => setReport({ ...report, e_ultima_inge: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Hora y contenido de ingesta" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Eventos Previos</label>
-                                        <input value={report.e_eventos} onChange={(e) => setReport({ ...report, e_eventos: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-4 text-sm text-slate-900 dark:text-white shadow-inner" placeholder="Actividad antes del evento" />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Eventos Previos</label>
+                                        <input value={report.e_eventos} onChange={(e) => setReport({ ...report, e_eventos: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Actividad antes del evento" />
                                     </div>
                                 </div>
                             </div>
@@ -402,86 +432,139 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
 
                     {currentStep === 2 && (
                         <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[32px] p-8 shadow-sm">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                            {/* Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
                                     <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
                                         <span className="material-symbols-outlined text-base">monitor_heart</span>
                                         Objetivo (O) - Signos Vitales
                                     </h3>
-                                    <button onClick={handleAddVitalSign} className="bg-primary hover:bg-primary-dark text-slate-900 text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
-                                        <span className="material-symbols-outlined text-base font-black">add_circle</span> Agregar Toma
-                                    </button>
+                                    <p className="text-slate-400 text-[10px] mt-1 font-medium">{report.signos_vitales.length} registro{report.signos_vitales.length !== 1 ? 's' : ''} de signos vitales</p>
                                 </div>
-                                <div className="overflow-x-auto mb-10">
-                                    <table className="w-full text-left border-collapse min-w-[700px]">
-                                        <thead>
-                                            <tr className="border-b border-slate-200 dark:border-white/5">
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">Hora</th>
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">Pulso</th>
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">Resp</th>
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">T.A.</th>
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">SpO2</th>
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">Temp</th>
-                                                <th className="p-4 text-[9px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-[0.2em]">AVDI</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {report.signos_vitales.map((sv, idx) => (
-                                                <tr key={idx} className="border-b border-slate-100 dark:border-white/5">
-                                                    <td className="p-2"><input type="text" value={sv.hora} onChange={(e) => handleVitalChange(idx, 'hora', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-xs text-slate-900 dark:text-white p-3 font-bold" /></td>
-                                                    <td className="p-2"><input type="text" value={sv.pulso} onChange={(e) => handleVitalChange(idx, 'pulso', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-xs text-slate-900 dark:text-white p-3 font-bold" /></td>
-                                                    <td className="p-2"><input type="text" value={sv.respiracion} onChange={(e) => handleVitalChange(idx, 'respiracion', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-xs text-slate-900 dark:text-white p-3 font-bold" /></td>
-                                                    <td className="p-2"><input type="text" value={sv.presion} onChange={(e) => handleVitalChange(idx, 'presion', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-xs text-slate-900 dark:text-white p-3 font-bold" /></td>
-                                                    <td className="p-2"><input type="text" value={sv.spo2} onChange={(e) => handleVitalChange(idx, 'spo2', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-xs text-slate-900 dark:text-white p-3 font-bold" /></td>
-                                                    <td className="p-2"><input type="text" value={sv.temperatura} onChange={(e) => handleVitalChange(idx, 'temperatura', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-xs text-slate-900 dark:text-white p-3 font-bold" /></td>
-                                                    <td className="p-2">
-                                                        <select value={sv.avdi} onChange={(e) => handleVitalChange(idx, 'avdi', e.target.value)} className="w-full bg-slate-50 dark:bg-black/20 border-0 rounded-xl text-[10px] font-black uppercase text-slate-900 dark:text-white p-3">
-                                                            <option>A (Alerta)</option>
-                                                            <option>V (Verbal)</option>
-                                                            <option>D (Dolor)</option>
-                                                            <option>I (Inconsciente)</option>
-                                                        </select>
-                                                    </td>
-                                                </tr>
+                                <button onClick={handleAddVitalSign} className="bg-primary hover:scale-[1.02] active:scale-95 text-slate-900 text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-base font-black">add_circle</span> Agregar Toma
+                                </button>
+                            </div>
+
+                            {/* Vital Sign Cards */}
+                            <div className="space-y-4">
+                                {report.signos_vitales.map((sv, idx) => (
+                                    <div key={idx} className="bg-neutral-900 rounded-2xl border border-white/5 overflow-hidden group hover:border-primary/20 transition-all">
+                                        {/* Card Header */}
+                                        <div className="flex items-center justify-between px-5 py-3 bg-neutral-800/50 border-b border-white/5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                    <span className="material-symbols-outlined text-primary text-sm">schedule</span>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Toma #{idx + 1}</span>
+                                                    <input
+                                                        type="text"
+                                                        value={sv.hora}
+                                                        onChange={(e) => handleVitalChange(idx, 'hora', e.target.value)}
+                                                        className="block bg-transparent text-white text-sm font-bold outline-none w-32 placeholder:text-slate-600"
+                                                        placeholder="HH:MM"
+                                                    />
+                                                </div>
+                                            </div>
+                                            <select
+                                                value={sv.avdi}
+                                                onChange={(e) => handleVitalChange(idx, 'avdi', e.target.value)}
+                                                className={`text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg cursor-pointer outline-none transition-all ${sv.avdi.startsWith('A') ? 'bg-green-500/20 text-green-400 border border-green-500/20' :
+                                                    sv.avdi.startsWith('V') ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
+                                                        sv.avdi.startsWith('D') ? 'bg-red-500/20 text-red-400 border border-red-500/20' :
+                                                            'bg-purple-500/20 text-purple-400 border border-purple-500/20'
+                                                    }`}
+                                            >
+                                                <option>A (Alerta)</option>
+                                                <option>V (Verbal)</option>
+                                                <option>D (Dolor)</option>
+                                                <option>I (Inconsciente)</option>
+                                            </select>
+                                        </div>
+                                        {/* Card Body - Vital Fields */}
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 p-4">
+                                            {[
+                                                { key: 'pulso' as keyof VitalSign, label: 'Pulso', icon: 'favorite', unit: 'bpm', color: 'text-red-400' },
+                                                { key: 'respiracion' as keyof VitalSign, label: 'Resp.', icon: 'pulmonology', unit: 'rpm', color: 'text-blue-400' },
+                                                { key: 'presion' as keyof VitalSign, label: 'T.A.', icon: 'bloodtype', unit: 'mmHg', color: 'text-orange-400' },
+                                                { key: 'spo2' as keyof VitalSign, label: 'SpO2', icon: 'spo2', unit: '%', color: 'text-cyan-400' },
+                                                { key: 'temperatura' as keyof VitalSign, label: 'Temp.', icon: 'thermostat', unit: '°C', color: 'text-amber-400' },
+                                            ].map(({ key, label, icon, unit, color }) => (
+                                                <div key={key} className="bg-white/5 rounded-xl p-3 space-y-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`material-symbols-outlined text-xs ${color}`}>{icon}</span>
+                                                        <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{label}</span>
+                                                    </div>
+                                                    <div className="flex items-baseline gap-1">
+                                                        <input
+                                                            type="text"
+                                                            value={sv[key]}
+                                                            onChange={(e) => handleVitalChange(idx, key, e.target.value)}
+                                                            className="bg-transparent text-white text-lg font-black outline-none w-full placeholder:text-slate-700"
+                                                            placeholder="—"
+                                                        />
+                                                        <span className="text-[8px] text-slate-600 font-bold flex-shrink-0">{unit}</span>
+                                                    </div>
+                                                </div>
                                             ))}
-                                        </tbody>
-                                    </table>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {report.signos_vitales.length === 0 && (
+                                    <div className="bg-neutral-900 rounded-2xl border border-dashed border-white/10 p-12 text-center">
+                                        <span className="material-symbols-outlined text-4xl text-slate-600 mb-3">vital_signs</span>
+                                        <p className="text-slate-500 text-xs font-black uppercase tracking-widest">Sin registros aún</p>
+                                        <p className="text-slate-600 text-[10px] mt-1">Presioná "Agregar Toma" para registrar signos vitales</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Estado de la Piel */}
+                            <div className="bg-neutral-900 rounded-2xl border border-white/5 p-6 space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-sm text-amber-400">dermatology</span>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado de la Piel</label>
                                 </div>
-                                <div className="space-y-4">
-                                    <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Estado de la Piel</label>
-                                    <input type="text" value={report.sv_piel} onChange={(e) => setReport({ ...report, sv_piel: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-2xl p-5 text-sm text-slate-900 dark:text-white shadow-inner font-bold" placeholder="Color, temperatura, humedad..." />
-                                </div>
+                                <input
+                                    type="text"
+                                    value={report.sv_piel}
+                                    onChange={(e) => setReport({ ...report, sv_piel: e.target.value })}
+                                    className="w-full bg-white/5 border border-white/5 rounded-xl p-4 text-sm text-white font-medium outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-600"
+                                    placeholder="Color, temperatura, humedad, turgencia..."
+                                />
                             </div>
                         </div>
                     )}
 
                     {currentStep === 3 && (
                         <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                            <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/5 rounded-[32px] p-8 shadow-sm">
+                            <div className="bg-neutral-900 border border-white/5 rounded-[32px] p-8">
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary mb-8 flex items-center gap-2">
                                     <span className="material-symbols-outlined text-base">assignment</span>
                                     Evaluación y Plan (A/P)
                                 </h3>
                                 <div className="space-y-8">
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Evaluación del Guía</label>
-                                        <textarea value={report.evaluacion_guia} onChange={(e) => setReport({ ...report, evaluacion_guia: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-[24px] p-6 text-sm text-slate-900 dark:text-white min-h-[140px] shadow-inner" placeholder="Describa su evaluación técnica..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Evaluación del Guía</label>
+                                        <textarea value={report.evaluacion_guia} onChange={(e) => setReport({ ...report, evaluacion_guia: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-[24px] p-6 text-sm text-white min-h-[140px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Describa su evaluación técnica..." />
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 dark:text-[#92c9a9] uppercase tracking-widest ml-1">Observaciones / Tratamiento</label>
-                                        <textarea value={report.observacione} onChange={(e) => setReport({ ...report, observacione: e.target.value })} className="w-full bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/5 rounded-[24px] p-6 text-sm text-slate-900 dark:text-white min-h-[120px] shadow-inner" placeholder="Tratamiento realizado..." />
+                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observaciones / Tratamiento</label>
+                                        <textarea value={report.observacione} onChange={(e) => setReport({ ...report, observacione: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-[24px] p-6 text-sm text-white min-h-[120px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Tratamiento realizado..." />
                                     </div>
                                 </div>
 
-                                <div className="mt-12 pt-12 border-t border-slate-200 dark:border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="mt-12 pt-12 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <div className="flex flex-col">
-                                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">ID Responsable</label>
-                                        <input type="text" value={report.responsable_id} onChange={(e) => setReport({ ...report, responsable_id: e.target.value })} className="bg-slate-100 dark:bg-black/40 border border-slate-200 dark:border-white/5 rounded-2xl h-14 px-6 text-xs text-slate-900 dark:text-white font-black tracking-widest uppercase" />
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">ID Responsable</label>
+                                        <input type="text" value={report.responsable_id} onChange={(e) => setReport({ ...report, responsable_id: e.target.value })} className="bg-neutral-800 border border-white/5 rounded-2xl h-14 px-6 text-xs text-white font-black tracking-widest uppercase outline-none focus:ring-1 focus:ring-primary/50 transition-all" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">Firma Digital</label>
-                                        <div className="h-14 w-full bg-slate-100 dark:bg-[#1a3124] rounded-2xl border border-dashed border-slate-300 dark:border-[#234833] flex items-center justify-center">
-                                            <span className="text-slate-400 dark:text-[#326748] text-[10px] font-black uppercase tracking-[0.2em]">Firma Requerida</span>
+                                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">Firma Digital</label>
+                                        <div className="h-14 w-full bg-neutral-800 rounded-2xl border border-dashed border-white/10 flex items-center justify-center">
+                                            <span className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">Firma Requerida</span>
                                         </div>
                                     </div>
                                 </div>
@@ -495,7 +578,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                     <button
                         onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
                         disabled={currentStep === 0}
-                        className={`flex items-center gap-2 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'bg-white dark:bg-white/5 text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 border border-slate-200 dark:border-white/5'}`}
+                        className={`flex items-center gap-2 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${currentStep === 0 ? 'opacity-0 pointer-events-none' : 'bg-neutral-800 text-slate-300 hover:bg-neutral-700 border border-white/5'}`}
                     >
                         <span className="material-symbols-outlined text-lg">arrow_back</span>
                         Anterior
@@ -515,7 +598,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                                 <button
                                     disabled={saving}
                                     onClick={() => handleSave(false)}
-                                    className="flex-1 sm:flex-none min-w-[140px] px-6 py-4 rounded-2xl bg-white dark:bg-white/5 text-slate-500 dark:text-slate-300 font-black uppercase tracking-widest text-[10px] hover:bg-slate-100 dark:hover:bg-white/10 transition-all flex items-center justify-center gap-3 border border-slate-200 dark:border-white/5"
+                                    className="flex-1 sm:flex-none min-w-[140px] px-6 py-4 rounded-2xl bg-neutral-800 text-slate-300 font-black uppercase tracking-widest text-[10px] hover:bg-neutral-700 transition-all flex items-center justify-center gap-3 border border-white/5"
                                 >
                                     <span className="material-symbols-outlined text-xl">save</span> Borrador
                                 </button>

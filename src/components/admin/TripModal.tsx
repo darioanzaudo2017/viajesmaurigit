@@ -133,24 +133,24 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-background-dark/90 backdrop-blur-md" onClick={onClose}></div>
 
-            <div className="relative bg-surface-dark border border-border-dark w-full max-w-2xl rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
-                <div className="p-8 border-b border-border-dark flex items-center justify-between bg-background-dark/30">
+            <div className="relative bg-neutral-900 border border-white/10 w-full max-w-2xl rounded-[32px] overflow-hidden shadow-2xl animate-in zoom-in duration-300">
+                <div className="p-8 border-b border-white/10 flex items-center justify-between bg-neutral-800/50">
                     <div>
                         <h2 className="text-2xl font-black text-white uppercase italic tracking-tight">
                             {trip ? 'Editar Expedición' : 'Crear Nueva Expedición'}
                         </h2>
-                        <p className="text-text-muted text-[10px] font-black uppercase tracking-[0.2em] mt-1">Configuración logística y técnica</p>
+                        <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Configuración logística y técnica</p>
                     </div>
-                    <button onClick={onClose} className="size-10 rounded-full border border-border-dark flex items-center justify-center text-text-muted hover:text-white hover:border-primary/50 transition-all">
+                    <button onClick={onClose} className="size-10 rounded-full border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-primary/50 transition-all">
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar bg-background-dark/10">
+                <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar bg-neutral-900">
                     {/* Image Upload Header */}
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Imagen de Portada</label>
-                        <div className={`relative group h-48 rounded-2xl border-2 border-dashed transition-all duration-300 overflow-hidden flex flex-col items-center justify-center bg-background-dark/50 ${formData.imagen_url ? 'border-primary/30' : 'border-border-dark hover:border-primary/50'
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Imagen de Portada</label>
+                        <div className={`relative group h-48 rounded-2xl border-2 border-dashed transition-all duration-300 overflow-hidden flex flex-col items-center justify-center bg-neutral-800/50 ${formData.imagen_url ? 'border-primary/30' : 'border-white/10 hover:border-primary/50'
                             }`}>
                             {formData.imagen_url ? (
                                 <>
@@ -168,12 +168,12 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                                 </>
                             ) : (
                                 <label className="cursor-pointer flex flex-col items-center gap-3 p-6 w-full h-full group">
-                                    <div className="size-12 rounded-full bg-border-dark flex items-center justify-center text-text-muted group-hover:bg-primary group-hover:text-background-dark transition-all">
+                                    <div className="size-12 rounded-full bg-white/10 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-background-dark transition-all">
                                         <span className="material-symbols-outlined text-2xl">add_photo_alternate</span>
                                     </div>
                                     <div className="text-center">
                                         <p className="text-sm font-bold text-white uppercase italic">Subir Imagen</p>
-                                        <p className="text-[10px] text-text-muted font-black uppercase mt-1">SVG, PNG, JPG (MAX. 5MB)</p>
+                                        <p className="text-[10px] text-slate-500 font-black uppercase mt-1">SVG, PNG, JPG (MAX. 5MB)</p>
                                     </div>
                                     <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={uploading} />
                                 </label>
@@ -191,22 +191,22 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Título del Viaje</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Título del Viaje</label>
                             <input
                                 required
                                 type="text"
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
                                 value={formData.titulo}
                                 onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                                 placeholder="Ej: Champaquí Clásico"
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Ubicación</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Ubicación</label>
                             <input
                                 required
                                 type="text"
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
                                 value={formData.ubicacion}
                                 onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
                                 placeholder="Ej: Sierras Grandes, Córdoba"
@@ -215,10 +215,10 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Descripción</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Descripción</label>
                         <textarea
                             rows={3}
-                            className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium resize-none"
+                            className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium resize-none"
                             value={formData.descripcion}
                             onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                             placeholder="Detalles de la expedición..."
@@ -228,21 +228,21 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                     {/* Logistics */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Fecha Inicio</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Fecha Inicio</label>
                             <input
                                 required
                                 type="datetime-local"
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
                                 value={formData.fecha_inicio}
                                 onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Fecha Fin</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Fecha Fin</label>
                             <input
                                 required
                                 type="datetime-local"
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
                                 value={formData.fecha_fin}
                                 onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
                             />
@@ -252,29 +252,29 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                     {/* Capacity & Technical */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Cupos Totales</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Cupos Totales</label>
                             <input
                                 required
                                 type="number"
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
                                 value={formData.cupos_totales}
                                 onChange={(e) => setFormData({ ...formData, cupos_totales: parseInt(e.target.value) })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Min. Confirmación</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Min. Confirmación</label>
                             <input
                                 required
                                 type="number"
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium"
                                 value={formData.min_participantes}
                                 onChange={(e) => setFormData({ ...formData, min_participantes: parseInt(e.target.value) })}
                             />
                         </div>
                         <div className="space-y-2 col-span-2 md:col-span-1">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Dificultad</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Dificultad</label>
                             <select
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium cursor-pointer"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium cursor-pointer"
                                 value={formData.dificultad}
                                 onChange={(e) => setFormData({ ...formData, dificultad: e.target.value })}
                             >
@@ -288,9 +288,9 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
 
                     <div className="grid grid-cols-1 gap-6">
                         <div className="space-y-2">
-                            <label className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] ml-1">Estado del Viaje</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Estado del Viaje</label>
                             <select
-                                className="w-full bg-background-dark border border-border-dark rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium cursor-pointer"
+                                className="w-full bg-neutral-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none transition-all text-sm font-medium cursor-pointer"
                                 value={formData.estado}
                                 onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
                             >
@@ -302,11 +302,11 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                         </div>
                     </div>
 
-                    <div className="pt-8 border-t border-border-dark flex gap-4">
+                    <div className="pt-8 border-t border-white/10 flex gap-4">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 bg-surface-dark border border-border-dark text-white text-[10px] font-black uppercase tracking-widest py-4 rounded-xl hover:bg-border-dark/60 transition-all font-display"
+                            className="flex-1 bg-neutral-800 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest py-4 rounded-xl hover:bg-neutral-700 transition-all font-display"
                         >
                             Cancelar
                         </button>
