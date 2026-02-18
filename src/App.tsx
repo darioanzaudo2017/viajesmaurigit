@@ -29,7 +29,17 @@ function App() {
   useEffect(() => {
     const fetchProfile = async (sessionUser: any) => {
       if (!sessionUser) {
-        setUser(null);
+        // Try to restore from cache if offline
+        const cachedSessionUser = localStorage.getItem('cached_session_user');
+        if (cachedSessionUser) {
+          const restoredUser = JSON.parse(cachedSessionUser);
+          const cachedProfile = localStorage.getItem('cached_user_profile');
+          const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
+          console.log('[App] Session null — restoring from cache:', restoredUser.email, 'role:', profile?.role);
+          setUser({ ...restoredUser, profile });
+        } else {
+          setUser(null);
+        }
         return;
       }
 
@@ -42,9 +52,10 @@ function App() {
 
         if (error) throw error;
 
-        // Cache profile to localStorage for offline use
+        // Cache profile AND session user to localStorage for offline use
         if (profile) {
           localStorage.setItem('cached_user_profile', JSON.stringify(profile));
+          localStorage.setItem('cached_session_user', JSON.stringify(sessionUser));
         }
         setUser({ ...sessionUser, profile });
       } catch {
@@ -63,7 +74,16 @@ function App() {
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      fetchProfile(session?.user ?? null);
+      if (_event === 'SIGNED_OUT') {
+        localStorage.removeItem('cached_session_user');
+        localStorage.removeItem('cached_user_profile');
+        setUser(null);
+        return;
+      }
+      if (session?.user) {
+        fetchProfile(session.user);
+      }
+      // If no session but not signed out, preserve current user (offline)
     });
 
     return () => subscription.unsubscribe();
@@ -215,6 +235,8 @@ function App() {
                 <p className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1">{user.profile?.full_name || user.user_metadata?.full_name || 'Senderista'}</p>
                 <button
                   onClick={() => {
+                    localStorage.removeItem('cached_session_user');
+                    localStorage.removeItem('cached_user_profile');
                     supabase.auth.signOut();
                     setActiveTab('home');
                   }}
@@ -251,6 +273,8 @@ function App() {
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
             onLogout={() => {
+              localStorage.removeItem('cached_session_user');
+              localStorage.removeItem('cached_user_profile');
               supabase.auth.signOut();
               setActiveTab('home');
               setSidebarOpen(false);

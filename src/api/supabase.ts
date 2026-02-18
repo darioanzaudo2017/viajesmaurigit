@@ -7,4 +7,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error('Supabase URL and Anon Key must be defined in .env file');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        persistSession: true,
+        storage: localStorage,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+    },
+});

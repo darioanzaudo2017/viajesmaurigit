@@ -130,6 +130,19 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 }
             } catch (error) {
                 console.error("Error fetching data for SOAP:", error);
+                // Fallback to local DB on fetch error (e.g. network fail while "online")
+                try {
+                    const localEnrollment = await db.enrollments.get(enrollmentId);
+                    if (localEnrollment) {
+                        setEnrollmentData(localEnrollment);
+                        console.log('[SOAP] Using cached enrollment after error');
+                    }
+                    const localSoapArr = await db.soapReports.where('inscripcion_id').equals(enrollmentId).toArray();
+                    if (localSoapArr.length > 0) {
+                        setReport(localSoapArr[0].data);
+                        console.log('[SOAP] Using cached SOAP report after error');
+                    }
+                } catch { /* ignore cache errors */ }
             } finally {
                 setLoading(false);
             }

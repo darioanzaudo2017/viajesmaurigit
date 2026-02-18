@@ -45,6 +45,14 @@ export const useMedicalProfile = (userId: string) => {
             }
         } catch (err: any) {
             console.error('Error fetching medical profile:', err);
+            // Fallback to Dexie cache on any error (e.g. network fail while "online")
+            try {
+                const cached = await db.medicalRecords.get(userId);
+                if (cached) {
+                    setProfile(cached.data);
+                    console.log('[MedicalProfile] Using cached data after error');
+                }
+            } catch { /* ignore cache errors */ }
             setError(err.message);
         } finally {
             setLoading(false);
