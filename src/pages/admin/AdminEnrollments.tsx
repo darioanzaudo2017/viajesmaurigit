@@ -308,14 +308,13 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                         />
                     </div>
 
-                    <div className="flex bg-neutral-900/80 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                        <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-                        <div className="flex gap-1 no-scrollbar min-w-full">
+                    <div className="w-full sm:w-auto overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                        <div className="flex gap-1.5 bg-neutral-900/80 p-1.5 rounded-xl border border-white/10 backdrop-blur-md w-max mx-auto sm:mx-0">
                             {['all', 'pending', 'confirmed'].map(f => (
                                 <button
                                     key={f}
                                     onClick={() => setFilter(f)}
-                                    className={`flex-1 md:flex-none px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filter === f ? 'bg-primary text-background-dark shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'
+                                    className={`px-3 sm:px-6 py-2 rounded-lg text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${filter === f ? 'bg-primary text-background-dark shadow-lg shadow-primary/20' : 'text-slate-500 hover:text-white'
                                         }`}
                                 >
                                     {f === 'all' ? 'Todos' : f === 'pending' ? 'Pendientes' : 'Confirmados'}

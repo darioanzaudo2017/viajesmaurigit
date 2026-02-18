@@ -157,25 +157,25 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                         </div>
                     )}
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-2 w-full md:w-auto">
                     {isOnline && (
                         <button
                             onClick={handleSyncAll}
                             disabled={syncing}
-                            className={`flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-6 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-black uppercase tracking-widest text-[10px] ${syncing ? 'animate-pulse opacity-50' : ''}`}
+                            className={`flex flex-1 md:flex-none min-w-fit items-center justify-center gap-2 rounded-xl h-10 sm:h-12 px-3 sm:px-6 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all font-black uppercase tracking-widest text-[10px] ${syncing ? 'animate-pulse opacity-50' : ''}`}
                             title="Descargar todo para uso offline"
                         >
                             <span className="material-symbols-outlined">{syncing ? 'sync' : 'cloud_download'}</span>
                             <span>{syncing ? 'Sincronizando...' : 'Sincronizar'}</span>
                         </button>
                     )}
-                    <button className="flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-6 bg-neutral-900 text-white font-bold hover:bg-neutral-800 transition-all border border-white/5 hover:border-primary/30">
+                    <button className="flex flex-1 md:flex-none min-w-fit items-center justify-center gap-2 rounded-xl h-10 sm:h-12 px-3 sm:px-6 bg-neutral-900 text-white font-bold hover:bg-neutral-800 transition-all border border-white/5 hover:border-primary/30 text-[10px] sm:text-xs uppercase tracking-widest">
                         <span className="material-symbols-outlined">file_download</span>
                         <span>Exportar CSV</span>
                     </button>
                     <button
                         onClick={handleCreate}
-                        className="flex flex-1 md:flex-none items-center justify-center gap-2 rounded-xl h-12 px-8 bg-primary text-background-dark font-black uppercase tracking-widest text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-all"
+                        className="flex flex-1 md:flex-none min-w-fit items-center justify-center gap-2 rounded-xl h-10 sm:h-12 px-4 sm:px-8 bg-primary text-background-dark font-black uppercase tracking-widest text-[10px] sm:text-xs shadow-lg shadow-primary/20 hover:scale-105 transition-all"
                     >
                         <span className="material-symbols-outlined font-black">add</span>
                         <span>Nuevo Viaje</span>

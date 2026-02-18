@@ -111,23 +111,23 @@ const MedicalViewModal: React.FC<MedicalViewModalProps> = ({ isOpen, onClose, us
                             <span className="material-symbols-outlined text-2xl font-black">medical_services</span>
                         </div>
                         <div>
-                            <h2 className="text-xl font-black text-white uppercase italic tracking-tight">
-                                Ficha Médica de Control
+                            <h2 className="text-lg sm:text-xl font-black text-white uppercase italic tracking-tight leading-tight">
+                                Ficha Médica
                             </h2>
-                            <p className="text-primary text-[10px] font-black uppercase tracking-[0.2em] mt-1">Participante: {userName}</p>
+                            <p className="text-primary text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mt-0.5 sm:mt-1 truncate max-w-[150px] sm:max-w-none">{userName}</p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                         <button
                             onClick={handleDownloadPDF}
                             disabled={isGenerating}
-                            className={`flex items-center gap-2 px-6 py-3 bg-primary text-background-dark rounded-xl font-black uppercase tracking-widest text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex items-center gap-2 px-3 py-2 sm:px-6 sm:py-3 bg-primary text-background-dark rounded-xl font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-primary/20 ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                            <span className="material-symbols-outlined text-lg">
+                            <span className="material-symbols-outlined text-lg sm:text-lg">
                                 {isGenerating ? 'sync' : 'picture_as_pdf'}
                             </span>
-                            {isGenerating ? 'Generando...' : 'Descargar PDF'}
+                            <span className="hidden sm:inline">{isGenerating ? 'Generando...' : 'Descargar PDF'}</span>
                         </button>
 
                         <button
@@ -160,7 +160,7 @@ const MedicalViewModal: React.FC<MedicalViewModalProps> = ({ isOpen, onClose, us
                     </p>
                     <button
                         onClick={onClose}
-                        className="px-8 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                        className="px-4 py-2 sm:px-8 sm:py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all"
                     >
                         Cerrar Vista
                     </button>

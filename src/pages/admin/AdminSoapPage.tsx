@@ -312,12 +312,12 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                         <button
                             disabled={isGenerating}
                             onClick={handleDownloadPDF}
-                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-neutral-800 hover:bg-neutral-700 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 transition-all border border-white/5"
+                            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-neutral-800 hover:bg-neutral-700 px-3 py-2 sm:px-6 sm:py-3 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-slate-300 transition-all border border-white/5"
                         >
-                            <span className="material-symbols-outlined text-lg">{isGenerating ? 'sync' : 'download'}</span> {isGenerating ? 'Generando...' : 'PDF'}
+                            <span className="material-symbols-outlined text-base sm:text-lg">{isGenerating ? 'sync' : 'download'}</span> {isGenerating ? 'Generando...' : 'PDF'}
                         </button>
-                        <button onClick={onBack} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/10">
-                            <span className="material-symbols-outlined text-lg">close</span> Descartar
+                        <button onClick={onBack} className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 px-3 py-2 sm:px-6 sm:py-3 rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-red-500/10">
+                            <span className="material-symbols-outlined text-base sm:text-lg">close</span> Descartar
                         </button>
                     </div>
                 </div>
@@ -601,26 +601,26 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                         {currentStep < steps.length - 1 ? (
                             <button
                                 onClick={() => setCurrentStep(prev => prev + 1)}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-primary text-slate-900 px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg shadow-primary/20 transition-all font-black"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-primary text-slate-900 px-6 py-3 sm:px-10 sm:py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg shadow-primary/20 transition-all font-black"
                             >
                                 Siguiente
-                                <span className="material-symbols-outlined text-lg font-black">arrow_forward</span>
+                                <span className="material-symbols-outlined text-base sm:text-lg font-black">arrow_forward</span>
                             </button>
                         ) : (
                             <>
                                 <button
                                     disabled={saving}
                                     onClick={() => handleSave(false)}
-                                    className="flex-1 sm:flex-none min-w-[140px] px-6 py-4 rounded-2xl bg-neutral-800 text-slate-300 font-black uppercase tracking-widest text-[10px] hover:bg-neutral-700 transition-all flex items-center justify-center gap-3 border border-white/5"
+                                    className="flex-1 sm:flex-none min-w-[100px] sm:min-w-[140px] px-3 py-3 sm:px-6 sm:py-4 rounded-2xl bg-neutral-800 text-slate-300 font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:bg-neutral-700 transition-all flex items-center justify-center gap-2 sm:gap-3 border border-white/5"
                                 >
-                                    <span className="material-symbols-outlined text-xl">save</span> Borrador
+                                    <span className="material-symbols-outlined text-lg sm:text-xl">save</span> Borrador
                                 </button>
                                 <button
                                     disabled={saving}
                                     onClick={() => handleSave(true)}
-                                    className="flex-1 sm:flex-none min-w-[180px] px-10 py-4 rounded-2xl bg-primary text-slate-900 font-black uppercase tracking-widest text-[10px] hover:shadow-lg transition-all flex items-center justify-center gap-3 shadow-primary/20"
+                                    className="flex-1 sm:flex-none min-w-[140px] sm:min-w-[180px] px-4 py-3 sm:px-10 sm:py-4 rounded-2xl bg-primary text-slate-900 font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:shadow-lg transition-all flex items-center justify-center gap-2 sm:gap-3 shadow-primary/20"
                                 >
-                                    <span className="material-symbols-outlined text-xl font-black">verified</span> Finalizar
+                                    <span className="material-symbols-outlined text-lg sm:text-xl font-black">verified</span> Finalizar
                                 </button>
                             </>
                         )}

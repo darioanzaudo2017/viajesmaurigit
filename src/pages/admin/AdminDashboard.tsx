@@ -109,7 +109,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 animate-in fade-in duration-500">
             {/* Header */}
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-8">
                 <div>
@@ -191,7 +191,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     </div>
                 </div>
 
-                <div className="lg:col-span-2 bg-neutral-900 border border-white/5 rounded-2xl p-6">
+                <div className="lg:col-span-2 bg-neutral-900 border border-white/5 rounded-2xl p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h4 className="text-white font-bold flex items-center gap-2 uppercase tracking-widest text-xs">
                             <span className="material-symbols-outlined text-primary text-[20px]">history</span>
@@ -211,17 +211,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                             <tbody className="divide-y divide-white/5">
                                 {recentActivity.map((act) => (
                                     <tr key={act.id} className="group hover:bg-white/5 transition-colors">
-                                        <td className="py-4">
+                                        <td className="py-2.5 sm:py-4">
                                             <span className={`text-[9px] font-black px-2 py-1 rounded uppercase tracking-widest ${act.estado === 'confirmed' ? 'bg-primary/10 text-primary' : 'bg-amber-500/10 text-amber-500'
                                                 }`}>
                                                 {act.estado === 'confirmed' ? 'Inscripción' : 'Pendiente'}
                                             </span>
                                         </td>
-                                        <td className="py-4">
+                                        <td className="py-2.5 sm:py-4">
                                             <p className="text-sm font-bold text-white uppercase tracking-tight">{(act.profiles as any)?.full_name}</p>
                                             <p className="text-[10px] text-slate-500 uppercase tracking-widest">{(act.viajes as any)?.titulo}</p>
                                         </td>
-                                        <td className="py-4 text-right">
+                                        <td className="py-2.5 sm:py-4 text-right">
                                             <span className="text-[10px] text-slate-500 font-mono italic">
                                                 {new Date(act.created_at).toLocaleDateString()}
                                             </span>
@@ -238,7 +238,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
 };
 
 const StatCard = ({ title, value, icon, color, change, isWarning }: any) => (
-    <div className={`bg-neutral-900 border border-white/5 p-6 rounded-2xl transition-all group ${isWarning ? 'ring-1 ring-amber-500/20 hover:border-amber-500/30' : 'hover:border-primary/30'}`}>
+    <div className={`bg-neutral-900 border border-white/5 p-4 sm:p-6 rounded-2xl transition-all group ${isWarning ? 'ring-1 ring-amber-500/20 hover:border-amber-500/30' : 'hover:border-primary/30'}`}>
         <div className="flex items-center justify-between mb-4">
             <span className={`material-symbols-outlined group-hover:scale-110 transition-transform ${isWarning ? 'text-amber-500' : 'text-primary'}`} style={color && !isWarning ? { color } : {}}>{icon}</span>
             {change && (
@@ -248,23 +248,23 @@ const StatCard = ({ title, value, icon, color, change, isWarning }: any) => (
             )}
         </div>
         <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{title}</p>
-        <h3 className={`text-3xl font-black mt-1 tabular-nums ${isWarning ? 'text-amber-500' : 'text-white'}`}>{value}</h3>
+        <h3 className={`text-2xl sm:text-3xl font-black mt-1 tabular-nums ${isWarning ? 'text-amber-500' : 'text-white'}`}>{value}</h3>
     </div>
 );
 
 const ManagementCard = ({ title, description, imageUrl, onClick }: any) => (
     <div
         onClick={onClick}
-        className="relative group cursor-pointer overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 aspect-[16/9] lg:aspect-auto h-[300px]"
+        className="relative group cursor-pointer overflow-hidden rounded-3xl border border-white/5 bg-neutral-900 aspect-[16/9] lg:aspect-auto h-[200px] sm:h-[300px]"
     >
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/40 to-transparent z-10"></div>
         <div
             className="absolute inset-0 opacity-30 group-hover:opacity-50 transition-all duration-700 bg-cover bg-center group-hover:scale-110"
             style={{ backgroundImage: `url('${imageUrl}')` }}
         ></div>
-        <div className="absolute bottom-0 left-0 p-8 z-20 w-full flex items-end justify-between">
+        <div className="absolute bottom-0 left-0 p-4 sm:p-8 z-20 w-full flex items-end justify-between">
             <div>
-                <h4 className="text-3xl font-black text-white leading-tight uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: title.replace(' ', '<br/>') }}></h4>
+                <h4 className="text-xl sm:text-3xl font-black text-white leading-tight uppercase tracking-tighter" dangerouslySetInnerHTML={{ __html: title.replace(' ', '<br/>') }}></h4>
                 <p className="text-slate-400 mt-2 max-w-[280px] text-xs font-medium leading-relaxed uppercase tracking-widest">{description}</p>
             </div>
             <div className="bg-primary p-4 rounded-2xl text-background-dark group-hover:translate-x-2 transition-all shadow-xl shadow-primary/20">

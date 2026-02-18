@@ -190,49 +190,49 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
 
                     {/* Participant List */}
                     <section className="bg-white dark:bg-trek-surface border border-slate-200 dark:border-trek-border rounded-[32px] overflow-hidden shadow-2xl shadow-primary/5">
-                        <div className="p-8 border-b border-slate-200 dark:border-trek-border flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                                    <span className="material-symbols-outlined text-2xl font-black">group</span>
+                        <div className="p-5 sm:p-8 border-b border-slate-200 dark:border-trek-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-center gap-3 sm:gap-4">
+                                <div className="p-2 sm:p-3 bg-primary/10 rounded-2xl text-primary">
+                                    <span className="material-symbols-outlined text-xl sm:text-2xl font-black">group</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Compañeros de Aventura</h3>
+                                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-tight">Compañeros de Aventura</h3>
                             </div>
-                            {isAdmin && <span className="text-[10px] font-black uppercase tracking-[0.3em] text-trek-text-muted bg-white/5 px-4 py-2 rounded-full border border-white/5">Vista de Admin</span>}
+                            {isAdmin && <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-trek-text-muted bg-white/5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border border-white/5 w-fit">Vista de Admin</span>}
                         </div>
                         <div className="overflow-x-auto no-scrollbar">
                             <table className="w-full text-left order-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50 dark:bg-trek-elevated text-slate-400 dark:text-trek-text-muted/60 text-[10px] uppercase font-black tracking-[0.2em]">
-                                        <th className="px-8 py-5">Participante</th>
-                                        <th className="px-8 py-5">Fecha Reg.</th>
-                                        {isAdmin && <th className="px-8 py-5">Estado Pago</th>}
-                                        {isAdmin && <th className="px-8 py-5 text-right"></th>}
+                                    <tr className="bg-slate-50 dark:bg-trek-elevated text-slate-400 dark:text-trek-text-muted/60 text-[9px] sm:text-[10px] uppercase font-black tracking-[0.2em]">
+                                        <th className="px-4 py-4 sm:px-8 sm:py-5 whitespace-nowrap">Participante</th>
+                                        <th className="px-4 py-4 sm:px-8 sm:py-5 whitespace-nowrap">Fecha Reg.</th>
+                                        {isAdmin && <th className="px-4 py-4 sm:px-8 sm:py-5 whitespace-nowrap">Estado Pago</th>}
+                                        {isAdmin && <th className="px-4 py-4 sm:px-8 sm:py-5 text-right"></th>}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-[#234833]">
                                     {participants.length > 0 ? participants.map((p) => (
                                         <tr key={p.id} className="hover:bg-slate-50/50 dark:hover:bg-trek-elevated/50 transition-colors">
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-trek-elevated overflow-hidden border border-slate-200 dark:border-white/10 flex items-center justify-center">
-                                                        <span className="material-symbols-outlined text-slate-400">person</span>
+                                            <td className="px-4 py-4 sm:px-8 sm:py-6">
+                                                <div className="flex items-center gap-3 sm:gap-4">
+                                                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-slate-100 dark:bg-trek-elevated overflow-hidden border border-slate-200 dark:border-white/10 flex items-center justify-center flex-shrink-0">
+                                                        <span className="material-symbols-outlined text-slate-400 text-lg sm:text-xl">person</span>
                                                     </div>
-                                                    <div>
-                                                        <div className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight">{p.full_name}</div>
-                                                        <div className="text-[10px] text-trek-text-muted font-bold uppercase tracking-widest">{p.role}</div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight truncate max-w-[120px] sm:max-w-none">{p.full_name}</div>
+                                                        <div className="text-[9px] sm:text-[10px] text-trek-text-muted font-bold uppercase tracking-widest">{p.role}</div>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6 text-[11px] font-bold text-slate-500 dark:text-trek-text-muted uppercase tracking-widest italic">{new Date(p.created_at).toLocaleDateString()}</td>
+                                            <td className="px-4 py-4 sm:px-8 sm:py-6 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-trek-text-muted uppercase tracking-widest italic whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
                                             {isAdmin && (
-                                                <td className="px-8 py-6">
-                                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-xl border ${p.status === 'Confirmado' ? 'bg-primary/20 text-primary border-primary/30' : 'bg-orange-500/20 text-orange-500 border-orange-500/30'}`}>
+                                                <td className="px-4 py-4 sm:px-8 sm:py-6 whitespace-nowrap">
+                                                    <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] px-2 py-1 sm:px-3 sm:py-1.5 rounded-xl border ${p.status === 'Confirmado' ? 'bg-primary/20 text-primary border-primary/30' : 'bg-orange-500/20 text-orange-500 border-orange-500/30'}`}>
                                                         {p.status}
                                                     </span>
                                                 </td>
                                             )}
                                             {isAdmin && (
-                                                <td className="px-8 py-6 text-right">
+                                                <td className="px-4 py-4 sm:px-8 sm:py-6 text-right">
                                                     <button className="text-slate-400 hover:text-primary transition-colors">
                                                         <span className="material-symbols-outlined font-black">more_horiz</span>
                                                     </button>

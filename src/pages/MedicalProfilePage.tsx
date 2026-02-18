@@ -96,10 +96,10 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
     );
 
     const ConditionsSection = () => (
-        <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center justify-between mb-8">
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">Condiciones Médicas</h3>
-                <span className="bg-primary/10 text-primary text-[10px] font-black px-3 py-1 rounded-full uppercase">
+        <div className="bg-neutral-900 border border-white/5 p-6 sm:p-8 rounded-[32px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+                <h3 className="text-lg sm:text-xl font-black text-white uppercase tracking-tight">Condiciones Médicas</h3>
+                <span className="bg-primary/10 text-primary text-[9px] sm:text-[10px] font-black px-3 py-1 rounded-full uppercase w-fit">
                     {(profile.condiciones?.length || 0)} Hallazgos Detectados
                 </span>
             </div>
@@ -155,10 +155,10 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                 <div className="space-y-2">
                     <div className="flex items-center gap-2 text-primary">
                         <span className="material-symbols-outlined text-sm font-black">verified_user</span>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em]">Perfil de Seguridad Verificado</p>
+                        <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] truncate">Perfil de Seguridad</p>
                     </div>
-                    <h1 className="text-white text-4xl font-black uppercase tracking-tight italic">Ficha Médica Digital</h1>
-                    <p className="text-slate-400 text-base">Datos vitales para tu seguridad en expediciones de montaña.</p>
+                    <h1 className="text-white text-3xl sm:text-4xl font-black uppercase tracking-tight italic">Ficha Médica</h1>
+                    <p className="text-slate-400 text-xs sm:text-base">Datos vitales para tu seguridad en expediciones de montaña.</p>
                 </div>
                 {onEdit && !fullView && (
                     <button
@@ -176,8 +176,8 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                 <div className="flex flex-col md:flex-row gap-8 items-center">
                     <div className="h-32 w-32 rounded-[24px] overflow-hidden border-4 border-primary/20 bg-cover bg-center shadow-xl" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200')" }}></div>
                     <div className="text-center md:text-left space-y-3">
-                        <div className="flex flex-col md:flex-row items-center gap-3">
-                            <h2 className="text-3xl font-black text-white uppercase tracking-tight">{profile.user?.full_name || 'Senderista'}</h2>
+                        <div className="flex flex-col md:flex-row items-center gap-2 sm:gap-3">
+                            <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight text-center sm:text-left">{profile.user?.full_name || 'Senderista'}</h2>
                             <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-primary/30">Verificado</span>
                         </div>
                         <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
@@ -221,22 +221,24 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                     </div>
                 </div>
             ) : (
-                <div className="space-y-8">
-                    <nav className="flex gap-4 p-2 bg-neutral-900 rounded-2xl w-fit border border-white/5">
-                        {menuItems.map((item) => (
-                            <button
-                                key={item.id}
-                                onClick={() => setActiveSection(item.id)}
-                                className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeSection === item.id
-                                    ? 'bg-primary text-background-dark shadow-lg shadow-primary/10'
-                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
-                                    }`}
-                            >
-                                <span className="material-symbols-outlined text-lg">{item.icon}</span>
-                                {item.label}
-                            </button>
-                        ))}
-                    </nav>
+                <div className="space-y-6 sm:space-y-8">
+                    <div className="w-full overflow-x-auto pb-2 scrollbar-thin">
+                        <nav className="flex gap-2 p-1.5 bg-neutral-900 rounded-2xl w-max border border-white/5 mx-auto sm:mx-0">
+                            {menuItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setActiveSection(item.id)}
+                                    className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeSection === item.id
+                                        ? 'bg-primary text-background-dark shadow-lg shadow-primary/10'
+                                        : 'text-slate-500 hover:text-white hover:bg-white/5'
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined text-base sm:text-lg">{item.icon}</span>
+                                    {item.label}
+                                </button>
+                            ))}
+                        </nav>
+                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-2 space-y-8">
@@ -280,7 +282,7 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
 };
 
 const MetricCard = ({ label, value, icon }: any) => (
-    <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
+    <div className="bg-neutral-900 border border-white/5 p-5 sm:p-8 rounded-[32px] flex items-center gap-4 sm:gap-6 group hover:translate-y-[-4px] transition-all duration-300">
         <div className="size-16 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-background-dark transition-all duration-500">
             <span className="material-symbols-outlined text-3xl font-black">{icon}</span>
         </div>
@@ -292,7 +294,7 @@ const MetricCard = ({ label, value, icon }: any) => (
 );
 
 const ContactCard = ({ name, phone, relation }: any) => (
-    <div className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] space-y-4 hover:border-primary/40 transition-all duration-300">
+    <div className="bg-neutral-900 border border-white/5 p-6 sm:p-8 rounded-[32px] space-y-4 hover:border-primary/40 transition-all duration-300">
         <div className="flex justify-between items-start">
             <div className="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                 <span className="material-symbols-outlined font-black">perm_contact_calendar</span>
