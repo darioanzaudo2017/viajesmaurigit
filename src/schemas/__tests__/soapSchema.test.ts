@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { soapSchema, vitalSignSchema } from '../soapSchema';
+import { soapSchema } from '../soapSchema';
 
 describe('SOAP Report Validation (soapSchema)', () => {
 
