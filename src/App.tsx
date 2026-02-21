@@ -126,8 +126,6 @@ function App() {
         />;
       case 'admin_dashboard':
         return user?.profile?.role === 'admin' ? <AdminDashboard onNavigate={setActiveTab} /> : <HomePage />;
-      case 'admin_enrollments':
-        return user?.profile?.role === 'admin' ? <AdminEnrollments onBack={() => setActiveTab('admin_trips')} /> : <HomePage />;
       case 'admin_news':
         return user?.profile?.role === 'admin' ? <AdminNewsPage onBack={() => setActiveTab('admin_dashboard')} /> : <HomePage />;
       case 'admin_trips':
