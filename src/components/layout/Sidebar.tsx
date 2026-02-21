@@ -24,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
         { id: 'admin_dashboard', icon: 'dashboard', label: 'Dashboard', adminOnly: true },
         { id: 'admin_trips', icon: 'map', label: 'Viajes', adminOnly: true },
         { id: 'admin_enrollments', icon: 'assignment_ind', label: 'Inscripciones', adminOnly: true },
+        { id: 'university', icon: 'school', label: 'University' },
         { id: 'safety', icon: 'health_and_safety', label: 'Protocolos' },
     ].filter(item => {
         if (item.adminOnly && !isAdmin) return false;
@@ -41,10 +42,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                 />
             )}
 
-            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-                <div className="p-6">
-                    <Logo className="h-10" />
+            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-white/5 flex flex-col bg-background-dark h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+                <div className="p-6 flex items-center justify-between lg:hidden">
+                    <Logo className="h-8" variant="neon" showText={true} />
+                    <button onClick={onClose} className="p-2 text-slate-400">
+                        <span className="material-symbols-outlined">close</span>
+                    </button>
                 </div>
+                <div className="h-6 hidden lg:block"></div> {/* Espaciador Desktop */}
                 <nav className="flex-1 px-4 space-y-1">
                     {menuItems.map((item) => (
                         <div

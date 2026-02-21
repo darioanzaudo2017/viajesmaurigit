@@ -399,6 +399,10 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                                         <div>
                                             <p className="text-sm font-black text-white uppercase tracking-tight">{enrollment.profiles?.full_name || 'Desconocido'}</p>
                                             <p className="text-[10px] text-primary/70 font-bold tracking-widest mt-0.5">{enrollment.profiles?.phone || 'Sin télefono'}</p>
+                                            {/* Mobile only expedition info */}
+                                            <p className="sm:hidden text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 bg-white/5 px-2 py-0.5 rounded inline-block">
+                                                {enrollment.viajes?.titulo}
+                                            </p>
                                         </div>
                                     </div>
                                 </td>

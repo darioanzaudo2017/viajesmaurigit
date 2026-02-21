@@ -10,6 +10,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
+    const [isUniversity, setIsUniversity] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +33,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                     options: {
                         data: {
                             full_name: fullName,
+                            is_university: isUniversity,
                         },
                     },
                 });
@@ -94,20 +96,32 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                             )}
 
                             {!isLogin && (
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60 ml-1">Nombre Completo</label>
-                                    <div className="relative group">
-                                        <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">person</span>
-                                        <input
-                                            required
-                                            type="text"
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            className="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
-                                            placeholder="Ej: Juan Pérez"
-                                        />
+                                <>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-trek-text-muted/60 ml-1">Nombre Completo</label>
+                                        <div className="relative group">
+                                            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors">person</span>
+                                            <input
+                                                required
+                                                type="text"
+                                                value={fullName}
+                                                onChange={(e) => setFullName(e.target.value)}
+                                                className="w-full bg-slate-50 dark:bg-background-dark border border-slate-200 dark:border-[#2a4435] rounded-xl pl-12 pr-4 py-3.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                                                placeholder="Ej: Juan Pérez"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
+
+                                    <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl cursor-pointer hover:bg-primary/10 transition-all group mt-2" onClick={() => setIsUniversity(!isUniversity)}>
+                                        <div className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all ${isUniversity ? 'bg-primary border-primary' : 'border-slate-300 dark:border-[#2a4435]'}`}>
+                                            {isUniversity && <span className="material-symbols-outlined text-background-dark text-sm font-bold">check</span>}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Estudiante Universitario</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-trek-text-muted/60 uppercase font-medium">Habilitar simuladores de práctica</p>
+                                        </div>
+                                    </div>
+                                </>
                             )}
 
                             <div className="space-y-2">

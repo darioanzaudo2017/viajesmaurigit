@@ -11,9 +11,12 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminTrips from './pages/admin/AdminTrips';
 import AdminEnrollments from './pages/admin/AdminEnrollments';
 import AdminSoapPage from './pages/admin/AdminSoapPage';
+import AdminNewsPage from './pages/admin/AdminNewsPage';
+import UniversityPage from './pages/UniversityPage';
+import UniversityNewsPage from './pages/UniversityNewsPage';
 import { supabase } from './api/supabase';
 import { useOfflineSync } from './hooks/useOfflineSync';
-import Logo from './components/common/Logo';
+import Navbar from './components/layout/Navbar';
 import './index.css';
 
 function App() {
@@ -123,6 +126,10 @@ function App() {
         />;
       case 'admin_dashboard':
         return user?.profile?.role === 'admin' ? <AdminDashboard onNavigate={setActiveTab} /> : <HomePage />;
+      case 'admin_enrollments':
+        return user?.profile?.role === 'admin' ? <AdminEnrollments onBack={() => setActiveTab('admin_trips')} /> : <HomePage />;
+      case 'admin_news':
+        return user?.profile?.role === 'admin' ? <AdminNewsPage onBack={() => setActiveTab('admin_dashboard')} /> : <HomePage />;
       case 'admin_trips':
         return user?.profile?.role === 'admin' ? (
           <AdminTrips
@@ -186,6 +193,10 @@ function App() {
         ) : (
           <AuthPage onSuccess={() => setActiveTab('medical')} />
         );
+      case 'university':
+        return <UniversityPage onNavigateNews={() => setActiveTab('university_news')} />;
+      case 'university_news':
+        return <UniversityNewsPage onBack={() => setActiveTab('university')} />;
       case 'safety':
         return <div className="p-8 text-white uppercase font-black tracking-widest italic">Protocolos de Seguridad (En Construcción)</div>;
       default:
@@ -195,75 +206,41 @@ function App() {
 
   return (
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
-      <header className="h-16 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-6 bg-white dark:bg-background-dark transition-colors duration-300 z-50">
-        <div className="flex items-center gap-4">
-          <button
-            className="lg:hidden p-2 text-slate-500 hover:text-primary transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <span className="material-symbols-outlined">menu</span>
-          </button>
+      <Navbar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        user={user}
+        onMenuClick={() => setSidebarOpen(true)}
+        onBack={activeTab !== 'home' ? () => {
+          if (selectedTripId) {
+            setSelectedTripId(null);
+            if (activeTab === 'register') return;
+          }
 
-          <Logo className="h-8" showText={false} onClick={() => setActiveTab('home')} />
+          if (activeTab === 'admin_soap') {
+            setSelectedSoapEnrollmentId(null);
+            setActiveTab('admin_enrollments');
+            return;
+          }
 
-          <div className="hidden sm:flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">TrekLogix Precision System</p>
-          </div>
-        </div>
+          if (activeTab === 'admin_enrollments') {
+            setActiveTab('admin_trips');
+            return;
+          }
 
-        <div className="flex items-center gap-6">
-          <nav className="hidden lg:flex items-center gap-8">
-            {['Inicio', 'Descubrir', 'Ficha Médica'].map((label, idx) => (
-              <button
-                key={label}
-                onClick={() => setActiveTab(['home', 'trips', 'medical'][idx])}
-                className={`text-[10px] font-black uppercase tracking-widest transition-all hover:text-primary ${activeTab === ['home', 'trips', 'medical'][idx] ? 'text-primary' : 'text-slate-400'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
+          if (activeTab === 'admin_trips') {
+            setActiveTab('admin_dashboard');
+            return;
+          }
 
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-slate-400 hover:text-primary cursor-pointer transition-colors">notifications</span>
-            <span className="material-symbols-outlined text-slate-400 hover:text-primary cursor-pointer transition-colors" onClick={() => setActiveTab('medical')}>account_circle</span>
-          </div>
+          if (activeTab === 'register' || activeTab === 'medical' || activeTab === 'university' || activeTab === 'university_news' || activeTab === 'admin_news') {
+            setActiveTab('home');
+            return;
+          }
 
-          {user ? (
-            <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 ml-2">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-bold text-slate-900 dark:text-white leading-none mb-1">{user.profile?.full_name || user.user_metadata?.full_name || 'Senderista'}</p>
-                <button
-                  onClick={() => {
-                    localStorage.removeItem('cached_session_user');
-                    localStorage.removeItem('cached_user_profile');
-                    supabase.auth.signOut();
-                    setActiveTab('home');
-                  }}
-                  className="text-[10px] text-primary hover:underline font-black uppercase tracking-widest"
-                >
-                  Cerrar Sesión
-                </button>
-              </div>
-              <div
-                className="h-10 w-10 rounded-full bg-cover bg-center border-2 border-primary/40 cursor-pointer"
-                onClick={() => setActiveTab('medical')}
-                style={{ backgroundImage: user.user_metadata?.avatar_url ? `url(${user.user_metadata.avatar_url})` : "url('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100')" }}
-              ></div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-4 ml-2">
-              <button
-                onClick={() => setActiveTab('medical')}
-                className="bg-primary text-background-dark px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20"
-              >
-                Ingresar
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+          setActiveTab('home');
+        } : undefined}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         {!selectedTripId && (

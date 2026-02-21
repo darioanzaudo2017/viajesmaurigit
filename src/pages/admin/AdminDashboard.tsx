@@ -192,6 +192,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     imageUrl="https://lh3.googleusercontent.com/aida-public/AB6AXuDicP7fCrMTpianw8Dag7-3eRGzeUyctESfcJUmNDdl-AUGNcOizpwT8J9vQW-o-7zEiD5v-iCPAqZVqbHw-phvQpKoTuoQCXoRZ03KrYDm-pz12244Iwho-w4oJ4d6ItgjXUfOFD8ClW5di1HbeFSwpesvvuZUwwj1v2oVHzywnto3bdvj0Bp0-k60waecwaG6-C2IZSvKQFtRuJGz-gFUU7NJLeVMmXG_w8pLX6ssfbx0yW0V2taUeJXnKxWiujKIhyPY4VhS3NjS"
                     onClick={() => onNavigate('admin_enrollments')}
                 />
+                <ManagementCard
+                    title="Gestionar Novedades Universitarias"
+                    description="Publicar artículos, noticias y actualizaciones académicas."
+                    imageUrl="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"
+                    onClick={() => onNavigate('admin_news')}
+                />
             </div>
 
             {/* Quick Actions & Recent Activity */}
