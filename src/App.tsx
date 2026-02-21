@@ -137,6 +137,7 @@ function App() {
           <AdminEnrollments
             tripId={selectedAdminTripId || undefined}
             onClearFilter={() => setSelectedAdminTripId(null)}
+            onTripChange={(id) => setSelectedAdminTripId(id)}
             onNewSoapReport={(id) => {
               setSelectedSoapEnrollmentId(id);
               setActiveTab('admin_soap');

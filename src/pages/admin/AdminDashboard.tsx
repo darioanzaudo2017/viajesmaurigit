@@ -5,9 +5,9 @@ import { useOfflineSync } from '../../hooks/useOfflineSync';
 
 interface AdminStats {
     totalTrips: number;
-    totalParticipants: number;
+    totalEnrollments: number;
+    pendingEnrollments: number;
     pendingMedical: number;
-    totalRevenue: number;
 }
 
 interface AdminDashboardProps {
@@ -17,9 +17,9 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
     const [stats, setStats] = useState<AdminStats>({
         totalTrips: 0,
-        totalParticipants: 0,
-        pendingMedical: 0,
-        totalRevenue: 0
+        totalEnrollments: 0,
+        pendingEnrollments: 0,
+        pendingMedical: 0
     });
     const [recentActivity, setRecentActivity] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,13 +38,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             if (isOnline) {
                 // 1. Get stats
                 const { count: tripsCount } = await supabase.from('viajes').select('*', { count: 'exact', head: true });
-                const { count: participantsCount } = await supabase.from('inscripciones').select('*', { count: 'exact', head: true });
+                const { count: enrollmentsCount } = await supabase.from('inscripciones').select('*', { count: 'exact', head: true });
+                const { count: pendingInscCount } = await supabase.from('inscripciones').select('*', { count: 'exact', head: true }).eq('estado', 'pending');
+
+                // Get unique users with inscriptions
+                const { data: inscribedUsers } = await supabase.from('inscripciones').select('user_id');
+                const uniqueInscribedIds = Array.from(new Set(inscribedUsers?.map(i => i.user_id) || []));
+
+                // Get count of medical records for DOES unique users
+                const { count: medicalRecordsCount } = await supabase
+                    .from('fichas_medicas')
+                    .select('*', { count: 'exact', head: true })
+                    .in('user_id', uniqueInscribedIds);
 
                 setStats({
                     totalTrips: tripsCount || 0,
-                    totalParticipants: participantsCount || 0,
-                    pendingMedical: 12,
-                    totalRevenue: 42.8
+                    totalEnrollments: enrollmentsCount || 0,
+                    pendingEnrollments: pendingInscCount || 0,
+                    pendingMedical: uniqueInscribedIds.length - (medicalRecordsCount || 0)
                 });
 
                 // 2. Get recent activity
@@ -66,14 +77,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             } else {
                 // OFFLINE: compute from local DB
                 const localTrips = await db.trips.count();
-                const localEnrollments = await db.enrollments.count();
+                const localEnrollments = await db.enrollments.toArray();
                 const localRecent = await db.enrollments.orderBy('created_at').reverse().limit(5).toArray();
+
+                const uniqueUsers = new Set(localEnrollments.map(e => e.user_id)).size;
+                const medicalCount = await db.medicalRecords.count();
 
                 setStats({
                     totalTrips: localTrips,
-                    totalParticipants: localEnrollments,
-                    pendingMedical: 0,
-                    totalRevenue: 0
+                    totalEnrollments: localEnrollments.length,
+                    pendingEnrollments: localEnrollments.filter(e => e.estado === 'pending').length,
+                    pendingMedical: Math.max(0, uniqueUsers - medicalCount)
                 });
                 setRecentActivity(localRecent);
                 setIsDataFromCache(true);
@@ -83,14 +97,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             // Fallback to local data
             try {
                 const localTrips = await db.trips.count();
-                const localEnrollments = await db.enrollments.count();
+                const localEnrollments = await db.enrollments.toArray();
                 const localRecent = await db.enrollments.orderBy('created_at').reverse().limit(5).toArray();
+
+                const uniqueUsers = new Set(localEnrollments.map(e => e.user_id)).size;
+                const medicalCount = await db.medicalRecords.count();
 
                 setStats({
                     totalTrips: localTrips,
-                    totalParticipants: localEnrollments,
-                    pendingMedical: 0,
-                    totalRevenue: 0
+                    totalEnrollments: localEnrollments.length,
+                    pendingEnrollments: localEnrollments.filter(e => e.estado === 'pending').length,
+                    pendingMedical: Math.max(0, uniqueUsers - medicalCount)
                 });
                 setRecentActivity(localRecent);
                 setIsDataFromCache(true);
@@ -138,25 +155,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     change="+2 esta semana"
                 />
                 <StatCard
-                    title="Total Participantes"
-                    value={stats.totalParticipants}
+                    title="Total de Inscriptos"
+                    value={stats.totalEnrollments}
                     icon="groups"
                     color="primary"
                     change="Temporada Actual"
                 />
                 <StatCard
+                    title="Inscriptos Pendientes"
+                    value={stats.pendingEnrollments}
+                    icon="person_add"
+                    color="amber-500"
+                    change="Requiere Acción"
+                />
+                <StatCard
                     title="Fichas Médicas Pendientes"
                     value={stats.pendingMedical}
                     icon="medical_services"
-                    color="amber-500"
+                    color="red-500"
                     isWarning
-                />
-                <StatCard
-                    title="Objetivo de Ingresos"
-                    value={`$${stats.totalRevenue}k`}
-                    icon="payments"
-                    color="primary"
-                    change="94% Pagado"
+                    change="Faltantes"
                 />
             </div>
 

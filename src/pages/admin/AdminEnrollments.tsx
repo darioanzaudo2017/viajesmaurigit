@@ -26,11 +26,13 @@ interface Enrollment {
 interface AdminEnrollmentsProps {
     tripId?: string;
     onClearFilter?: () => void;
+    onTripChange?: (tripId: string | null) => void;
     onNewSoapReport?: (id: string) => void;
 }
 
-const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilter, onNewSoapReport }) => {
+const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilter, onTripChange, onNewSoapReport }) => {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
+    const [trips, setTrips] = useState<{ id: string, titulo: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
@@ -47,8 +49,30 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
     const [downloadingUser, setDownloadingUser] = useState<{ userId: string, userName: string } | null>(null);
 
     useEffect(() => {
+        fetchTrips();
+    }, []);
+
+    useEffect(() => {
         fetchEnrollments();
     }, [tripId]);
+
+    const fetchTrips = async () => {
+        try {
+            if (isOnline) {
+                const { data, error } = await supabase
+                    .from('viajes')
+                    .select('id, titulo')
+                    .order('titulo');
+                if (error) throw error;
+                setTrips(data || []);
+            } else {
+                const localTrips = await db.trips.toArray();
+                setTrips(localTrips.map(t => ({ id: t.id, titulo: t.titulo })));
+            }
+        } catch (error) {
+            console.error("Error fetching trips:", error);
+        }
+    };
 
     const fetchEnrollments = async () => {
         try {
@@ -264,7 +288,9 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                     <h2 className="text-3xl lg:text-5xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">{tripId ? 'Lista de Inscriptos' : 'Inscripciones Globales'}</h2>
                     {tripId && (
                         <div className="flex items-center gap-3 mt-2">
-                            <p className="text-primary text-xs font-black uppercase tracking-widest">{enrollments[0]?.viajes?.titulo || 'Filtrado por Expedición'}</p>
+                            <p className="text-primary text-xs font-black uppercase tracking-widest">
+                                {trips.find(t => t.id === tripId)?.titulo || enrollments[0]?.viajes?.titulo || 'Filtrado por Expedición'}
+                            </p>
                             <button
                                 onClick={onClearFilter}
                                 className="text-[10px] text-red-400 hover:text-red-300 font-bold uppercase underline tracking-tighter"
@@ -273,6 +299,31 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                             </button>
                         </div>
                     )}
+
+                    <div className="flex flex-col gap-2 pt-4">
+                        <label className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] ml-1">Seleccionar Viaje</label>
+                        <div className="relative">
+                            <select
+                                className="bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-primary outline-none text-xs font-black uppercase tracking-widest cursor-pointer appearance-none pr-10 min-w-[200px]"
+                                value={tripId || 'all'}
+                                onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === 'all') {
+                                        onClearFilter?.();
+                                    } else {
+                                        onTripChange?.(val);
+                                    }
+                                }}
+                            >
+                                <option value="all">TODOS LOS VIAJES</option>
+                                {trips.map(trip => (
+                                    <option key={trip.id} value={trip.id}>{trip.titulo.toUpperCase()}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">expand_more</span>
+                        </div>
+                    </div>
+
                     {!isOnline && (
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/20 text-amber-500 rounded-full mt-2 border border-amber-500/10">
                             <span className="material-symbols-outlined text-sm">cloud_off</span>
@@ -323,7 +374,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                         </div>
                     </div>
                 </div>
-            </header>
+            </header >
 
             <div className="bg-neutral-900 border border-white/10 rounded-[32px] overflow-hidden shadow-2xl relative overflow-x-auto">
                 <table className="w-full text-left">
@@ -426,7 +477,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                     </tbody>
                 </table>
             </div>
-        </div>
+        </div >
     );
 };
 
