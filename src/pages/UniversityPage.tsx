@@ -31,6 +31,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
             presion: '',
             spo2: '',
             temperatura: '',
+            piel: '',
             avdi: 'A (Alerta)'
         }],
         sv_piel: '',
@@ -97,6 +98,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
                 presion: '',
                 spo2: '',
                 temperatura: '',
+                piel: '',
                 avdi: 'A (Alerta)'
             }],
             sv_piel: '',

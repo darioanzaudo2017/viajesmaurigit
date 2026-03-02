@@ -3,7 +3,6 @@ import MedicalProfilePage from '../../pages/MedicalProfilePage';
 import { generateMedicalPDF } from '../../utils/pdfGenerator';
 import type { MedicalProfileData } from '../../utils/pdfGenerator';
 import { useMedicalProfile } from '../../hooks/useMedicalProfile';
-import { CONDITIONS_CATALOG } from '../../api/constants';
 
 interface MedicalViewModalProps {
     isOpen: boolean;
@@ -11,10 +10,6 @@ interface MedicalViewModalProps {
     userId: string;
     userName: string;
 }
-
-const getConditionName = (id: number) => {
-    return CONDITIONS_CATALOG.find(c => c.id === id)?.condicion || `Condición ${id}`;
-};
 
 const MedicalViewModal: React.FC<MedicalViewModalProps> = ({ isOpen, onClose, userId, userName }) => {
     const [isGenerating, setIsGenerating] = useState(false);
