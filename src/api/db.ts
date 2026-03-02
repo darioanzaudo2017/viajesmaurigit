@@ -1,5 +1,12 @@
 import Dexie, { type Table } from 'dexie';
 
+export interface MaestroProblema {
+    id: string;
+    problema: string;
+    problema_anticipado: string;
+    tratamiento_sugerido: string;
+}
+
 export interface LocalTrip {
     id: string;
     titulo: string;
@@ -71,7 +78,7 @@ export interface LocalMedicalRecord {
 export interface LocalSoapReport {
     id: string; // uuid
     inscripcion_id: string;
-    status: 'pending' | 'synced';
+    status: 'pending' | 'synced' | 'error';
     data: any; // Full SOAP report JSON
     updated_at: number;
 }
@@ -83,6 +90,7 @@ export class TrekDatabase extends Dexie {
     enrollments!: Table<LocalEnrollment>;
     medicalRecords!: Table<LocalMedicalRecord>;
     soapReports!: Table<LocalSoapReport>;
+    maestroProblemasSoap!: Table<MaestroProblema>;
 
     constructor() {
         super('TrekPWA_DB');
@@ -103,6 +111,16 @@ export class TrekDatabase extends Dexie {
             enrollments: 'id, viaje_id, user_id',
             medicalRecords: 'user_id',
             soapReports: 'id, inscripcion_id, status'
+        });
+        // v4: Added maestroProblemasSoap for offline SOAP form selection
+        this.version(4).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema'
         });
     }
 }

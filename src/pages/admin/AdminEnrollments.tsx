@@ -17,6 +17,10 @@ interface Enrollment {
     profiles: {
         full_name: string;
         phone?: string;
+        fichas_medicas?: {
+            telefono_emergencia_1?: string | number;
+            telefono_emergencia_2?: string | number;
+        }[] | null;
     };
     viajes: {
         titulo: string;
@@ -81,7 +85,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
             if (isOnline) {
                 let query = supabase
                     .from('inscripciones')
-                    .select('*,profiles(full_name,phone),viajes(titulo)')
+                    .select('*,profiles(full_name,phone,fichas_medicas(telefono_emergencia_1,telefono_emergencia_2)),viajes(titulo)')
                     .order('created_at', { ascending: false });
 
                 if (tripId) {
@@ -158,6 +162,42 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
         } catch (error) {
             console.error("Error updating status:", error);
             alert("Error al actualizar estado");
+        }
+    };
+
+    const handleDeleteEnrollment = async (id: string, userName: string) => {
+        const confirmDelete = window.confirm(`¿Estás seguro de que deseas eliminar la inscripción de ${userName}? También se eliminará la ficha SOAP si existe. Esta acción no se puede deshacer.`);
+        if (!confirmDelete) return;
+
+        try {
+            // 1. Delete associated SOAP from Supabase
+            if (isOnline) {
+                // Delete SOAP reports linked to this enrollment
+                await supabase
+                    .from('reportes_soap')
+                    .delete()
+                    .eq('inscripcion_id', id);
+
+                // Delete enrollment from Supabase
+                const { error } = await supabase
+                    .from('inscripciones')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+            }
+
+            // 2. Delete from Dexie (Always do this)
+            await db.soapReports.where('inscripcion_id').equals(id).delete();
+            await db.enrollments.delete(id);
+
+            // 3. Update local state
+            setEnrollments(prev => prev.filter(e => e.id !== id));
+
+            alert("Inscripción y datos asociados eliminados con éxito.");
+        } catch (error) {
+            console.error("Error deleting enrollment:", error);
+            alert("Error al eliminar la inscripción. Verifica tu conexión.");
         }
     };
 
@@ -398,7 +438,26 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                                         </div>
                                         <div>
                                             <p className="text-sm font-black text-white uppercase tracking-tight">{enrollment.profiles?.full_name || 'Desconocido'}</p>
-                                            <p className="text-[10px] text-primary/70 font-bold tracking-widest mt-0.5">{enrollment.profiles?.phone || 'Sin télefono'}</p>
+                                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                                                <p className="text-[10px] text-primary/70 font-bold tracking-widest">{enrollment.profiles?.phone || 'Sin télefono'}</p>
+                                                {enrollment.profiles?.fichas_medicas?.[0] && (enrollment.profiles.fichas_medicas[0].telefono_emergencia_1 || enrollment.profiles.fichas_medicas[0].telefono_emergencia_2) && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[8px] text-slate-500 font-black uppercase tracking-tighter self-center">• EMERGENCIAS:</span>
+                                                        {enrollment.profiles.fichas_medicas[0].telefono_emergencia_1 && (
+                                                            <span className="text-[10px] text-red-400 font-black tracking-tight flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-[10px]">emergency</span>
+                                                                {enrollment.profiles.fichas_medicas[0].telefono_emergencia_1}
+                                                            </span>
+                                                        )}
+                                                        {enrollment.profiles.fichas_medicas[0].telefono_emergencia_2 && (
+                                                            <span className="text-[10px] text-red-400/80 font-black tracking-tight flex items-center gap-1">
+                                                                <span className="material-symbols-outlined text-[10px]">contact_phone</span>
+                                                                {enrollment.profiles.fichas_medicas[0].telefono_emergencia_2}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
                                             {/* Mobile only expedition info */}
                                             <p className="sm:hidden text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1 bg-white/5 px-2 py-0.5 rounded inline-block">
                                                 {enrollment.viajes?.titulo}
@@ -464,6 +523,13 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                                             <span className="material-symbols-outlined text-lg">
                                                 {downloadingUser?.userId === enrollment.user_id ? 'sync' : 'file_download'}
                                             </span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteEnrollment(enrollment.id, enrollment.profiles?.full_name || 'Participante')}
+                                            className="size-10 flex items-center justify-center bg-red-500/5 hover:bg-red-500/20 text-red-500/40 hover:text-red-500 rounded-xl transition-all border border-red-500/10 hover:border-red-500/30"
+                                            title="Eliminar Inscripción"
+                                        >
+                                            <span className="material-symbols-outlined text-lg">delete</span>
                                         </button>
                                     </div>
                                 </td>

@@ -81,3 +81,7 @@ body {
 main>* {
   animation: pageEnter 0.25s ease-out;
 }
+
+.pb-safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

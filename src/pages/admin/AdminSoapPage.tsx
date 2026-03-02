@@ -4,7 +4,7 @@ import { generateMedicalPDF } from '../../utils/pdfGenerator';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { db } from '../../api/db';
 import SoapForm from '../../components/soap/SoapForm';
-import type { SoapReport } from '../../components/soap/SoapForm';
+import type { SoapReport, MaestroProblema } from '../../components/soap/SoapForm';
 // Removed unused useLiveQuery
 
 interface AdminSoapPageProps {
@@ -18,6 +18,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
     const [isGenerating, setIsGenerating] = useState(false);
     const { isOnline } = useOfflineSync();
     const [enrollmentData, setEnrollmentData] = useState<any>(null);
+    const [maestros, setMaestros] = useState<MaestroProblema[]>([]);
     const [report, setReport] = useState<SoapReport>({
         inscripcion_id: enrollmentId,
         referencia_viaje: '',
@@ -36,7 +37,8 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
             presion: '',
             spo2: '',
             temperatura: '',
-            avdi: 'A (Alerta)'
+            avdi: 'A (Alerta)',
+            piel: ''
         }],
         sv_piel: '',
         observacione: '',
@@ -55,6 +57,15 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 let existingSoap;
 
                 if (isOnline) {
+                    // Cargar maestros de problemas y guardar en cache local
+                    const { data: mData } = await supabase.from('maestro_problemas_soap').select('*').order('problema');
+                    if (mData) {
+                        setMaestros(mData);
+                        // Cachear para uso offline
+                        await db.maestroProblemasSoap.clear();
+                        await db.maestroProblemasSoap.bulkPut(mData);
+                    }
+
                     // Try remote first
                     const { data: remoteEnrollment } = await supabase
                         .from('inscripciones')
@@ -65,15 +76,26 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
 
                     const { data: remoteSoap } = await supabase
                         .from('reportes_soap')
-                        .select('*')
+                        .select('*, problemas:reportes_soap_problemas(*, maestro:maestro_problemas_soap(*))')
                         .eq('inscripcion_id', enrollmentId)
                         .maybeSingle();
-                    existingSoap = remoteSoap;
+
+                    if (remoteSoap) {
+                        // Mapear los problemas relacionales al formato del estado
+                        existingSoap = {
+                            ...remoteSoap,
+                            problemas_seleccionados: remoteSoap.problemas || []
+                        };
+                    }
                 } else {
                     // Load from local cache
                     enrollment = await db.enrollments.get(enrollmentId);
                     existingSoap = await db.soapReports.get({ inscripcion_id: enrollmentId });
                     if (existingSoap) existingSoap = existingSoap.data;
+
+                    // Load maestros from local cache
+                    const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
+                    setMaestros(localMaestros);
                 }
 
                 if (enrollment) {
@@ -148,7 +170,14 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 skin: report.sv_piel || 'No especificado',
                 assessment: report.evaluacion_guia || 'Sin evaluación',
                 plan: report.observacione || 'Sin plan',
-                responsibleId: report.responsable_id || 'N/A'
+                responsibleId: report.responsable_id || 'N/A',
+                problemas: (report.problemas_seleccionados || []).map(p => ({
+                    problema: p.maestro?.problema || 'N/A',
+                    anticipado: p.maestro?.problema_anticipado || 'N/A',
+                    tratamiento: p.maestro?.tratamiento_sugerido || 'N/A',
+                    observacion: p.observacion_especifica || 'Sin observaciones'
+                })),
+                notasAdicionales: report.notas_adicionales
             };
 
             await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });
@@ -171,18 +200,47 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
             setSaving(true);
 
             if (isOnline) {
+                // Eliminar campos que NO existen en la tabla física de Supabase
+                const { problemas_seleccionados, ...cleanReportData } = reportData;
+
+                // Mapear observaciones a la columna física correcta (observacione)
+                const finalPayload = {
+                    ...cleanReportData,
+                    observacione: (cleanReportData as any).observaciones || (cleanReportData as any).observacione || ''
+                };
+                // @ts-ignore
+                if ('observaciones' in finalPayload) delete (finalPayload as any).observaciones;
+
                 const { data, error } = await supabase
                     .from('reportes_soap')
-                    .upsert(reportData)
+                    .upsert(finalPayload)
                     .select()
                     .single();
 
                 if (error) throw error;
 
+                // Guardar problemas asociados
+                if (reportData.problemas_seleccionados) {
+                    // Primero borramos los anteriores para simplificar el upsert de la relación muchos-a-muchos
+                    await supabase
+                        .from('reportes_soap_problemas')
+                        .delete()
+                        .eq('reporte_soap_id', data.id);
+
+                    if (reportData.problemas_seleccionados.length > 0) {
+                        const problemasToInsert = reportData.problemas_seleccionados.map(p => ({
+                            reporte_soap_id: data.id,
+                            problema_id: p.problema_id,
+                            observacion_especifica: p.observacion_especifica
+                        }));
+                        await supabase.from('reportes_soap_problemas').insert(problemasToInsert);
+                    }
+                }
+
                 if (!report.id && enrollmentId) {
                     await supabase.from('inscripciones').update({ soap_creada: true }).eq('id', enrollmentId);
                 }
-                if (data) setReport(data);
+                if (data) setReport({ ...data, problemas_seleccionados: reportData.problemas_seleccionados });
                 alert(isFinal ? "Reporte finalizado con éxito" : "Borrador guardado");
             } else {
                 // Offline Save to Dexie
@@ -217,6 +275,46 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
         }
     };
 
+    const handleDelete = async () => {
+        if (!report.id) return;
+        const confirmDelete = window.confirm("¿Estás seguro de que deseas eliminar esta ficha SOAP? La inscripción se mantendrá.");
+        if (!confirmDelete) return;
+
+        try {
+            setSaving(true);
+            if (isOnline) {
+                // Delete from Supabase
+                const { error } = await supabase
+                    .from('reportes_soap')
+                    .delete()
+                    .eq('id', report.id);
+
+                if (error) throw error;
+
+                // Mark enrollment as not having a SOAP
+                await supabase
+                    .from('inscripciones')
+                    .update({ soap_creada: false })
+                    .eq('id', enrollmentId);
+            }
+
+            // Delete from Dexie
+            await db.soapReports.delete(report.id);
+            const localEnrollment = await db.enrollments.get(enrollmentId);
+            if (localEnrollment) {
+                await db.enrollments.update(enrollmentId, { soap_creada: false });
+            }
+
+            alert("Ficha SOAP eliminada correctamente.");
+            onBack();
+        } catch (error) {
+            console.error("Error deleting SOAP report:", error);
+            alert("Error al eliminar el reporte.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex flex-1 items-center justify-center min-h-[60vh]">
@@ -240,6 +338,8 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 patientId={enrollmentData?.id}
                 saving={saving}
                 isGenerating={isGenerating}
+                onDelete={handleDelete}
+                maestros={maestros}
             />
 
             {/* Hidden Printable PDF Version (used by pdfGenerator if needed via DOM) */}

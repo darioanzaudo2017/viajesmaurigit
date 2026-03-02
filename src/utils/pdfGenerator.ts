@@ -2,6 +2,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import html2canvas from 'html2canvas';
+import { CONDITIONS_CATALOG } from '../api/constants';
 
 // --- INTERFACES FOR STRUCTURED DATA ---
 export interface MedicalProfileData {
@@ -20,7 +21,7 @@ export interface MedicalProfileData {
         phone: string;
         relation: string;
     }[];
-    conditions: string[];
+    conditions: number[]; // IDs de las condiciones marcadas
     medications: {
         name: string;
         dosage: string;
@@ -53,6 +54,13 @@ export interface SoapReportData {
     assessment: string;
     plan: string;
     responsibleId: string;
+    problemas?: {
+        problema: string;
+        anticipado: string;
+        tratamiento: string;
+        observacion: string;
+    }[];
+    notasAdicionales?: string;
 }
 
 // --- MAIN GENERATOR FUNCTION ---
@@ -171,31 +179,47 @@ const generateNativeMedicalPDF = (data: MedicalProfileData, fileName: string) =>
     yPos += 28;
 
     // ============================================
-    // TAB 2: CONDICIONES MEDICAS
+    // TAB 2: CONDICIONES MEDICAS (CHECKLIST COMPLETO)
     // ============================================
-    yPos = sectionHeader(`2. CONDICIONES MEDICAS (${data.conditions.length} hallazgos)`, yPos);
+    yPos = sectionHeader('2. EVALUACIÓN DE CONDICIONES MÉDICAS (Catálogo de Seguridad)', yPos);
 
-    if (data.conditions.length > 0) {
-        const condRows = data.conditions.map((c, i) => [String(i + 1), c]);
-        autoTable(doc, {
-            startY: yPos,
-            head: [['#', 'Condicion Detectada']],
-            body: condRows,
-            theme: 'grid',
-            headStyles: { fillColor: [200, 60, 60], textColor: [255, 255, 255] },
-            columnStyles: { 0: { cellWidth: 12, halign: 'center' } },
-            styles: { fontSize: 9, cellPadding: 3 },
-            margin: { left: margin, right: margin }
-        });
-        // @ts-ignore
-        yPos = doc.lastAutoTable.finalY + 8;
-    } else {
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(100, 100, 100);
-        doc.text('No se registran condiciones preexistentes.', margin + 5, yPos + 5);
-        yPos += 12;
+    // Preparar filas para dos columnas (más compacto)
+    const midPoint = Math.ceil(CONDITIONS_CATALOG.length / 2);
+    const checklistRows = [];
+
+    for (let i = 0; i < midPoint; i++) {
+        const c1 = CONDITIONS_CATALOG[i];
+        const c2 = i + midPoint < CONDITIONS_CATALOG.length ? CONDITIONS_CATALOG[i + midPoint] : null;
+
+        const isMarked1 = data.conditions.includes(c1.id);
+        const isMarked2 = c2 ? data.conditions.includes(c2.id) : false;
+
+        checklistRows.push([
+            isMarked1 ? '[ X ]' : '[   ]',
+            c1.condicion,
+            c2 ? (isMarked2 ? '[ X ]' : '[   ]') : '',
+            c2 ? c2.condicion : ''
+        ]);
     }
+
+    autoTable(doc, {
+        startY: yPos,
+        head: [['Estado', 'Condición', 'Estado', 'Condición']],
+        body: checklistRows,
+        theme: 'grid',
+        headStyles: { fillColor: [60, 60, 60], textColor: [255, 255, 255], fontSize: 8 },
+        columnStyles: {
+            0: { cellWidth: 15, halign: 'center', fontStyle: 'bold' },
+            1: { cellWidth: (contentWidth / 2) - 15, fontSize: 8 },
+            2: { cellWidth: 15, halign: 'center', fontStyle: 'bold' },
+            3: { cellWidth: (contentWidth / 2) - 15, fontSize: 8 }
+        },
+        styles: { cellPadding: 2 },
+        margin: { left: margin, right: margin }
+    });
+
+    // @ts-ignore
+    yPos = doc.lastAutoTable.finalY + 8;
 
     // Medications sub-section
     if (data.medications.length > 0) {
@@ -269,6 +293,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Reporte de Incidente - Gravedad: ${data.severity.toUpperCase()}`, pageWidth / 2, 30, { align: 'center' });
+    doc.text('PASO 1: ESCENA', pageWidth / 2, 36, { align: 'center' });
 
     let yPos = 50;
 
@@ -291,7 +316,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     doc.rect(14, yPos, pageWidth - 28, 8, 'F');
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('SUBJETIVO (S) - SAMPLE', 16, yPos + 6);
+    doc.text('PASO 2: SUBJETIVO - SAMPUE', 16, yPos + 6);
     yPos += 10;
 
     const subjectiveData = [
@@ -300,7 +325,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
         ['Medicamentos', data.medications],
         ['Historia Pasada', data.history],
         ['Última Ingesta', data.lastIntake],
-        ['Eventos Previos', data.events],
+        ['Evento', data.events],
         ['Escena', data.scene]
     ];
 
@@ -319,7 +344,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     // 4. Objective Section (O) - Vitals
     doc.setFillColor(230, 230, 230);
     doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-    doc.text('OBJETIVO (O) - Signos Vitales', 16, yPos + 6);
+    doc.text('PASO 3: OBJETIVO - EXAMEN FÍSICO Y SIGNOS VITALES', 16, yPos + 6);
     yPos += 10;
 
     const vitalsBody = data.vitals.map(v => [v.time, v.pulse, v.resp, v.bp, v.spo2, v.temp, v.avdi]);
@@ -348,19 +373,71 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     doc.setFillColor(230, 230, 230);
     doc.rect(14, yPos, pageWidth - 28, 8, 'F');
     doc.setFontSize(11);
-    doc.text('EVALUACIÓN Y PLAN (A/P)', 16, yPos + 6);
+    doc.text('PASO 4: EVALUACIÓN Y TRATAMIENTO. NOTAS ADICIONALES.', 16, yPos + 6);
     yPos += 10;
 
     autoTable(doc, {
         startY: yPos,
         body: [
-            ['Evaluación', data.assessment],
-            ['Plan / Tratamiento', data.plan]
+            ['Evaluación Global', data.assessment]
         ],
         theme: 'grid',
         columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold', fillColor: [250, 250, 250] } },
         styles: { fontSize: 9, cellPadding: 5 }
     });
+
+    // @ts-ignore
+    yPos = doc.lastAutoTable.finalY + 8;
+
+    // 6. Problemas Detallados
+    if (data.problemas && data.problemas.length > 0) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('PROBLEMAS IDENTIFICADOS Y TRATAMIENTO', 14, yPos + 4);
+        yPos += 8;
+
+        const problemasBody: any[] = [];
+        data.problemas.forEach((p, idx) => {
+            // Fila de Encabezado de Problema
+            problemasBody.push([
+                { content: `${idx + 1}. ${p.problema}`, colSpan: 2, styles: { fillColor: [80, 80, 80], textColor: [255, 255, 255], fontStyle: 'bold' } }
+            ]);
+            // Filas de Detalles
+            problemasBody.push(['P. Anticipado', p.anticipado]);
+            problemasBody.push(['T. Sugerido', p.tratamiento]);
+            if (p.observacion) {
+                problemasBody.push(['Observación', p.observacion]);
+            }
+        });
+
+        autoTable(doc, {
+            startY: yPos,
+            body: problemasBody,
+            theme: 'grid',
+            columnStyles: {
+                0: { cellWidth: 35, fontStyle: 'bold', fillColor: [245, 245, 245] }
+            },
+            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+            margin: { left: 14, right: 14, bottom: 20 },
+            pageBreak: 'auto', // Permite que la tabla fluya entre páginas
+            rowPageBreak: 'avoid' // Pero evita romper una fila individual (como el nombre del problema)
+        });
+
+        // @ts-ignore
+        yPos = doc.lastAutoTable.finalY + 8;
+    }
+
+    // 7. Notas Adicionales
+    if (data.notasAdicionales) {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('NOTAS ADICIONALES', 14, yPos + 5);
+        yPos += 8;
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'italic');
+        doc.text(data.notasAdicionales, 14, yPos, { maxWidth: pageWidth - 28 });
+    }
 
     // Footer
     addFooter(doc);

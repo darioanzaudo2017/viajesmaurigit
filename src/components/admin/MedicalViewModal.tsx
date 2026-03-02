@@ -3,6 +3,7 @@ import MedicalProfilePage from '../../pages/MedicalProfilePage';
 import { generateMedicalPDF } from '../../utils/pdfGenerator';
 import type { MedicalProfileData } from '../../utils/pdfGenerator';
 import { useMedicalProfile } from '../../hooks/useMedicalProfile';
+import { CONDITIONS_CATALOG } from '../../api/constants';
 
 interface MedicalViewModalProps {
     isOpen: boolean;
@@ -11,36 +12,8 @@ interface MedicalViewModalProps {
     userName: string;
 }
 
-// Local catalog to resolve condition IDs to names for the PDF
-const conditions_catalog = [
-    { id: 1, condicion: 'COVID-19' },
-    { id: 2, condicion: 'Síntomas de COVID-19' },
-    { id: 3, condicion: 'Dificultad visual' },
-    { id: 4, condicion: 'Problemas auditivos' },
-    { id: 5, condicion: 'Alergias' },
-    { id: 6, condicion: 'Afecciones del corazón' },
-    { id: 7, condicion: 'Epilepsia' },
-    { id: 8, condicion: 'Asma' },
-    { id: 9, condicion: 'Diabetes' },
-    { id: 10, condicion: 'Hipertensión' },
-    { id: 11, condicion: 'Problemas respiratorios' },
-    { id: 12, condicion: 'Convulsiones' },
-    { id: 13, condicion: 'Enfermedades de la sangre' },
-    { id: 14, condicion: 'Hepatitis u otras enfermedades del hígado' },
-    { id: 15, condicion: 'Limitaciones en actividad diaria' },
-    { id: 16, condicion: 'Celiaquía' },
-    { id: 17, condicion: 'Luxaciones' },
-    { id: 18, condicion: 'Problemas de la columna' },
-    { id: 19, condicion: 'Lesiones de cintura, rodillas o tobillos' },
-    { id: 20, condicion: 'Lesiones de hombros o brazos' },
-    { id: 21, condicion: 'Bajo cuidado médico' },
-    { id: 22, condicion: 'Toma medicación actualmente' },
-    { id: 23, condicion: 'Embarazo' },
-    { id: 24, condicion: 'Otra condición que pueda perjudicar la salud' },
-];
-
 const getConditionName = (id: number) => {
-    return conditions_catalog.find(c => c.id === id)?.condicion || `Condición ${id}`;
+    return CONDITIONS_CATALOG.find(c => c.id === id)?.condicion || `Condición ${id}`;
 };
 
 const MedicalViewModal: React.FC<MedicalViewModalProps> = ({ isOpen, onClose, userId, userName }) => {
@@ -66,7 +39,7 @@ const MedicalViewModal: React.FC<MedicalViewModalProps> = ({ isOpen, onClose, us
                     allergies: profile.alergias || 'Ninguna',
                     observations: profile.observaciones || 'Sin observaciones',
                     lastUpdate: profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : undefined,
-                    conditions: (profile.condiciones || []).map((id: number) => getConditionName(id)),
+                    conditions: profile.condiciones || [],
                     medications: (profile.medicamentos || []).map((m: any) => ({
                         name: m.name || 'Sin nombre',
                         dosage: m.dosage || 'Sin dosis'

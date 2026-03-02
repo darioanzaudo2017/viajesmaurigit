@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMedicalProfile } from '../hooks/useMedicalProfile';
+import { CONDITIONS_CATALOG } from '../api/constants';
 
 interface MedicalProfilePageProps {
     userId: string;
@@ -17,35 +18,8 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
         { id: 'contacts', label: 'Contactos de Emergencia', icon: 'group' },
     ];
 
-    const conditions_catalog = [
-        { id: 1, condicion: 'COVID-19' },
-        { id: 2, condicion: 'Síntomas de COVID-19' },
-        { id: 3, condicion: 'Dificultad visual' },
-        { id: 4, condicion: 'Problemas auditivos' },
-        { id: 5, condicion: 'Alergias' },
-        { id: 6, condicion: 'Afecciones del corazón' },
-        { id: 7, condicion: 'Epilepsia' },
-        { id: 8, condicion: 'Asma' },
-        { id: 9, condicion: 'Diabetes' },
-        { id: 10, condicion: 'Hipertensión' },
-        { id: 11, condicion: 'Problemas respiratorios' },
-        { id: 12, condicion: 'Convulsiones' },
-        { id: 13, condicion: 'Enfermedades de la sangre' },
-        { id: 14, condicion: 'Hepatitis u otras enfermedades del hígado' },
-        { id: 15, condicion: 'Limitaciones en actividad diaria' },
-        { id: 16, condicion: 'Celiaquía' },
-        { id: 17, condicion: 'Luxaciones' },
-        { id: 18, condicion: 'Problemas de la columna' },
-        { id: 19, condicion: 'Lesiones de cintura, rodillas o tobillos' },
-        { id: 20, condicion: 'Lesiones de hombros o brazos' },
-        { id: 21, condicion: 'Bajo cuidado médico' },
-        { id: 22, condicion: 'Toma medicación actualmente' },
-        { id: 23, condicion: 'Embarazo' },
-        { id: 24, condicion: 'Otra condición que pueda perjudicar la salud' },
-    ];
-
     const getConditionName = (id: number) => {
-        return conditions_catalog.find(c => c.id === id)?.condicion || `Condición ${id}`;
+        return CONDITIONS_CATALOG.find(c => c.id === id)?.condicion || `Condición ${id}`;
     };
 
     if (loading) {
@@ -180,7 +154,7 @@ const MedicalProfilePage: React.FC<MedicalProfilePageProps> = ({ userId, onEdit,
                             <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight text-center sm:text-left">{profile.user?.full_name || 'Senderista'}</h2>
                             <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border border-primary/30">Verificado</span>
                         </div>
-                        <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
+                        <div className="flex wrap items-center justify-center md:justify-start gap-4">
                             <div className="flex items-center gap-2 text-red-500">
                                 <span className="material-symbols-outlined text-[18px]">bloodtype</span>
                                 <p className="text-sm font-black uppercase tracking-tight">{profile.grupo_sanguineo || 'N/A'}</p>

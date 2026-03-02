@@ -40,18 +40,49 @@ export const useOfflineSync = () => {
 
         for (const report of pendingReports) {
             try {
-                const { error } = await supabase
-                    .from('reportes_soap')
-                    .upsert({
-                        ...report.data,
-                        updated_at: new Date(report.updated_at).toISOString()
-                    });
+                // Limpiar campos que no pertenecen a la tabla física
+                const { problemas_seleccionados, ...cleanData } = report.data;
 
-                if (!error) {
-                    await db.soapReports.update(report.id, { status: 'synced' });
+                // Mapeo defensivo para columna truncada en DB (observacione)
+                const finalPayload = {
+                    ...cleanData,
+                    observacione: (cleanData as any).observaciones || (cleanData as any).observacione || '',
+                    updated_at: new Date(report.updated_at).toISOString()
+                };
+                // @ts-ignore
+                if ('observaciones' in finalPayload) delete (finalPayload as any).observaciones;
+
+                const { data: savedReport, error } = await supabase
+                    .from('reportes_soap')
+                    .upsert(finalPayload)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Sync problemas relacionales si existen
+                if (problemas_seleccionados && problemas_seleccionados.length > 0) {
+                    // Borrar previos para evitar duplicados en reintentos
+                    await supabase
+                        .from('reportes_soap_problemas')
+                        .delete()
+                        .eq('reporte_soap_id', savedReport.id);
+
+                    const problemasToInsert = problemas_seleccionados.map((p: any) => ({
+                        reporte_soap_id: savedReport.id,
+                        problema_id: p.problema_id,
+                        observacion_especifica: p.observacion_especifica
+                    }));
+
+                    await supabase.from('reportes_soap_problemas').insert(problemasToInsert);
                 }
+
+                await db.soapReports.update(report.id, { status: 'synced' });
+                console.log(`Reporte ${report.id} sincronizado con éxito.`);
             } catch (err) {
                 console.error("Error syncing report:", report.id, err);
+                // Opcional: Marcar como error para evitar el loop inmediato si persiste
+                await db.soapReports.update(report.id, { status: 'error' });
             }
         }
         setSyncing(false);

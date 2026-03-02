@@ -1,0 +1,221 @@
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../api/supabase';
+
+interface Simulacro {
+    id: string;
+    paciente_nombre: string;
+    created_at: string;
+    user_id: string;
+    data: any;
+    profiles?: {
+        full_name: string;
+    };
+}
+
+interface AdminSimulacrosPageProps {
+    onBack: () => void;
+}
+
+const AdminSimulacrosPage: React.FC<AdminSimulacrosPageProps> = ({ onBack }) => {
+    const [simulacros, setSimulacros] = useState<Simulacro[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedSimulacro, setSelectedSimulacro] = useState<Simulacro | null>(null);
+
+    useEffect(() => {
+        fetchSimulacros();
+    }, []);
+
+    const fetchSimulacros = async () => {
+        try {
+            setLoading(true);
+            // We join with profiles to get the student's name
+            const { data, error } = await supabase
+                .from('simulacros_soap')
+                .select('*, profiles:user_id(full_name)')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setSimulacros(data || []);
+        } catch (error) {
+            console.error("Error fetching simulacros:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+            <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-8">
+                <div className="space-y-1">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 text-primary font-bold hover:gap-3 transition-all duration-300 text-xs uppercase tracking-widest mb-2"
+                    >
+                        <span className="material-symbols-outlined text-sm">arrow_back</span>
+                        Volver al Dashboard
+                    </button>
+                    <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Simulacros Académicos</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">Supervisión de prácticas clínicas SOAP realizadas por estudiantes</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="bg-primary/10 border border-primary/20 px-4 py-2 rounded-xl">
+                        <p className="text-[10px] text-primary font-black uppercase tracking-widest leading-none mb-1">Total Registros</p>
+                        <p className="text-xl font-black text-white leading-none">{simulacros.length}</p>
+                    </div>
+                </div>
+            </header>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* List Column */}
+                <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Historial de Prácticas</h3>
+                    {loading ? (
+                        <div className="p-12 text-center text-slate-500 italic">Cargando simulacros...</div>
+                    ) : simulacros.length === 0 ? (
+                        <div className="p-12 text-center text-slate-500 italic bg-white/5 rounded-3xl border border-white/10">No se han realizado simulacros aún.</div>
+                    ) : (
+                        <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 no-scrollbar">
+                            {simulacros.map((sim) => (
+                                <div
+                                    key={sim.id}
+                                    onClick={() => setSelectedSimulacro(sim)}
+                                    className={`p-5 rounded-2xl border transition-all cursor-pointer group ${selectedSimulacro?.id === sim.id
+                                            ? 'bg-primary/10 border-primary/30 shadow-lg shadow-primary/5'
+                                            : 'bg-white/5 border-white/5 hover:border-white/20'
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-10 bg-white/10 rounded-xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                                <span className="material-symbols-outlined text-xl">clinical_notes</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-black text-white uppercase tracking-tight">{sim.profiles?.full_name || 'Estudiante'}</p>
+                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{new Date(sim.created_at).toLocaleString()}</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-[9px] font-black px-2 py-1 bg-white/10 text-slate-400 rounded uppercase tracking-widest">SOAP</span>
+                                    </div>
+                                    <div className="flex items-center justify-between border-t border-white/5 pt-3">
+                                        <p className="text-[10px] text-slate-400 font-medium">Paciente Simulation: <span className="text-white font-bold">{sim.paciente_nombre}</span></p>
+                                        <span className="material-symbols-outlined text-primary text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Detail Column */}
+                <div className="bg-slate-900/50 border border-white/10 rounded-[32px] overflow-hidden flex flex-col h-[75vh]">
+                    {selectedSimulacro ? (
+                        <>
+                            <div className="p-8 border-b border-white/5 bg-white/[0.02]">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h4 className="text-xl font-black text-white uppercase tracking-tight">Reporte Clínico</h4>
+                                    <span className="px-3 py-1 bg-primary text-background-dark text-[10px] font-black uppercase rounded-lg shadow-lg shadow-primary/20">
+                                        Práctica Académica
+                                    </span>
+                                </div>
+                                <p className="text-sm text-slate-400">Analizando el desempeño diagnóstico de <span className="text-primary font-bold">{selectedSimulacro.profiles?.full_name}</span></p>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar">
+                                {/* Paciente & Escena */}
+                                <div className="grid grid-cols-2 gap-8">
+                                    <div>
+                                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2">Paciente</p>
+                                        <p className="text-lg font-bold text-white uppercase tracking-tight">{selectedSimulacro.paciente_nombre}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2">Escena / Incidente</p>
+                                        <p className="text-sm font-medium text-slate-300 italic">{selectedSimulacro.data.escena || 'No especificada'}</p>
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-white/5"></div>
+
+                                {/* Secciones SOAP */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <DetailSection
+                                        label="Subjetivo (SAMPLE)"
+                                        content={[
+                                            { k: 'Síntomas', v: selectedSimulacro.data.e_sintoma },
+                                            { k: 'Alergias', v: selectedSimulacro.data.e_alergias },
+                                            { k: 'Medicación', v: selectedSimulacro.data.e_medicacion }
+                                        ]}
+                                    />
+                                    <DetailSection
+                                        label="Historia Pasada"
+                                        content={[
+                                            { k: 'Antecedentes', v: selectedSimulacro.data.e_historia_pasada },
+                                            { k: 'Última Ingesta', v: selectedSimulacro.data.e_ultima_ingesta },
+                                            { k: 'Eventos Previos', v: selectedSimulacro.data.e_eventos }
+                                        ]}
+                                    />
+                                </div>
+
+                                <div className="h-px bg-white/5"></div>
+
+                                {/* Objetivo (Signos Vitales) */}
+                                <div>
+                                    <p className="text-[11px] font-black text-primary uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-sm">monitor_heart</span>
+                                        Examen Objetivo
+                                    </p>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                        <VitalDisplay label="Pulso" value={selectedSimulacro.data.sv_pulso} unit="LPM" />
+                                        <VitalDisplay label="Resp" value={selectedSimulacro.data.sv_respiracion} unit="RPM" />
+                                        <VitalDisplay label="T.A." value={selectedSimulacro.data.sv_ta} />
+                                        <VitalDisplay label="Temp" value={selectedSimulacro.data.sv_temperatura} unit="°C" />
+                                    </div>
+                                </div>
+
+                                <div className="h-px bg-white/5"></div>
+
+                                {/* Plan & Observaciones */}
+                                <div>
+                                    <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2">Evaluación y Plan</p>
+                                    <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-sm text-slate-300 leading-relaxed italic">
+                                        {selectedSimulacro.data.observaciones || 'Sin observaciones detalladas.'}
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="flex-1 flex flex-col items-center justify-center p-12 text-center space-y-4 opacity-30">
+                            <span className="material-symbols-outlined text-6xl">visibility</span>
+                            <p className="text-xs font-black uppercase tracking-[0.3em] max-w-[200px]">Selecciona un simulacro para ver el reporte detallado</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DetailSection = ({ label, content }: { label: string, content: { k: string, v: string }[] }) => (
+    <div className="space-y-4">
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
+        <div className="space-y-3">
+            {content.map((c, i) => (
+                <div key={i}>
+                    <p className="text-[9px] font-bold text-primary italic uppercase mb-1">{c.k}</p>
+                    <p className="text-xs text-white/80 leading-relaxed">{c.v || 'N/A'}</p>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const VitalDisplay = ({ label, value, unit }: { label: string, value: string, unit?: string }) => (
+    <div className="bg-white/5 border border-white/5 rounded-2xl p-4 text-center">
+        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+        <p className="text-lg font-black text-white">
+            {value || '--'}
+            {value && unit && <span className="text-[8px] text-slate-400 ml-1">{unit}</span>}
+        </p>
+    </div>
+);
+
+export default AdminSimulacrosPage;

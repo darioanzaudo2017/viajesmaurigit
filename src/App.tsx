@@ -12,11 +12,13 @@ import AdminTrips from './pages/admin/AdminTrips';
 import AdminEnrollments from './pages/admin/AdminEnrollments';
 import AdminSoapPage from './pages/admin/AdminSoapPage';
 import AdminNewsPage from './pages/admin/AdminNewsPage';
+import AdminSimulacrosPage from './pages/admin/AdminSimulacrosPage';
 import UniversityPage from './pages/UniversityPage';
 import UniversityNewsPage from './pages/UniversityNewsPage';
 import { supabase } from './api/supabase';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import Navbar from './components/layout/Navbar';
+import BottomNavbar from './components/layout/BottomNavbar';
 import './index.css';
 
 function App() {
@@ -28,6 +30,39 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isOnline, syncAllAdminData } = useOfflineSync();
   const hasSynced = useRef(false);
+
+  // Sync state with history for back button handling
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state?.tab) {
+        setActiveTab(event.state.tab);
+        // Clear sub-page states when going back to a main tab
+        if (event.state.tab === 'home' || event.state.tab === 'trips' || event.state.tab === 'medical' || event.state.tab === 'admin_dashboard') {
+          setSelectedTripId(null);
+          setSelectedAdminTripId(null);
+          setSelectedSoapEnrollmentId(null);
+        }
+      } else {
+        // Fallback to home if no state
+        setActiveTab('home');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Initial state
+    window.history.replaceState({ tab: 'home' }, '');
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleTabChange = (newTab: string) => {
+    if (newTab !== activeTab) {
+      window.history.pushState({ tab: newTab }, '');
+      setActiveTab(newTab);
+    }
+  };
+
 
   useEffect(() => {
     const fetchProfile = async (sessionUser: any) => {
@@ -119,21 +154,23 @@ function App() {
     switch (activeTab) {
       case 'home':
         return <HomePage
-          onDiscoverClick={() => setActiveTab('trips')}
+          onDiscoverClick={() => handleTabChange('trips')}
           onTrekClick={(id) => setSelectedTripId(id)}
-          onCreateTrekClick={() => setActiveTab(user?.profile?.role === 'admin' ? 'admin_dashboard' : 'register')}
+          onCreateTrekClick={() => handleTabChange(user?.profile?.role === 'admin' ? 'admin_dashboard' : 'register')}
           user={user}
         />;
       case 'admin_dashboard':
-        return user?.profile?.role === 'admin' ? <AdminDashboard onNavigate={setActiveTab} /> : <HomePage />;
+        return user?.profile?.role === 'admin' ? <AdminDashboard onNavigate={handleTabChange} /> : <HomePage />;
       case 'admin_news':
-        return user?.profile?.role === 'admin' ? <AdminNewsPage onBack={() => setActiveTab('admin_dashboard')} /> : <HomePage />;
+        return user?.profile?.role === 'admin' ? <AdminNewsPage onBack={() => handleTabChange('admin_dashboard')} /> : <HomePage />;
+      case 'admin_simulacros':
+        return user?.profile?.role === 'admin' ? <AdminSimulacrosPage onBack={() => handleTabChange('admin_dashboard')} /> : <HomePage />;
       case 'admin_trips':
         return user?.profile?.role === 'admin' ? (
           <AdminTrips
             onViewInscriptos={(id: string) => {
               setSelectedAdminTripId(id);
-              setActiveTab('admin_enrollments');
+              handleTabChange('admin_enrollments');
             }}
           />
         ) : <HomePage />;
@@ -145,7 +182,7 @@ function App() {
             onTripChange={(id) => setSelectedAdminTripId(id)}
             onNewSoapReport={(id) => {
               setSelectedSoapEnrollmentId(id);
-              setActiveTab('admin_soap');
+              handleTabChange('admin_soap');
             }}
           />
         ) : <HomePage />;
@@ -155,15 +192,15 @@ function App() {
             enrollmentId={selectedSoapEnrollmentId}
             onBack={() => {
               setSelectedSoapEnrollmentId(null);
-              setActiveTab('admin_enrollments');
+              handleTabChange('admin_enrollments');
             }}
           />
         ) : <HomePage />;
       case 'overview':
-        return user?.profile?.role === 'admin' ? <AdminDashboard onNavigate={setActiveTab} /> : <DashboardPage />;
+        return user?.profile?.role === 'admin' ? <AdminDashboard onNavigate={handleTabChange} /> : <DashboardPage />;
       case 'trips':
         return <TripsPage
-          onRegister={() => setActiveTab('register')}
+          onRegister={() => handleTabChange('register')}
           onViewDetails={(id) => setSelectedTripId(id)}
         />;
       case 'register':
@@ -173,11 +210,11 @@ function App() {
             tripId={selectedTripId || undefined}
             onComplete={() => {
               setSelectedTripId(null);
-              setActiveTab('home');
+              handleTabChange('home');
             }}
           />
         ) : (
-          <AuthPage onSuccess={() => setActiveTab('register')} />
+          <AuthPage onSuccess={() => handleTabChange('register')} />
         );
       case 'medical':
         return user ? (
@@ -185,16 +222,16 @@ function App() {
             userId={user.id}
             onEdit={() => {
               setSelectedTripId(null);
-              setActiveTab('register');
+              handleTabChange('register');
             }}
           />
         ) : (
-          <AuthPage onSuccess={() => setActiveTab('medical')} />
+          <AuthPage onSuccess={() => handleTabChange('medical')} />
         );
       case 'university':
-        return <UniversityPage onNavigateNews={() => setActiveTab('university_news')} />;
+        return <UniversityPage onNavigateNews={() => handleTabChange('university_news')} />;
       case 'university_news':
-        return <UniversityNewsPage onBack={() => setActiveTab('university')} />;
+        return <UniversityNewsPage onBack={() => handleTabChange('university')} />;
       case 'safety':
         return <div className="p-8 text-white uppercase font-black tracking-widest italic">Protocolos de Seguridad (En Construcción)</div>;
       default:
@@ -206,7 +243,7 @@ function App() {
     <div className="flex flex-col h-screen bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         user={user}
         onMenuClick={() => setSidebarOpen(true)}
         onBack={activeTab !== 'home' ? () => {
@@ -231,7 +268,7 @@ function App() {
             return;
           }
 
-          if (activeTab === 'register' || activeTab === 'medical' || activeTab === 'university' || activeTab === 'university_news' || activeTab === 'admin_news') {
+          if (activeTab === 'register' || activeTab === 'medical' || activeTab === 'university' || activeTab === 'university_news' || activeTab === 'admin_news' || activeTab === 'admin_simulacros') {
             setActiveTab('home');
             return;
           }
@@ -244,7 +281,7 @@ function App() {
         {!selectedTripId && (
           <Sidebar
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange}
             user={user}
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
@@ -258,10 +295,16 @@ function App() {
           />
         )}
 
-        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+        <main className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark pb-20 md:pb-0">
           {renderContent()}
         </main>
       </div>
+
+      <BottomNavbar
+        activeTab={activeTab}
+        setActiveTab={handleTabChange}
+        user={user}
+      />
     </div>
   );
 }

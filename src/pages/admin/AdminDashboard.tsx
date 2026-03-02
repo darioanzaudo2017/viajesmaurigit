@@ -198,6 +198,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     imageUrl="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&q=80&w=800"
                     onClick={() => onNavigate('admin_news')}
                 />
+                <ManagementCard
+                    title="Simulacros Académicos"
+                    description="Supervisar las prácticas SOAP realizadas por los estudiantes universitarios."
+                    imageUrl="https://images.unsplash.com/photo-1576091160550-2173dad99901?auto=format&fit=crop&q=80&w=800"
+                    onClick={() => onNavigate('admin_simulacros')}
+                />
             </div>
 
             {/* Quick Actions & Recent Activity */}
