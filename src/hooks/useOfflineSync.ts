@@ -227,6 +227,36 @@ export const useOfflineSync = () => {
         }
     }, []);
 
+    // ─── NEW: Download ALL SOAP reports ──────────────────────────
+    const downloadAllSoapReports = useCallback(async () => {
+        try {
+            const { data: reports, error } = await supabase
+                .from('reportes_soap')
+                .select('*, problemas:reportes_soap_problemas(*, maestro:maestro_problemas_soap(*))');
+
+            if (error) throw error;
+            if (!reports || reports.length === 0) return { success: true, count: 0 };
+
+            await db.soapReports.clear();
+            await db.soapReports.bulkPut(reports.map(r => ({
+                id: r.id,
+                inscripcion_id: r.inscripcion_id,
+                status: 'synced',
+                data: {
+                    ...r,
+                    problemas_seleccionados: r.problemas || []
+                },
+                updated_at: new Date(r.updated_at || Date.now()).getTime()
+            })));
+
+            console.log(`[OfflineSync] ${reports.length} reportes SOAP cacheados.`);
+            return { success: true, count: reports.length };
+        } catch (err) {
+            console.error('[OfflineSync] Error descargando reportes SOAP:', err);
+            return { success: false, error: err };
+        }
+    }, []);
+
     // ─── NEW: Sync everything for admin offline use ───────────────
     const syncAllAdminData = useCallback(async () => {
         if (syncing) return;
@@ -236,13 +266,14 @@ export const useOfflineSync = () => {
         try {
             await downloadAllTrips();
             await downloadAllEnrollments();
+            await downloadAllSoapReports();
             console.log('[OfflineSync] Sincronización completa exitosa.');
         } catch (err) {
             console.error('[OfflineSync] Error en sincronización completa:', err);
         } finally {
             setSyncing(false);
         }
-    }, [syncing, downloadAllTrips, downloadAllEnrollments]);
+    }, [syncing, downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports]);
 
     return {
         isOnline,

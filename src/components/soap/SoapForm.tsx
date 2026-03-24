@@ -20,8 +20,11 @@ export interface MaestroProblema {
 
 export interface SoapProblemaSeleccionado {
     id?: string;
-    problema_id: string;
-    observacion_especifica: string;
+    problema_id?: string;
+    problema: string;
+    problema_anticipado: string;
+    tratamiento: string;
+    observacion_especifica?: string;
     maestro?: MaestroProblema;
 }
 
@@ -41,6 +44,7 @@ export interface SoapReport {
     sv_piel: string;
     observacione: string; // Tratamiento general
     evaluacion_guia: string;
+    examen_fisico: string;
     responsable_id: string;
     severity: 'low' | 'mod' | 'high' | 'critical';
     estado?: string;
@@ -62,6 +66,8 @@ interface SoapFormProps {
     isSimulation?: boolean;
     onDelete?: () => Promise<void>;
     maestros?: MaestroProblema[];
+    readOnly?: boolean;
+    setPatientName?: (name: string) => void;
 }
 
 const SoapForm: React.FC<SoapFormProps> = ({
@@ -77,9 +83,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
     title = "Ficha SOAP",
     isSimulation = false,
     onDelete,
-    maestros = []
+    maestros = [],
+    readOnly = false,
+    setPatientName: updatePatientName
 }) => {
     const [currentStep, setCurrentStep] = useState(0);
+    const [activeProblemIndex, setActiveProblemIndex] = useState<number | null>(null);
 
     const steps = [
         { label: 'Paso 1: Escena', icon: 'person_pin_circle' },
@@ -98,7 +107,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                 presion: '',
                 spo2: '',
                 temperatura: '',
-                avdi: 'A (Alerta)',
+                avdi: '',
                 piel: ''
             }]
         }));
@@ -123,30 +132,49 @@ const SoapForm: React.FC<SoapFormProps> = ({
         // Evitar duplicados
         if (report.problemas_seleccionados?.some(p => p.problema_id === maestroId)) return;
 
-        const newProblema: SoapProblemaSeleccionado = {
+        const newProblemas = [...(report.problemas_seleccionados || [])];
+        const newIndex = newProblemas.length;
+        newProblemas.push({
             problema_id: maestroId,
+            problema: maestro.problema,
+            problema_anticipado: maestro.problema_anticipado,
+            tratamiento: maestro.tratamiento_sugerido,
             observacion_especifica: '',
-            maestro: maestro
-        };
+            maestro
+        });
+        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
+        setActiveProblemIndex(newIndex);
+    };
 
-        setReport(prev => ({
-            ...prev,
-            problemas_seleccionados: [...(prev.problemas_seleccionados || []), newProblema]
-        }));
+    const handleAddCustomProblema = () => {
+        const newProblemas = [...(report.problemas_seleccionados || [])];
+        const newIndex = newProblemas.length;
+        newProblemas.push({
+            problema: '',
+            problema_anticipado: '',
+            tratamiento: '',
+            observacion_especifica: ''
+        });
+        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
+        setActiveProblemIndex(newIndex);
+    };
+
+    const handleUpdateProblema = (index: number, field: keyof SoapProblemaSeleccionado, value: string) => {
+        const newProblemas = [...(report.problemas_seleccionados || [])];
+        newProblemas[index] = { ...newProblemas[index], [field]: value };
+        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
     };
 
     const handleRemoveProblema = (index: number) => {
-        setReport(prev => ({
-            ...prev,
-            problemas_seleccionados: prev.problemas_seleccionados?.filter((_, idx) => idx !== index)
-        }));
+        const newProblemas = (report.problemas_seleccionados || []).filter((_, idx) => idx !== index);
+        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
+        if (activeProblemIndex === index) {
+            setActiveProblemIndex(newProblemas.length > 0 ? 0 : null);
+        } else if (activeProblemIndex !== null && activeProblemIndex > index) {
+            setActiveProblemIndex(activeProblemIndex - 1);
+        }
     };
 
-    const handleProblemaObsChange = (index: number, obs: string) => {
-        const newProblemas = [...(report.problemas_seleccionados || [])];
-        newProblemas[index] = { ...newProblemas[index], observacion_especifica: obs };
-        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
-    };
 
     return (
         <div className="w-full max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -165,13 +193,26 @@ const SoapForm: React.FC<SoapFormProps> = ({
                     <h1 className="text-white text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight sm:leading-none mb-2">
                         {title} <span className="text-primary block sm:inline italic">{isSimulation ? 'Simulacro' : 'Incidente'}</span>
                     </h1>
-                    <p className="text-primary/70 text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm">person</span> {patientName}
-                    </p>
+                    {isSimulation && !readOnly ? (
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="material-symbols-outlined text-sm text-primary">edit</span>
+                            <input 
+                                type="text" 
+                                value={patientName} 
+                                onChange={(e) => updatePatientName?.(e.target.value)}
+                                className="bg-transparent border-b border-primary/30 text-primary text-sm font-black uppercase tracking-widest outline-none focus:border-primary transition-all w-full max-w-[300px]"
+                                placeholder="Nombre del Paciente..."
+                            />
+                        </div>
+                    ) : (
+                        <p className="text-primary/70 text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                            <span className="material-symbols-outlined text-sm">person</span> {patientName}
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    {onDownloadPDF && report.id && (
+                    {onDownloadPDF && (
                         <button
                             onClick={onDownloadPDF}
                             disabled={isGenerating}
@@ -181,7 +222,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                             {isGenerating ? 'G...' : 'PDF'}
                         </button>
                     )}
-                    {onDelete && report.id && (
+                    {!readOnly && onDelete && report.id && (
                         <button
                             onClick={onDelete}
                             disabled={saving}
@@ -222,34 +263,22 @@ const SoapForm: React.FC<SoapFormProps> = ({
             <div className="mt-16">
                 {currentStep === 0 && (
                     <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
-                        <div className="bg-neutral-900 border border-white/5 rounded-[40px] p-8 space-y-10 shadow-2xl">
+                        <div className="bg-neutral-900 border border-white/5 rounded-[40px] p-8 md:p-12 space-y-10 shadow-2xl">
                             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
-                                <span className="material-symbols-outlined text-base">emergency_home</span>
-                                Paso 1: Escena
+                                <span className="material-symbols-outlined text-base font-black">emergency_home</span>
+                                Paso 1: Escena y Mecanismo de Daño
                             </h3>
-                            <div className="space-y-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Referencia del Viaje / Ubicación</label>
-                                    <input type="text" value={report.referencia_viaje} onChange={(e) => setReport({ ...report, referencia_viaje: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-16 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Ej: Campamento Base Aconcagua" />
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Hora del Incidente</label>
-                                        <input type="time" value={report.hora_incidente} onChange={(e) => setReport({ ...report, hora_incidente: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-16 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Severidad</label>
-                                        <select value={report.severity} onChange={(e) => setReport({ ...report, severity: e.target.value as any })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-16 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all appearance-none cursor-pointer">
-                                            <option value="low">Leve (Verde)</option>
-                                            <option value="mod">Moderado (Amarillo)</option>
-                                            <option value="high">Grave (Rojo)</option>
-                                            <option value="critical">Crítico (Negro)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observaciones de la Escena</label>
-                                    <textarea value={report.escena} onChange={(e) => setReport({ ...report, escena: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-[24px] p-6 text-sm text-white min-h-[140px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Condiciones ambientales, mecanismos de lesión, seguridad de la escena..." />
+                            
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Mecanismo de Daño / Descripción de la Escena</label>
+                                    <textarea 
+                                        disabled={readOnly} 
+                                        value={report.escena} 
+                                        onChange={(e) => setReport({ ...report, escena: e.target.value })} 
+                                        className="w-full bg-white/5 border border-white/10 rounded-[32px] p-8 text-sm text-white min-h-[300px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-600 leading-relaxed" 
+                                        placeholder="Descripción del mecanismo de daño, problemas iniciales y su tratamiento e información general: nombre, sexo, edad, fecha, hora, lugar, etc." 
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -269,29 +298,29 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                 <div className="space-y-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">S (Síntomas / Queja Principal)</label>
-                                        <textarea value={report.e_sintoma} onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="¿Qué siente el paciente?" />
+                                        <textarea disabled={readOnly} value={report.e_sintoma} onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="¿Qué siente el paciente?" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">A (Alergias)</label>
-                                        <input type="text" value={report.e_alergias} onChange={(e) => setReport({ ...report, e_alergias: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Medicamentos, alimentos..." />
+                                        <input disabled={readOnly} type="text" value={report.e_alergias} onChange={(e) => setReport({ ...report, e_alergias: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Si tiene alergias o no a que?" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">M (Medicamentos)</label>
-                                        <input type="text" value={report.e_medicacion} onChange={(e) => setReport({ ...report, e_medicacion: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="¿Qué está tomando?" />
+                                        <input disabled={readOnly} type="text" value={report.e_medicacion} onChange={(e) => setReport({ ...report, e_medicacion: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="¿Qué está tomando?" />
                                     </div>
                                 </div>
                                 <div className="space-y-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">P (Historia Pasada)</label>
-                                        <textarea value={report.e_historia_pa} onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Diabetes, epilepsia, cirugías..." />
+                                        <textarea disabled={readOnly} value={report.e_historia_pa} onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Historial medico relevante" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">U (Última Ingesta)</label>
-                                        <input type="text" value={report.e_ultima_inge} onChange={(e) => setReport({ ...report, e_ultima_inge: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Comida o agua (hora)" />
+                                        <input disabled={readOnly} type="text" value={report.e_ultima_inge} onChange={(e) => setReport({ ...report, e_ultima_inge: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Ultima comida / Hidratacion" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E (Evento)</label>
-                                        <input type="text" value={report.e_eventos} onChange={(e) => setReport({ ...report, e_eventos: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Recuerda el evento" />
+                                        <input disabled={readOnly} type="text" value={report.e_eventos} onChange={(e) => setReport({ ...report, e_eventos: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Si recuerda o no lo que paso" />
                                     </div>
                                 </div>
                             </div>
@@ -301,21 +330,52 @@ const SoapForm: React.FC<SoapFormProps> = ({
 
                 {currentStep === 2 && (
                     <div className="space-y-8 animate-in slide-in-from-right-4 duration-500">
+                        {/* Examen Section */}
+                        <div className="bg-neutral-900 border border-white/5 rounded-[40px] p-8 md:p-12 space-y-8 shadow-2xl">
+                            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
+                                <span className="material-symbols-outlined text-base font-black italic">clinical_notes</span>
+                                Examen
+                            </h3>
+                            
+                            <div className="bg-primary/5 border border-primary/20 rounded-[24px] p-6 mb-4">
+                                <div className="flex items-start gap-4">
+                                    <span className="material-symbols-outlined text-primary text-xl">info</span>
+                                    <p className="text-[11px] font-bold text-slate-300 leading-relaxed uppercase tracking-wider">
+                                        Detallar los que el socorrista encuentra: dolores, molestias, inflamación, deformidad, moretón, crepitación, etc. 
+                                        Movilidad, sensibilidad, circulación (MSC distal). Información pertinente sobre molestias en la columna.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <textarea 
+                                    disabled={readOnly} 
+                                    value={report.examen_fisico} 
+                                    onChange={(e) => setReport({ ...report, examen_fisico: e.target.value })} 
+                                    className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 text-sm text-white min-h-[220px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-700 leading-relaxed" 
+                                    placeholder="Escriba aquí los hallazgos del examen..." 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Signos Vitales Section */}
                         <div className="bg-neutral-900 border border-white/5 rounded-[40px] p-8 space-y-10 shadow-2xl">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
                                     <span className="material-symbols-outlined text-base">monitor_heart</span>
-                                    Paso 3: Objetivo: Examen Físico y Signos Vitales
+                                    Signos Vitales
                                 </h3>
-                                <button
-                                    onClick={handleAddVitalSign}
-                                    className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-primary text-slate-900 font-black uppercase tracking-widest text-[10px] hover:shadow-xl hover:shadow-primary/20 transition-all flex items-center justify-center gap-3 active:scale-95"
-                                >
-                                    <span className="material-symbols-outlined font-black">add_circle</span>
-                                    Agregar Toma
-                                </button>
+                                {!readOnly && (
+                                    <button
+                                        onClick={handleAddVitalSign}
+                                        className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-primary text-slate-900 font-black uppercase tracking-widest text-[10px] hover:shadow-xl hover:shadow-primary/20 transition-all flex items-center justify-center gap-3 active:scale-95"
+                                    >
+                                        <span className="material-symbols-outlined font-black">add_circle</span>
+                                        Agregar Toma
+                                    </button>
+                                )}
                             </div>
-
+                            
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-4 sm:px-0">
                                 {report.signos_vitales.length} {report.signos_vitales.length === 1 ? 'registro' : 'registros'} de signos vitales
                             </p>
@@ -330,60 +390,60 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             <div>
                                                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Toma #{idx + 1}</p>
                                                 <input
-                                                    type="time"
+                                                    disabled={readOnly}
+                                                    type="text"
+                                                    inputMode="numeric"
                                                     value={sv.hora}
                                                     onChange={(e) => handleVitalChange(idx, 'hora', e.target.value)}
-                                                    className="bg-transparent text-white text-xl font-black outline-none cursor-pointer hover:text-primary transition-colors"
+                                                    className="bg-transparent text-white text-xl font-black outline-none cursor-pointer hover:text-primary transition-colors disabled:cursor-default w-24"
+                                                    placeholder="00:00"
                                                 />
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 w-full md:w-auto">
-                                            <select
-                                                value={sv.avdi}
-                                                onChange={(e) => handleVitalChange(idx, 'avdi', e.target.value)}
-                                                className={`flex-1 md:flex-none text-[9px] font-black uppercase tracking-wider px-3 md:px-6 py-3 rounded-xl cursor-pointer outline-none transition-all z-10 ${sv.avdi.startsWith('A') ? 'bg-green-500/20 text-green-400 border border-green-500/20' :
-                                                    sv.avdi.startsWith('V') ? 'bg-amber-500/20 text-amber-400 border border-amber-500/20' :
-                                                        sv.avdi.startsWith('D') ? 'bg-red-500/20 text-red-400 border border-red-500/20' :
-                                                            'bg-purple-500/20 text-purple-400 border border-purple-500/20'
-                                                    }`}
-                                            >
-                                                <option>A (Alerta)</option>
-                                                <option>V (Verbal)</option>
-                                                <option>D (Dolor)</option>
-                                                <option>I (Inconsciente)</option>
-                                            </select>
-                                            <button
-                                                onClick={() => handleDeleteVitalSign(idx)}
-                                                className="size-12 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all border border-red-500/10"
-                                                title="Eliminar toma"
-                                            >
-                                                <span className="material-symbols-outlined text-lg">delete</span>
-                                            </button>
+                                        <div className="flex items-center gap-3 w-full md:w-auto">
+                                            {!readOnly && (
+                                                <button
+                                                    onClick={() => handleDeleteVitalSign(idx)}
+                                                    className="size-12 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all border border-red-500/10"
+                                                    title="Eliminar toma"
+                                                >
+                                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 p-4 md:p-8">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 p-4 md:p-8">
                                         {[
                                             { key: 'pulso', icon: 'favorite', label: 'Pulso', unit: 'bpm', color: 'text-red-400' },
                                             { key: 'respiracion', icon: 'air', label: 'Resp.', unit: 'rpm', color: 'text-blue-400' },
-                                            { key: 'presion', icon: 'e_emergency', label: 'T.A.', unit: 'mmHg', color: 'text-amber-400' },
+                                            { key: 'presion', icon: 'blood_pressure', label: 'T.A.', unit: 'mmHg', color: 'text-amber-400' },
                                             { key: 'spo2', icon: 'water_drop', label: 'SpO2', unit: '%', color: 'text-sky-400' },
                                             { key: 'temperatura', icon: 'thermostat', label: 'Temp.', unit: '°C', color: 'text-orange-400' },
-                                            { key: 'piel', icon: 'dermatology', label: 'Piel', unit: '', color: 'text-emerald-400' }
+                                            { key: 'piel', icon: 'dermatology', label: 'Piel', unit: '', color: 'text-pink-400' },
+                                            { key: 'avdi', icon: 'psychology', label: 'AVDI', unit: '', color: 'text-purple-400' }
                                         ].map(({ key, icon, label, unit, color }) => (
-                                            <div key={key} className="bg-white/5 rounded-2xl p-4 space-y-2 border border-white/5 group-hover:border-white/10 transition-all">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`material-symbols-outlined text-sm ${color}`}>{icon}</span>
-                                                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">{label}</span>
+                                            <div key={key} className="bg-white/5 rounded-2xl p-4 space-y-2 border border-white/5 group-hover:border-white/10 transition-all flex flex-col min-h-[100px] h-full">
+                                                <div className="flex items-center justify-between gap-1.5 mb-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className={`material-symbols-outlined text-[14px] ${color}`}>{icon}</span>
+                                                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none">{label}</span>
+                                                    </div>
+                                                    <span className="text-[7px] text-slate-600 font-bold uppercase">{unit}</span>
                                                 </div>
-                                                <div className="flex items-baseline gap-1">
-                                                    <input
-                                                        type="text"
+                                                <div className="flex-1 flex flex-col">
+                                                    <textarea
+                                                        disabled={readOnly}
+                                                        rows={1}
                                                         value={(sv as any)[key]}
                                                         onChange={(e) => handleVitalChange(idx, key as any, e.target.value)}
-                                                        className="bg-transparent text-white text-xl font-black outline-none w-full placeholder:text-slate-700"
+                                                        onInput={(e) => {
+                                                            const target = e.target as HTMLTextAreaElement;
+                                                            target.style.height = 'auto';
+                                                            target.style.height = `${target.scrollHeight}px`;
+                                                        }}
+                                                        className="bg-transparent text-white text-sm font-bold outline-none w-full placeholder:text-slate-700 resize-none overflow-hidden leading-tight py-1"
                                                         placeholder="—"
                                                     />
-                                                    <span className="text-[8px] text-slate-600 font-bold flex-shrink-0 uppercase">{unit}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -408,115 +468,175 @@ const SoapForm: React.FC<SoapFormProps> = ({
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary flex items-center gap-2">
                                     <span className="material-symbols-outlined text-base">assignment</span>
-                                    Paso 4: Evaluación y Tratamiento. Notas adicionales.
+                                    Paso 4: Evaluación y Tratamiento
                                 </h3>
                             </div>
 
                             <div className="space-y-8">
-                                {/* Evaluación Macroscópica */}
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Evaluación Global del Guía</label>
-                                    <textarea
-                                        value={report.evaluacion_guia}
-                                        onChange={(e) => setReport({ ...report, evaluacion_guia: e.target.value })}
-                                        className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-700"
-                                        placeholder="Describa su evaluación técnica global del estado del paciente..."
-                                    />
-                                </div>
-
-                                {/* Selección de Problemas Maestro */}
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                {/* Gestión de Problemas */}
+                                <div className="space-y-6">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                                         <div className="space-y-1">
-                                            <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Problemas Identificados</h4>
-                                            <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest">Seleccione uno o varios del catálogo maestro</p>
+                                            <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Problemas de Salud</h4>
+                                            <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest italic">Añada problemas manuales o desde el catálogo</p>
                                         </div>
-                                        <div className="w-full sm:w-auto min-w-[280px]">
-                                            <select
-                                                onChange={(e) => {
-                                                    handleAddProblema(e.target.value);
-                                                    e.target.value = ""; // Reset select
-                                                }}
-                                                className="w-full bg-primary/10 border border-primary/20 text-primary rounded-2xl px-6 h-14 text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer active:scale-95 transition-all"
-                                            >
-                                                <option value="" disabled selected>+ AGREGAR PROBLEMA</option>
-                                                {maestros.map(m => (
-                                                    <option key={m.id} value={m.id} className="bg-neutral-900 text-white py-4 font-sans text-sm">{m.problema}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6">
-                                        {(report.problemas_seleccionados || []).map((p, pIdx) => (
-                                            <div key={p.problema_id} className="bg-white/5 rounded-[32px] overflow-hidden border border-white/5 animate-in slide-in-from-left-4 duration-500">
-                                                <div className="bg-white/5 px-8 py-5 flex justify-between items-center border-b border-white/5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="size-8 rounded-xl bg-primary flex items-center justify-center text-slate-900 font-black text-xs">
-                                                            {pIdx + 1}
-                                                        </div>
-                                                        <span className="text-xs font-black text-white uppercase tracking-widest">{p.maestro?.problema || 'Cargando...'}</span>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => handleRemoveProblema(pIdx)}
-                                                        className="size-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all"
+                                        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                                            {!readOnly && (
+                                                <>
+                                                    <button 
+                                                        onClick={handleAddCustomProblema}
+                                                        className="flex-1 sm:flex-none h-14 px-6 bg-white/5 border border-white/10 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2 shadow-lg"
                                                     >
-                                                        <span className="material-symbols-outlined text-base">close</span>
+                                                        <span className="material-symbols-outlined text-sm">add</span>
+                                                        Nuevo Problema
                                                     </button>
-                                                </div>
-                                                <div className="p-8 space-y-6">
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                        <div className="space-y-2">
-                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                                                                <span className="material-symbols-outlined text-xs">warning</span> Problema Anticipado
-                                                            </span>
-                                                            <div className="bg-white/5 rounded-2xl p-4 border border-red-500/10 text-xs font-bold text-red-400 italic">
-                                                                {p.maestro?.problema_anticipado}
-                                                            </div>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-1">
-                                                                <span className="material-symbols-outlined text-xs">medical_services</span> Tratamiento Sugerido
-                                                            </span>
-                                                            <div className="bg-white/5 rounded-2xl p-4 border border-green-500/10 text-xs font-bold text-green-400/80">
-                                                                {p.maestro?.tratamiento_sugerido}
-                                                            </div>
-                                                        </div>
+                                                    <div className="flex-1 sm:w-64">
+                                                        <select
+                                                            onChange={(e) => {
+                                                                handleAddProblema(e.target.value);
+                                                                e.target.value = "";
+                                                            }}
+                                                            className="w-full h-14 bg-primary/10 border border-primary/20 text-primary rounded-2xl px-6 text-[9px] font-black uppercase tracking-widest outline-none cursor-pointer focus:ring-1 focus:ring-primary/50 transition-all"
+                                                        >
+                                                            <option value="" disabled selected>Catálogo Maestro</option>
+                                                            {maestros.map(m => (
+                                                                <option key={m.id} value={m.id} className="bg-neutral-900 text-white py-4 font-sans text-sm">{m.problema}</option>
+                                                            ))}
+                                                        </select>
                                                     </div>
-                                                    <div className="space-y-3">
-                                                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Observación Específica del Guía</label>
-                                                        <textarea
-                                                            value={p.observacion_especifica}
-                                                            onChange={(e) => handleProblemaObsChange(pIdx, e.target.value)}
-                                                            className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
-                                                            placeholder="Personalice el tratamiento o detalles del problema..."
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-
-                                        {(report.problemas_seleccionados || []).length === 0 && (
-                                            <div className="bg-neutral-800/50 rounded-[32px] border border-dashed border-white/10 p-12 text-center">
-                                                <span className="material-symbols-outlined text-4xl text-slate-700 mb-4 italic">clinical_notes</span>
-                                                <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">No se han seleccionado problemas aún</p>
-                                            </div>
-                                        )}
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
+
+                                    {(report.problemas_seleccionados || []).length > 0 ? (
+                                        <div className="space-y-6">
+                                            {/* Tabs de Edición */}
+                                            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none">
+                                                {(report.problemas_seleccionados || []).map((p, idx) => (
+                                                    <button
+                                                        key={idx}
+                                                        onClick={() => setActiveProblemIndex(idx)}
+                                                        className={`flex-shrink-0 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${activeProblemIndex === idx ? 'bg-primary text-slate-900 border-primary shadow-xl' : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'}`}
+                                                    >
+                                                        P{idx + 1}: {p.problema || 'S/N'}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Formulario de Edición de Problema Activo */}
+                                            {activeProblemIndex !== null && report.problemas_seleccionados?.[activeProblemIndex] && (
+                                                <div className="bg-white/5 rounded-[32px] p-6 sm:p-10 border border-white/5 space-y-8 animate-in zoom-in-95 duration-300">
+                                                    <div className="flex justify-between items-center mb-4">
+                                                        <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Editando Problema #{activeProblemIndex + 1}</span>
+                                                        {!readOnly && (
+                                                            <button 
+                                                                onClick={() => handleRemoveProblema(activeProblemIndex)}
+                                                                className="text-red-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-500/10 transition-all"
+                                                                title="Quitar problema"
+                                                            >
+                                                                <span className="material-symbols-outlined text-lg">delete</span>
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-1 gap-6">
+                                                        <div className="space-y-3">
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                                                <span className="material-symbols-outlined text-sm">emergency</span> 1. Problema
+                                                            </label>
+                                                            <textarea
+                                                                disabled={readOnly}
+                                                                value={report.problemas_seleccionados![activeProblemIndex].problema}
+                                                                onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema', e.target.value)}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                placeholder="Describa el problema actual..."
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                                                <span className="material-symbols-outlined text-sm">warning</span> 2. Problema Anticipado
+                                                            </label>
+                                                            <textarea
+                                                                disabled={readOnly}
+                                                                value={report.problemas_seleccionados![activeProblemIndex].problema_anticipado}
+                                                                onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema_anticipado', e.target.value)}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                placeholder="¿Qué podría complicarse?"
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-3">
+                                                            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                                                                <span className="material-symbols-outlined text-sm">medical_services</span> 3. Tratamiento
+                                                            </label>
+                                                            <textarea
+                                                                disabled={readOnly}
+                                                                value={report.problemas_seleccionados![activeProblemIndex].tratamiento}
+                                                                onChange={(e) => handleUpdateProblema(activeProblemIndex, 'tratamiento', e.target.value)}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                placeholder="Describa el tratamiento o acciones a seguir..."
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Tabla de Resumen */}
+                                            <div className="bg-white/5 rounded-[32px] overflow-hidden border border-white/5">
+                                                <div className="overflow-x-auto">
+                                                    <table className="w-full text-left">
+                                                        <thead className="bg-white/5 border-b border-white/5">
+                                                            <tr>
+                                                                <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">#</th>
+                                                                <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">Problema</th>
+                                                                <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">Anticipado</th>
+                                                                <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest">Tratamiento</th>
+                                                                <th className="px-6 py-4 text-[9px] font-black text-slate-500 uppercase tracking-widest"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-white/5">
+                                                            {report.problemas_seleccionados!.map((p, idx) => (
+                                                                <tr key={idx} className={`group hover:bg-white/5 transition-colors cursor-pointer ${activeProblemIndex === idx ? 'bg-primary/5' : ''}`} onClick={() => setActiveProblemIndex(idx)}>
+                                                                    <td className="px-6 py-4 text-[10px] font-bold text-slate-400">{idx + 1}</td>
+                                                                    <td className="px-6 py-4 text-[11px] font-black text-white">{p.problema || '—'}</td>
+                                                                    <td className="px-6 py-4 text-[10px] font-bold text-red-400/80 italic">{p.problema_anticipado || '—'}</td>
+                                                                    <td className="px-6 py-4 text-[10px] font-bold text-green-400/80">{p.tratamiento || '—'}</td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <button onClick={(e) => { e.stopPropagation(); handleRemoveProblema(idx); }} className="opacity-0 group-hover:opacity-100 text-red-500 p-2 transition-all">
+                                                                            <span className="material-symbols-outlined text-lg">delete</span>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-neutral-800/50 rounded-[40px] border border-dashed border-white/10 p-16 text-center">
+                                            <span className="material-symbols-outlined text-5xl text-slate-700 mb-4 italic">clinical_notes</span>
+                                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">No hay problemas registrados aún</p>
+                                            <p className="text-slate-600 text-[9px] mt-2 font-bold">Use los botones superiores para añadir evaluación</p>
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* Notas Adicionales */}
-                                <div className="space-y-6 pt-6 border-t border-white/5">
-                                    <div className="space-y-3">
+                                {/* Notas Generales */}
+                                <div className="space-y-6 pt-10 border-t border-white/5">
+                                    <div className="space-y-4">
                                         <div className="flex items-center gap-2 ml-1">
-                                            <span className="material-symbols-outlined text-sm text-primary">note_add</span>
-                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notas Adicionales del Reporte</label>
+                                            <span className="material-symbols-outlined text-sm text-primary">description</span>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notas Generales de la Ficha (SOAP)</label>
                                         </div>
                                         <textarea
+                                            disabled={readOnly}
                                             value={report.notas_adicionales}
                                             onChange={(e) => setReport({ ...report, notas_adicionales: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 text-sm text-white min-h-[120px] outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-700 shadow-inner"
-                                            placeholder="Información adicional relevante, logística, evacuación, etc..."
+                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-700 shadow-inner"
+                                            placeholder="Información adicional relevante, coordinación logística, decisiones del equipo, etc..."
                                         />
                                     </div>
                                 </div>
@@ -526,7 +646,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                             <div className="mt-12 pt-12 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="flex flex-col">
                                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">ID Responsable</label>
-                                    <input type="text" value={report.responsable_id} onChange={(e) => setReport({ ...report, responsable_id: e.target.value })} className="bg-neutral-800 border border-white/5 rounded-2xl h-14 px-6 text-xs text-white font-black tracking-widest uppercase outline-none focus:ring-1 focus:ring-primary/50 transition-all" />
+                                    <input disabled={readOnly} type="text" value={report.responsable_id} onChange={(e) => setReport({ ...report, responsable_id: e.target.value })} className="bg-neutral-800 border border-white/5 rounded-2xl h-14 px-6 text-xs text-white font-black tracking-widest uppercase outline-none focus:ring-1 focus:ring-primary/50 transition-all disabled:opacity-80" />
                                 </div>
                                 <div className="flex flex-col">
                                     <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">Firma Digital</label>
@@ -560,22 +680,31 @@ const SoapForm: React.FC<SoapFormProps> = ({
                             <span className="material-symbols-outlined text-base sm:text-lg font-black">arrow_forward</span>
                         </button>
                     ) : (
-                        <>
+                        !readOnly ? (
+                            <>
+                                <button
+                                    disabled={saving}
+                                    onClick={() => onSave(false)}
+                                    className="flex-1 sm:flex-none min-w-[100px] sm:min-w-[140px] px-3 py-3 sm:px-6 sm:py-4 rounded-2xl bg-neutral-800 text-slate-300 font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:bg-neutral-700 transition-all flex items-center justify-center gap-2 sm:gap-3 border border-white/5"
+                                >
+                                    <span className="material-symbols-outlined text-lg sm:text-xl">{saving ? 'sync' : 'save'}</span> {saving ? 'G...' : 'Borrador'}
+                                </button>
+                                <button
+                                    disabled={saving}
+                                    onClick={() => onSave(true)}
+                                    className="flex-1 sm:flex-none min-w-[140px] sm:min-w-[180px] px-4 py-3 sm:px-10 sm:py-4 rounded-2xl bg-primary text-slate-900 font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:shadow-lg transition-all flex items-center justify-center gap-2 sm:gap-3 shadow-primary/20"
+                                >
+                                    <span className="material-symbols-outlined text-lg sm:text-xl font-black">{saving ? 'sync' : 'verified'}</span> {saving ? 'G...' : 'Finalizar'}
+                                </button>
+                            </>
+                        ) : (
                             <button
-                                disabled={saving}
-                                onClick={() => onSave(false)}
-                                className="flex-1 sm:flex-none min-w-[100px] sm:min-w-[140px] px-3 py-3 sm:px-6 sm:py-4 rounded-2xl bg-neutral-800 text-slate-300 font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:bg-neutral-700 transition-all flex items-center justify-center gap-2 sm:gap-3 border border-white/5"
+                                onClick={onCancel}
+                                className="flex-1 sm:flex-none px-10 py-4 rounded-2xl bg-slate-800 text-slate-300 font-black uppercase tracking-widest text-[10px] border border-white/5"
                             >
-                                <span className="material-symbols-outlined text-lg sm:text-xl">{saving ? 'sync' : 'save'}</span> {saving ? 'G...' : 'Borrador'}
+                                Cerrar Vista
                             </button>
-                            <button
-                                disabled={saving}
-                                onClick={() => onSave(true)}
-                                className="flex-1 sm:flex-none min-w-[140px] sm:min-w-[180px] px-4 py-3 sm:px-10 sm:py-4 rounded-2xl bg-primary text-slate-900 font-black uppercase tracking-widest text-[9px] sm:text-[10px] hover:shadow-lg transition-all flex items-center justify-center gap-2 sm:gap-3 shadow-primary/20"
-                            >
-                                <span className="material-symbols-outlined text-lg sm:text-xl font-black">{saving ? 'sync' : 'verified'}</span> {saving ? 'G...' : 'Finalizar'}
-                            </button>
-                        </>
+                        )
                     )}
                 </div>
             </div>

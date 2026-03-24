@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 import SoapForm from '../components/soap/SoapForm';
-import type { SoapReport } from '../components/soap/SoapForm';
+import type { SoapReport, MaestroProblema } from '../components/soap/SoapForm';
 import { generateMedicalPDF } from '../utils/pdfGenerator';
 
 interface UniversityPageProps {
-    onNavigateNews: () => void;
 }
 
-const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
+const UniversityPage: React.FC<UniversityPageProps> = () => {
     const [showSoapForm, setShowSoapForm] = useState(false);
     const [simulations, setSimulations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -24,6 +23,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
         e_historia_pa: '',
         e_ultima_inge: '',
         e_eventos: '',
+        examen_fisico: '',
         signos_vitales: [{
             hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             pulso: '',
@@ -32,17 +32,24 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
             spo2: '',
             temperatura: '',
             piel: '',
-            avdi: 'A (Alerta)'
+            avdi: 'A'
         }],
         sv_piel: '',
         observacione: '',
         evaluacion_guia: '',
         responsable_id: 'STUDENT-UNI',
-        severity: 'mod'
+        severity: 'mod',
+        problemas_seleccionados: [],
+        notas_adicionales: ''
     });
     const [patientName, setPatientName] = useState('');
     const [isEnteringName, setIsEnteringName] = useState(false);
     const [isUniversityUser, setIsUniversityUser] = useState<boolean | null>(null);
+    const [maestros, setMaestros] = useState<MaestroProblema[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchSimulations();
@@ -63,15 +70,41 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
 
             const isUni = !!profile?.is_university;
             setIsUniversityUser(isUni);
+            setCurrentUserId(user.id);
 
             if (isUni) {
-                const { data, error } = await supabase
-                    .from('simulacros_soap')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                // Fetch simulations and profiles in parallel for better performance and reliability
+                const [simsRes, profilesRes] = await Promise.all([
+                    supabase.from('simulacros_soap').select('*').order('created_at', { ascending: false }),
+                    supabase.from('profiles').select('id, full_name')
+                ]);
 
-                if (error) throw error;
-                setSimulations(data || []);
+                if (simsRes.error) throw simsRes.error;
+                if (profilesRes.error) throw profilesRes.error;
+
+                const sims = simsRes.data || [];
+                const profiles = profilesRes.data || [];
+
+                // Create lookup map
+                const profilesMap = profiles.reduce((acc: any, curr: any) => {
+                    acc[curr.id] = curr.full_name;
+                    return acc;
+                }, {});
+
+                // Merge names
+                const formattedData = sims.map((s: any) => ({
+                    ...s,
+                    autor_nombre: profilesMap[s.user_id] || 'Estudiante'
+                }));
+
+                setSimulations(formattedData);
+
+                // Cargar maestros de problemas
+                const { data: mData } = await supabase
+                    .from('maestro_problemas_soap')
+                    .select('*')
+                    .order('problema');
+                if (mData) setMaestros(mData);
             }
         } catch (error) {
             console.error("Error fetching simulations:", error);
@@ -91,6 +124,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
             e_historia_pa: '',
             e_ultima_inge: '',
             e_eventos: '',
+            examen_fisico: '',
             signos_vitales: [{
                 hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 pulso: '',
@@ -108,15 +142,44 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
             severity: 'mod'
         });
         setPatientName('');
+        setIsEditingOwn(true);
         setIsEnteringName(true);
         setShowSoapForm(true);
     };
 
     const handleEdit = (sim: any) => {
-        setCurrentReport(sim.data);
+        // Combinamos el ID de la tabla con los datos internos del JSON
+        setCurrentReport({
+            ...sim.data,
+            id: sim.id
+        });
         setPatientName(sim.paciente_nombre);
+        setIsEditingOwn(sim.user_id === currentUserId);
         setIsEnteringName(false);
         setShowSoapForm(true);
+    };
+
+    const [isEditingOwn, setIsEditingOwn] = useState(false);
+
+    const handleDeleteSimulation = async (id: string) => {
+        if (!window.confirm("¿Estás seguro de que deseas eliminar este simulacro? Esta acción no se puede deshacer.")) {
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('simulacros_soap')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            
+            setSimulations(prev => prev.filter(s => s.id !== id));
+            if (showSoapForm) setShowSoapForm(false);
+        } catch (error: any) {
+            console.error("Error deleting simulation:", error);
+            alert("Error al eliminar el simulacro: " + error.message);
+        }
     };
 
     const handleSaveSimulation = async (isFinal: boolean) => {
@@ -131,10 +194,11 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
             if (!user) throw new Error("No user found");
 
             const payload = {
+                id: currentReport.id,
                 user_id: user.id,
                 paciente_nombre: patientName,
                 data: { ...currentReport, estado: isFinal ? 'finalizado' : 'borrador' },
-                created_at: new Date().toISOString()
+                created_at: currentReport.id ? undefined : new Date().toISOString()
             };
 
             const { error } = await supabase
@@ -183,7 +247,14 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
                 skin: currentReport.sv_piel || 'No especificado',
                 assessment: currentReport.evaluacion_guia || 'Sin evaluación',
                 plan: currentReport.observacione || 'Sin plan',
-                responsibleId: currentReport.responsable_id || 'N/A'
+                responsibleId: currentReport.responsable_id || 'N/A',
+                problemas: (currentReport.problemas_seleccionados || []).map(p => ({
+                    problema: p.problema || p.maestro?.problema || 'N/A',
+                    anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
+                    tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
+                    observacion: p.observacion_especifica || 'Sin observaciones'
+                })),
+                notasAdicionales: currentReport.notas_adicionales
             };
 
             await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });
@@ -195,6 +266,22 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
         }
     };
 
+    const filteredSimulations = simulations.filter(sim => {
+        const matchesName = sim.paciente_nombre.toLowerCase().includes(searchTerm.toLowerCase());
+        const date = new Date(sim.created_at);
+        const matchesStart = startDate ? date >= new Date(startDate) : true;
+        
+        // Final del día para endDate
+        let matchesEnd = true;
+        if (endDate) {
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            matchesEnd = date <= end;
+        }
+        
+        return matchesName && matchesStart && matchesEnd;
+    });
+
     if (showSoapForm) {
         return (
             <div className="bg-background-dark min-h-screen">
@@ -204,18 +291,22 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
                     onSave={handleSaveSimulation}
                     onCancel={() => setShowSoapForm(false)}
                     patientName={patientName}
+                    setPatientName={setPatientName}
                     patientId="SIM-PRÁCTICA"
                     saving={saving}
                     isSimulation={true}
                     title="Simulacro"
                     onDownloadPDF={handleDownloadPDF}
                     isGenerating={isGenerating}
+                    maestros={maestros}
+                    readOnly={!isEditingOwn}
+                    onDelete={currentReport.id ? () => handleDeleteSimulation(currentReport.id!) : undefined}
                 />
                 {/* Overlay for providing names in simulation mode */}
                 {isEnteringName && (
                     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
                         <div className="bg-slate-900 border border-primary/20 p-8 rounded-[32px] max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
-                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Iniciar Práctica</h2>
+                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Nueva Ficha SOAP</h2>
                             <p className="text-slate-400 text-sm mb-6">Para comenzar la simulación, asigne un nombre ficticio a su paciente.</p>
                             <input
                                 autoFocus
@@ -248,13 +339,9 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
     }
 
     return (
-        <div className="relative flex h-auto min-h-screen w-full flex-col rugged-grid overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+        <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
             <style>
                 {`
-                .rugged-grid {
-                    background-image: radial-gradient(circle, #1a2e22 1px, transparent 1px);
-                    background-size: 30px 30px;
-                }
                 .no-scrollbar::-webkit-scrollbar {
                     display: none;
                 }
@@ -266,68 +353,17 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
             </style>
 
             <main className="flex-1 flex flex-col max-w-7xl mx-auto w-full px-4 md:px-10 py-8 gap-10">
-                {/* News Slider Section */}
-                <section>
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-slate-100 text-xl font-bold flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">campaign</span>
-                            Actualizaciones del Campus
-                        </h3>
-                        <a className="text-primary text-sm font-semibold flex items-center gap-1 hover:underline" href="#">
-                            Ver todas <span className="material-symbols-outlined text-xs">arrow_forward</span>
-                        </a>
-                    </div>
-                    <div className="flex gap-6 overflow-x-auto pb-4 snap-x no-scrollbar">
-                        {/* News Card 1 */}
-                        <div onClick={onNavigateNews} className="flex-none w-80 md:w-96 snap-start group cursor-pointer transition-all active:scale-[0.98]">
-                            <div className="relative h-48 w-full rounded-xl overflow-hidden border border-slate-800 mb-4 bg-slate-800">
-                                <div className="absolute inset-0 bg-gradient-to-t from-background-dark to-transparent z-10"></div>
-                                <img alt="Medical Facility" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=800" />
-                                <div className="absolute bottom-4 left-4 z-20">
-                                    <span className="px-2 py-1 bg-primary text-background-dark text-[10px] font-bold uppercase rounded tracking-wider shadow-lg shadow-primary/20">Infraestructura</span>
-                                </div>
-                            </div>
-                            <h4 className="text-slate-100 font-bold text-lg leading-tight group-hover:text-primary transition-colors">Apertura del Nuevo Centro de Simulación Médica</h4>
-                            <p className="text-slate-400 text-sm mt-2 line-clamp-2">Equipado con tecnología de punta para prácticas de respuesta inmediata y reportes SOAP avanzados.</p>
-                        </div>
-                        {/* News Card 2 */}
-                        <div onClick={onNavigateNews} className="flex-none w-80 md:w-96 snap-start group cursor-pointer transition-all active:scale-[0.98]">
-                            <div className="relative h-48 w-full rounded-xl overflow-hidden border border-slate-800 mb-4 bg-slate-800">
-                                <div className="absolute inset-0 bg-gradient-to-t from-background-dark to-transparent z-10"></div>
-                                <img alt="Training Session" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&q=80&w=800" />
-                                <div className="absolute bottom-4 left-4 z-20">
-                                    <span className="px-2 py-1 bg-blue-500 text-white text-[10px] font-bold uppercase rounded tracking-wider">Capacitación</span>
-                                </div>
-                            </div>
-                            <h4 className="text-slate-100 font-bold text-lg leading-tight group-hover:text-primary transition-colors">Taller de Reportes SOAP en Terreno</h4>
-                            <p className="text-slate-400 text-sm mt-2 line-clamp-2">Aprende a documentar hallazgos clínicos de manera eficiente bajo condiciones de alta presión.</p>
-                        </div>
-                        {/* News Card 3 */}
-                        <div onClick={onNavigateNews} className="flex-none w-80 md:w-96 snap-start group cursor-pointer transition-all active:scale-[0.98]">
-                            <div className="relative h-48 w-full rounded-xl overflow-hidden border border-slate-800 mb-4 bg-slate-800">
-                                <div className="absolute inset-0 bg-gradient-to-t from-background-dark to-transparent z-10"></div>
-                                <img alt="Health Guidelines" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://images.unsplash.com/photo-1504439468489-c8920d796a29?auto=format&fit=crop&q=80&w=800" />
-                                <div className="absolute bottom-4 left-4 z-20">
-                                    <span className="px-2 py-1 bg-red-500 text-white text-[10px] font-bold uppercase rounded tracking-wider">Protocolo</span>
-                                </div>
-                            </div>
-                            <h4 className="text-slate-100 font-bold text-lg leading-tight group-hover:text-primary transition-colors">Actualización de Guías de Salud 2024</h4>
-                            <p className="text-slate-400 text-sm mt-2 line-clamp-2">Nuevos estándares para la respuesta ante emergencias en expediciones universitarias.</p>
-                        </div>
-                    </div>
-                </section>
-
                 {/* CTA Hero Action */}
                 {isUniversityUser && (
-                    <section className="bg-primary/5 border border-primary/20 rounded-2xl p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-[100px] -z-10"></div>
+                    <section className="bg-primary/5 border border-primary/20 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-10 animate-pulse"></div>
                         <div className="flex-1 space-y-4">
-                            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-100 tracking-tight">Gestión de Incidentes Médicos</h2>
-                            <p className="text-slate-400 max-w-xl">Inicia un nuevo registro SOAP (Subjetivo, Objetivo, Evaluación, Plan) para documentar la atención de pacientes en el campo o clínica universitaria.</p>
+                             <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Gestión de Incidentes <span className="text-primary block sm:inline">en Campo</span></h2>
+                             <p className="text-slate-400 max-w-xl text-sm font-medium leading-relaxed">Inicia un nuevo registro SOAP (Subjetivo, Objetivo, Evaluación, Plan) para documentar la atención de pacientes en el campo como parte de tu entrenamiento.</p>
                         </div>
-                        <button onClick={handleCreateNew} className="flex min-w-[280px] md:min-w-[320px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-16 px-8 bg-primary text-background-dark gap-3 text-lg font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-[0_0_25px_-5px_rgba(19,236,109,0.4)]">
-                            <span className="material-symbols-outlined text-3xl">emergency</span>
-                            <span className="truncate">Simular Nuevo Reporte SOAP</span>
+                        <button onClick={handleCreateNew} className="flex min-w-[280px] md:min-w-[320px] cursor-pointer items-center justify-center overflow-hidden rounded-2xl h-20 px-10 bg-primary text-background-dark gap-4 text-xl font-black uppercase tracking-widest transition-all hover:scale-[1.05] active:scale-95 shadow-[0_20px_40px_-10px_rgba(19,236,109,0.4)]">
+                            <span className="material-symbols-outlined text-4xl">emergency</span>
+                            <span className="truncate">NUEVA FICHA SOAP</span>
                         </button>
                     </section>
                 )}
@@ -335,76 +371,160 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
                 {/* Data Table Section */}
                 {isUniversityUser && (
                     <section className="flex flex-col gap-6 animate-in fade-in duration-700 delay-150">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-slate-100 text-xl font-bold flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">history</span>
-                                Reportes SOAP Recientes
-                            </h3>
-                            <div className="flex gap-2">
-                                <button className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-xs font-semibold text-slate-300 flex items-center gap-2 hover:bg-slate-700/50 transition-colors">
-                                    <span className="material-symbols-outlined text-sm">filter_list</span> Filtrar
-                                </button>
-                                <button className="px-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-xs font-semibold text-slate-300 flex items-center gap-2 hover:bg-slate-700/50 transition-colors">
-                                    <span className="material-symbols-outlined text-sm">download</span> Exportar
-                                </button>
+                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+                            <div className="space-y-4 flex-1">
+                                <h3 className="text-slate-900 dark:text-white text-3xl font-black uppercase tracking-tighter flex items-center gap-3 italic">
+                                    <span className="material-symbols-outlined text-primary text-4xl">history</span>
+                                    LISTA DE FICHA SOAP
+                                </h3>
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-500 group-focus-within:text-primary transition-colors">search</span>
+                                    <input 
+                                        type="text" 
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="Buscar por nombre del paciente..." 
+                                        className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-800 rounded-2xl h-14 pl-12 pr-6 text-sm text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all font-medium"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-widest ml-1">Desde</label>
+                                    <input 
+                                        type="date" 
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="bg-slate-900/50 border border-slate-800 rounded-2xl h-14 px-6 text-xs text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-widest ml-1">Hasta</label>
+                                    <input 
+                                        type="date" 
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="bg-slate-900/50 border border-slate-800 rounded-2xl h-14 px-6 text-xs text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                    />
+                                </div>
+                                {(searchTerm || startDate || endDate) && (
+                                    <button 
+                                        onClick={() => { setSearchTerm(''); setStartDate(''); setEndDate(''); }}
+                                        className="mt-6 size-14 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/10 flex items-center justify-center hover:bg-red-500/20 transition-all active:scale-95"
+                                        title="Limpiar filtros"
+                                    >
+                                        <span className="material-symbols-outlined">restart_alt</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
-                        <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/30 backdrop-blur-sm">
+                        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-xl shadow-2xl">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-slate-800/40">
-                                            <th className="px-6 py-4 text-slate-300 text-xs font-bold uppercase tracking-wider">Fecha de Reporte</th>
-                                            <th className="px-6 py-4 text-slate-300 text-xs font-bold uppercase tracking-wider">Nombre del Paciente</th>
-                                            <th className="px-6 py-4 text-slate-300 text-xs font-bold uppercase tracking-wider">Severidad</th>
-                                            <th className="px-6 py-4 text-slate-300 text-xs font-bold uppercase tracking-wider">Estado</th>
-                                            <th className="px-6 py-4 text-right text-slate-300 text-xs font-bold uppercase tracking-wider">Acciones</th>
+                                        <tr className="bg-white/10">
+                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Creado</th>
+                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Actualización</th>
+                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Identificación Paciente</th>
+                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Responsable</th>
+                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Estado Registro</th>
+                                            <th className="px-8 py-5 text-right text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Gestión</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-800/50">
+                                    <tbody className="divide-y divide-white/10">
                                         {loading ? (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic">Cargando simulacros...</td>
+                                                <td colSpan={6} className="px-8 py-16 text-center">
+                                                    <div className="flex flex-col items-center gap-3">
+                                                        <div className="size-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                                                        <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Sincronizando...</span>
+                                                    </div>
+                                                </td>
                                             </tr>
-                                        ) : simulations.length === 0 ? (
+                                        ) : filteredSimulations.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-6 py-10 text-center text-slate-500 italic">No tienes simulacros registrados aún.</td>
+                                                <td colSpan={5} className="px-8 py-20 text-center">
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <span className="material-symbols-outlined text-4xl text-slate-700 italic">search_off</span>
+                                                        <div className="space-y-1">
+                                                            <p className="text-slate-500 text-xs font-black uppercase tracking-widest">No se encontraron resultados</p>
+                                                            <p className="text-slate-600 text-[10px] font-bold">Prueba ajustando los filtros de búsqueda</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ) : filteredSimulations.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={6} className="px-8 py-24 text-center">
+                                                    <div className="flex flex-col items-center gap-4">
+                                                        <div className="size-20 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-500 mb-2">
+                                                            <span className="material-symbols-outlined text-4xl">inventory_2</span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            <h3 className="text-white text-lg font-black uppercase tracking-tight">No se encontraron resultados</h3>
+                                                            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest italic">Prueba ajustando los filtros de búsqueda</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ) : (
-                                            simulations.map((row) => (
+                                            filteredSimulations.map((row) => (
                                                 <tr key={row.id} className="hover:bg-slate-800/20 transition-colors group">
-                                                    <td className="px-6 py-5 whitespace-nowrap">
+                                                    <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex flex-col">
-                                                            <span className="text-slate-100 text-sm font-semibold">{new Date(row.created_at).toLocaleDateString()}</span>
-                                                            <span className="text-slate-500 text-[10px]">{new Date(row.created_at).toLocaleTimeString()}</span>
+                                                            <span className="text-white text-sm font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-slate-400 text-[10px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5 whitespace-nowrap">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="size-8 rounded-full bg-slate-800 flex items-center justify-center text-primary text-xs font-bold">
+                                                    <td className="px-8 py-5 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-slate-300 text-[11px] font-black tracking-tight">{row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '-'}</span>
+                                                            <span className="text-slate-500 text-[9px] font-bold uppercase">{row.updated_at ? new Date(row.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-5 whitespace-nowrap">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
                                                                 {row.paciente_nombre.substring(0, 2).toUpperCase()}
                                                             </div>
-                                                            <span className="text-slate-100 text-sm font-medium">{row.paciente_nombre}</span>
+                                                            <span className="text-white text-sm font-black tracking-tight">{row.paciente_nombre}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="px-6 py-5 whitespace-nowrap">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${row.data.severity === 'high' || row.data.severity === 'critical' ? 'bg-red-900/30 text-red-400 border-red-800/50' :
-                                                            row.data.severity === 'mod' ? 'bg-orange-900/30 text-orange-400 border-orange-800/50' :
-                                                                'bg-primary/10 text-primary border-primary/30'
-                                                            }`}>
-                                                            <span className={`w-1.5 h-1.5 rounded-full mr-2 ${row.data.severity === 'high' || row.data.severity === 'critical' ? 'bg-red-500 animate-pulse' : row.data.severity === 'mod' ? 'bg-orange-500' : 'bg-primary'}`}></span>
-                                                            {row.data.severity.toUpperCase()}
-                                                        </span>
+                                                    <td className="px-8 py-5 whitespace-nowrap">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="size-6 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-black text-slate-300 border border-white/10 uppercase">
+                                                                {row.autor_nombre?.substring(0, 1) || '?'}
+                                                            </div>
+                                                            <span className="text-slate-300 text-[11px] font-black uppercase tracking-wider">{row.autor_nombre}</span>
+                                                        </div>
                                                     </td>
-                                                    <td className="px-6 py-5 whitespace-nowrap text-slate-400 text-sm">
-                                                        <span className={`capitalize ${row.data.estado === 'finalizado' ? 'text-green-500' : 'text-amber-500 font-bold italic'}`}>
+                                                    <td className="px-8 py-5 whitespace-nowrap text-slate-300 text-sm font-medium">
+                                                        <span className={`capitalize font-black tracking-tight ${row.data.estado === 'finalizado' ? 'text-green-400' : 'text-amber-400 italic'}`}>
                                                             {row.data.estado}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-5 whitespace-nowrap text-right">
-                                                        <button onClick={() => handleEdit(row)} className="inline-flex items-center gap-1 text-primary hover:text-primary/80 font-bold text-sm transition-colors">
-                                                            <span className="material-symbols-outlined text-lg">edit_note</span> Ver/Editar
-                                                        </button>
+                                                    <td className="px-8 py-5 whitespace-nowrap text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button 
+                                                                onClick={() => handleEdit(row)} 
+                                                                className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${row.user_id === currentUserId ? 'bg-primary/10 hover:bg-primary/20 text-primary' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'}`}
+                                                            >
+                                                                <span className="material-symbols-outlined text-lg">{row.user_id === currentUserId ? 'edit_note' : 'visibility'}</span> 
+                                                                {row.user_id === currentUserId ? 'Ver/Editar' : 'Ver'}
+                                                            </button>
+                                                            {row.user_id === currentUserId && (
+                                                                <button 
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDeleteSimulation(row.id);
+                                                                    }} 
+                                                                    className="size-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all border border-red-500/10"
+                                                                    title="Eliminar Simulacro"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))
@@ -412,8 +532,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="bg-slate-800/40 px-6 py-4 flex items-center justify-between border-t border-slate-800">
-                                <span className="text-xs text-slate-500 font-medium">Mostrando {simulations.length} reportes registrados</span>
+                            <div className="bg-white/10 px-8 py-6 flex items-center justify-between border-t border-white/5">
+                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mostrando {filteredSimulations.length} de {simulations.length} registros</span>
                             </div>
                         </div>
                     </section>
@@ -427,7 +547,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ onNavigateNews }) => {
                         <div className="space-y-2">
                             <h3 className="text-2xl font-black text-white uppercase tracking-tight">Acceso Restringido</h3>
                             <p className="text-slate-400 max-w-md mx-auto">
-                                Las herramientas de simulación clínica están disponibles exclusivamente para estudiantes registrados en TrekManager University.
+                                Las herramientas de simulación clínica están disponibles exclusivamente para estudiantes registrados en TrekManager ISAUI.
                             </p>
                         </div>
                         <div className="flex gap-4 mt-4">

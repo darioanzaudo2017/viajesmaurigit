@@ -204,6 +204,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
                     imageUrl="https://images.unsplash.com/photo-1576091160550-2173dad99901?auto=format&fit=crop&q=80&w=800"
                     onClick={() => onNavigate('admin_simulacros')}
                 />
+                <ManagementCard
+                    title="Gestión de Usuarios"
+                    description="Administrar roles de acceso y permisos universitarios para estudiantes."
+                    imageUrl="https://images.unsplash.com/photo-1521737703345-d4194c7bd48f?auto=format&fit=crop&q=80&w=800"
+                    onClick={() => onNavigate('admin_users')}
+                />
             </div>
 
             {/* Quick Actions & Recent Activity */}

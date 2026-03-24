@@ -29,7 +29,7 @@ const Navbar: React.FC<NavbarProps> = ({
             case 'admin_trips': return 'Admin > Viajes';
             case 'admin_enrollments': return 'Admin > Inscripciones';
             case 'admin_soap': return 'Admin > SOAP';
-            case 'university': return 'University';
+            case 'university': return 'ISAUI';
             case 'trips': return 'Explorar';
             case 'medical': return 'Ficha Médica';
             case 'register': return 'Inscripción';
@@ -55,6 +55,7 @@ const Navbar: React.FC<NavbarProps> = ({
                         className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 transition-all border border-white/5 group"
                     >
                         <span className="material-symbols-outlined text-sm font-bold group-hover:-translate-x-1 transition-transform">arrow_back_ios</span>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 opacity-60 ml-px">Certificación ISAUI</p>
                         <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Volver</span>
                     </button>
                 )}

@@ -13,6 +13,7 @@ import AdminEnrollments from './pages/admin/AdminEnrollments';
 import AdminSoapPage from './pages/admin/AdminSoapPage';
 import AdminNewsPage from './pages/admin/AdminNewsPage';
 import AdminSimulacrosPage from './pages/admin/AdminSimulacrosPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
 import UniversityPage from './pages/UniversityPage';
 import UniversityNewsPage from './pages/UniversityNewsPage';
 import { supabase } from './api/supabase';
@@ -165,6 +166,8 @@ function App() {
         return user?.profile?.role === 'admin' ? <AdminNewsPage onBack={() => handleTabChange('admin_dashboard')} /> : <HomePage />;
       case 'admin_simulacros':
         return user?.profile?.role === 'admin' ? <AdminSimulacrosPage onBack={() => handleTabChange('admin_dashboard')} /> : <HomePage />;
+      case 'admin_users':
+        return user?.profile?.role === 'admin' ? <AdminUsersPage onBack={() => handleTabChange('admin_dashboard')} /> : <HomePage />;
       case 'admin_trips':
         return user?.profile?.role === 'admin' ? (
           <AdminTrips
@@ -229,7 +232,7 @@ function App() {
           <AuthPage onSuccess={() => handleTabChange('medical')} />
         );
       case 'university':
-        return <UniversityPage onNavigateNews={() => handleTabChange('university_news')} />;
+        return <UniversityPage />;
       case 'university_news':
         return <UniversityNewsPage onBack={() => handleTabChange('university')} />;
       case 'safety':
@@ -268,7 +271,12 @@ function App() {
             return;
           }
 
-          if (activeTab === 'register' || activeTab === 'medical' || activeTab === 'university' || activeTab === 'university_news' || activeTab === 'admin_news' || activeTab === 'admin_simulacros') {
+          if (activeTab === 'admin_news' || activeTab === 'admin_simulacros' || activeTab === 'admin_users') {
+            setActiveTab('admin_dashboard');
+            return;
+          }
+
+          if (activeTab === 'register' || activeTab === 'medical' || activeTab === 'university' || activeTab === 'university_news') {
             setActiveTab('home');
             return;
           }

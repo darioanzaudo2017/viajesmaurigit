@@ -116,10 +116,10 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                         <div className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all ${isUniversity ? 'bg-primary border-primary' : 'border-slate-300 dark:border-[#2a4435]'}`}>
                                             {isUniversity && <span className="material-symbols-outlined text-background-dark text-sm font-bold">check</span>}
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Estudiante Universitario</p>
-                                            <p className="text-[10px] text-slate-500 dark:text-trek-text-muted/60 uppercase font-medium">Habilitar simuladores de práctica</p>
-                                        </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs font-black uppercase tracking-widest text-[#13ec6d]">Estudiante ISAUI</p>
+                                                <p className="text-[10px] text-slate-500 font-medium">Habilitar herramientas de simulación clínica</p>
+                                            </div>
                                     </div>
                                 </>
                             )}

@@ -22,9 +22,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
         { id: 'register', icon: 'app_registration', label: 'Inscripción', hidden: isAdmin },
         // Admin Profile Items
         { id: 'admin_dashboard', icon: 'dashboard', label: 'Dashboard', adminOnly: true },
+        { id: 'admin_users', icon: 'group', label: 'Usuarios', adminOnly: true },
         { id: 'admin_trips', icon: 'map', label: 'Viajes', adminOnly: true },
         { id: 'admin_enrollments', icon: 'assignment_ind', label: 'Inscripciones', adminOnly: true },
-        { id: 'university', icon: 'school', label: 'University' },
+        { id: 'university', icon: 'school', label: 'ISAUI' },
         { id: 'safety', icon: 'health_and_safety', label: 'Protocolos' },
     ].filter(item => {
         if (item.adminOnly && !isAdmin) return false;

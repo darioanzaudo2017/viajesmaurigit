@@ -30,6 +30,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
         e_historia_pa: '',
         e_ultima_inge: '',
         e_eventos: '',
+        examen_fisico: '',
         signos_vitales: [{
             hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             pulso: '',
@@ -44,7 +45,9 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
         observacione: '',
         evaluacion_guia: '',
         responsable_id: 'ADMIN-99-TREK',
-        severity: 'mod'
+        severity: 'mod',
+        problemas_seleccionados: [],
+        notas_adicionales: ''
     });
 
 
@@ -90,8 +93,13 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 } else {
                     // Load from local cache
                     enrollment = await db.enrollments.get(enrollmentId);
-                    existingSoap = await db.soapReports.get({ inscripcion_id: enrollmentId });
-                    if (existingSoap) existingSoap = existingSoap.data;
+                    existingSoap = await db.soapReports.where('inscripcion_id').equals(enrollmentId).first();
+                    if (existingSoap) {
+                        existingSoap = {
+                            ...existingSoap.data,
+                            id: existingSoap.id // Ensure ID is present
+                        };
+                    }
 
                     // Load maestros from local cache
                     const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
@@ -125,7 +133,10 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                     }
                     const localSoapArr = await db.soapReports.where('inscripcion_id').equals(enrollmentId).toArray();
                     if (localSoapArr.length > 0) {
-                        setReport(localSoapArr[0].data);
+                        setReport({
+                            ...localSoapArr[0].data,
+                            id: localSoapArr[0].id
+                        });
                         console.log('[SOAP] Using cached SOAP report after error');
                     }
                 } catch { /* ignore cache errors */ }
@@ -172,9 +183,9 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 plan: report.observacione || 'Sin plan',
                 responsibleId: report.responsable_id || 'N/A',
                 problemas: (report.problemas_seleccionados || []).map(p => ({
-                    problema: p.maestro?.problema || 'N/A',
-                    anticipado: p.maestro?.problema_anticipado || 'N/A',
-                    tratamiento: p.maestro?.tratamiento_sugerido || 'N/A',
+                    problema: p.problema || p.maestro?.problema || 'N/A',
+                    anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
+                    tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
                     observacion: p.observacion_especifica || 'Sin observaciones'
                 })),
                 notasAdicionales: report.notas_adicionales
@@ -231,7 +242,10 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                         const problemasToInsert = reportData.problemas_seleccionados.map(p => ({
                             reporte_soap_id: data.id,
                             problema_id: p.problema_id,
-                            observacion_especifica: p.observacion_especifica
+                            observacion_especifica: p.observacion_especifica,
+                            problema: p.problema,
+                            problema_anticipado: p.problema_anticipado,
+                            tratamiento: p.tratamiento
                         }));
                         await supabase.from('reportes_soap_problemas').insert(problemasToInsert);
                     }
