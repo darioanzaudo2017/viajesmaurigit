@@ -513,13 +513,13 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                         <div className="space-y-6">
                                             {/* Tabs de Edición */}
                                             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none">
-                                                {(report.problemas_seleccionados || []).map((p, idx) => (
+                                                {(report.problemas_seleccionados || []).map((_, idx) => (
                                                     <button
                                                         key={idx}
                                                         onClick={() => setActiveProblemIndex(idx)}
                                                         className={`flex-shrink-0 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${activeProblemIndex === idx ? 'bg-primary text-slate-900 border-primary shadow-xl' : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'}`}
                                                     >
-                                                        P{idx + 1}: {p.problema || 'S/N'}
+                                                        P{idx + 1}
                                                     </button>
                                                 ))}
                                             </div>
