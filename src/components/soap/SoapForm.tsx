@@ -26,6 +26,7 @@ export interface SoapProblemaSeleccionado {
     tratamiento: string;
     observacion_especifica?: string;
     maestro?: MaestroProblema;
+    orden?: number;
 }
 
 export interface SoapReport {
@@ -140,7 +141,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
             problema_anticipado: maestro.problema_anticipado,
             tratamiento: maestro.tratamiento_sugerido,
             observacion_especifica: '',
-            maestro
+            maestro,
+            orden: newIndex + 1
         });
         setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
         setActiveProblemIndex(newIndex);
@@ -153,7 +155,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
             problema: '',
             problema_anticipado: '',
             tratamiento: '',
-            observacion_especifica: ''
+            observacion_especifica: '',
+            orden: newIndex + 1
         });
         setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
         setActiveProblemIndex(newIndex);
@@ -173,6 +176,34 @@ const SoapForm: React.FC<SoapFormProps> = ({
         } else if (activeProblemIndex !== null && activeProblemIndex > index) {
             setActiveProblemIndex(activeProblemIndex - 1);
         }
+    };
+
+    const handleMoveProblema = (index: number, direction: 'up' | 'down') => {
+        if (!report.problemas_seleccionados) return;
+        const newProblemas = [...report.problemas_seleccionados];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        
+        if (targetIndex < 0 || targetIndex >= newProblemas.length) return;
+        
+        // Swap
+        [newProblemas[index], newProblemas[targetIndex]] = [newProblemas[targetIndex], newProblemas[index]];
+        
+        // Update order numbers too
+        newProblemas.forEach((p, idx) => p.orden = idx + 1);
+
+        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
+        if (activeProblemIndex === index) {
+            setActiveProblemIndex(targetIndex);
+        } else if (activeProblemIndex === targetIndex) {
+            setActiveProblemIndex(index);
+        }
+    };
+
+    const handleSortProblemas = () => {
+        if (!report.problemas_seleccionados) return;
+        const sorted = [...report.problemas_seleccionados].sort((a, b) => (a.orden || 0) - (b.orden || 0));
+        setReport(prev => ({ ...prev, problemas_seleccionados: sorted }));
+        setActiveProblemIndex(0);
     };
 
 
@@ -481,7 +512,16 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest italic">Añada problemas manuales o desde el catálogo</p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                                            {!readOnly && (
+                                            {!readOnly && (report.problemas_seleccionados?.length || 0) > 1 && (
+                                                <button 
+                                                    onClick={handleSortProblemas}
+                                                    className="flex-1 sm:flex-none h-14 px-6 bg-primary/10 border border-primary/20 text-primary rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    <span className="material-symbols-outlined text-sm">sort</span>
+                                                    Ordenar por Nº
+                                                </button>
+                                            )}
+                                            {(!readOnly || isSimulation) && (
                                                 <>
                                                     <button 
                                                         onClick={handleAddCustomProblema}
@@ -512,15 +552,34 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     {(report.problemas_seleccionados || []).length > 0 ? (
                                         <div className="space-y-6">
                                             {/* Tabs de Edición */}
-                                            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none">
+                                            <div className="flex flex-wrap gap-2 pb-2">
                                                 {(report.problemas_seleccionados || []).map((_, idx) => (
-                                                    <button
-                                                        key={idx}
-                                                        onClick={() => setActiveProblemIndex(idx)}
-                                                        className={`flex-shrink-0 px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${activeProblemIndex === idx ? 'bg-primary text-slate-900 border-primary shadow-xl' : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'}`}
-                                                    >
-                                                        P{idx + 1}
-                                                    </button>
+                                                    <div key={idx} className="flex items-center gap-1">
+                                                        <button
+                                                            onClick={() => setActiveProblemIndex(idx)}
+                                                            className={`px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${activeProblemIndex === idx ? 'bg-primary text-slate-900 border-primary shadow-xl' : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'}`}
+                                                        >
+                                                            P{idx + 1}
+                                                        </button>
+                                                        {!readOnly && (
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <button 
+                                                                    onClick={() => handleMoveProblema(idx, 'up')}
+                                                                    disabled={idx === 0}
+                                                                    className="text-slate-600 hover:text-primary disabled:opacity-0 transition-all"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[14px]">arrow_drop_up</span>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleMoveProblema(idx, 'down')}
+                                                                    disabled={idx === (report.problemas_seleccionados?.length || 0) - 1}
+                                                                    className="text-slate-600 hover:text-primary disabled:opacity-0 transition-all"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[14px]">arrow_drop_down</span>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 ))}
                                             </div>
 
@@ -545,13 +604,26 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                                                                 <span className="material-symbols-outlined text-sm">emergency</span> 1. Problema
                                                             </label>
-                                                            <textarea
-                                                                disabled={readOnly}
-                                                                value={report.problemas_seleccionados![activeProblemIndex].problema}
-                                                                onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema', e.target.value)}
-                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
-                                                                placeholder="Describa el problema actual..."
-                                                            />
+                                                            <div className="flex gap-4">
+                                                                <div className="w-24 shrink-0 space-y-2">
+                                                                    <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Nº Orden</label>
+                                                                    <input 
+                                                                        type="number" 
+                                                                        value={report.problemas_seleccionados![activeProblemIndex].orden || 0}
+                                                                        onChange={(e) => {
+                                                                            handleUpdateProblema(activeProblemIndex, 'orden', e.target.value);
+                                                                        }}
+                                                                        className="w-full bg-neutral-900 border border-white/5 rounded-xl h-12 px-4 text-xs text-white font-black"
+                                                                    />
+                                                                </div>
+                                                                <textarea
+                                                                    disabled={readOnly}
+                                                                    value={report.problemas_seleccionados![activeProblemIndex].problema}
+                                                                    onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema', e.target.value)}
+                                                                    className="flex-1 bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                    placeholder="Describa el problema actual..."
+                                                                />
+                                                            </div>
                                                         </div>
 
                                                         <div className="space-y-3">
@@ -604,9 +676,35 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                     <td className="px-6 py-4 text-[10px] font-bold text-red-400/80 italic">{p.problema_anticipado || '—'}</td>
                                                                     <td className="px-6 py-4 text-[10px] font-bold text-green-400/80">{p.tratamiento || '—'}</td>
                                                                     <td className="px-6 py-4 text-right">
-                                                                        <button onClick={(e) => { e.stopPropagation(); handleRemoveProblema(idx); }} className="opacity-0 group-hover:opacity-100 text-red-500 p-2 transition-all">
-                                                                            <span className="material-symbols-outlined text-lg">delete</span>
-                                                                        </button>
+                                                                        <div className="flex items-center justify-end gap-1">
+                                                                            {!readOnly && (
+                                                                                <>
+                                                                                    <button 
+                                                                                        onClick={(e) => { e.stopPropagation(); handleMoveProblema(idx, 'up'); }}
+                                                                                        disabled={idx === 0}
+                                                                                        className="text-slate-500 hover:text-primary p-1.5 transition-all disabled:opacity-20"
+                                                                                        title="Subir"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-lg">arrow_upward</span>
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        onClick={(e) => { e.stopPropagation(); handleMoveProblema(idx, 'down'); }}
+                                                                                        disabled={idx === (report.problemas_seleccionados?.length || 0) - 1}
+                                                                                        className="text-slate-500 hover:text-primary p-1.5 transition-all disabled:opacity-20"
+                                                                                        title="Bajar"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-lg">arrow_downward</span>
+                                                                                    </button>
+                                                                                    <button 
+                                                                                        onClick={(e) => { e.stopPropagation(); handleRemoveProblema(idx); }} 
+                                                                                        className="text-red-500 hover:text-red-400 p-1.5 transition-all"
+                                                                                        title="Eliminar"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-lg">delete</span>
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                             ))}
