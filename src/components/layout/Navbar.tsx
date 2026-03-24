@@ -8,6 +8,7 @@ interface NavbarProps {
     onBack?: () => void;
     breadcrumb?: string;
     user: any;
+    isDarkMode?: boolean;
 }
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -16,7 +17,8 @@ const Navbar: React.FC<NavbarProps> = ({
     onMenuClick,
     onBack,
     breadcrumb,
-    user
+    user,
+    isDarkMode = true
 }) => {
     // Determinar si mostrar botón atrás
     const showBack = onBack || (activeTab !== 'home' && activeTab !== 'admin_dashboard');
@@ -38,7 +40,7 @@ const Navbar: React.FC<NavbarProps> = ({
     };
 
     return (
-        <nav className="h-16 border-b border-white/5 bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 sticky top-0 z-[60] transition-all duration-300">
+        <nav className="h-16 border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md flex items-center justify-between px-4 sm:px-6 sticky top-0 z-[60] transition-all duration-300">
             <div className="flex items-center gap-4">
                 {/* Botón Menú Mobile */}
                 <button
@@ -52,7 +54,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 {showBack && (
                     <button
                         onClick={onBack || (() => setActiveTab('home'))}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 transition-all border border-white/5 group"
+                        className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl text-slate-700 dark:text-slate-300 transition-all border border-slate-200 dark:border-white/5 group"
                     >
                         <span className="material-symbols-outlined text-sm font-bold group-hover:-translate-x-1 transition-transform">arrow_back_ios</span>
                         <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 opacity-60 ml-px">Certificación ISAUI</p>
@@ -65,6 +67,7 @@ const Navbar: React.FC<NavbarProps> = ({
                     <Logo
                         className="h-8 hidden sm:block"
                         showText={false}
+                        variant={isDarkMode ? 'neon' : 'light'}
                         onClick={() => setActiveTab('home')}
                     />
 
@@ -90,7 +93,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 {user ? (
                     <div className="flex items-center gap-3 pl-4 border-l border-white/10">
                         <div className="text-right hidden sm:block">
-                            <p className="text-[11px] font-black text-white uppercase tracking-tight leading-none">
+                            <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight leading-none">
                                 {user.profile?.full_name?.split(' ')[0] || 'Senderista'}
                             </p>
                             <p className="text-[8px] text-primary font-bold uppercase tracking-widest mt-0.5">

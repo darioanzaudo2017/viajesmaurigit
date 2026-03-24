@@ -266,6 +266,54 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
         }
     };
 
+    const handleDownloadRowPDF = async (row: any) => {
+        try {
+            setIsGenerating(true);
+            const fileName = `SIMULACRO_${row.paciente_nombre.replace(/\s+/g, '_')}_${new Date(row.created_at).toLocaleDateString().replace(/\//g, '-')}`;
+
+            const soapData = {
+                patientName: row.paciente_nombre,
+                incidentTime: row.data.hora_incidente || 'N/A',
+                location: row.data.referencia_viaje || 'N/A',
+                severity: row.data.severity || 'mod',
+                scene: row.data.escena || 'No especificada',
+                symptoms: row.data.e_sintoma || 'N/A',
+                allergies: row.data.e_alergias || 'Ninguna conocida',
+                medications: row.data.e_medicacion || 'N/A',
+                history: row.data.e_historia_pa || 'N/A',
+                lastIntake: row.data.e_ultima_inge || 'N/A',
+                events: row.data.e_eventos || 'N/A',
+                vitals: (row.data.signos_vitales || []).map((sv: any) => ({
+                    time: sv.hora,
+                    pulse: sv.pulso || '-',
+                    resp: sv.respiracion || '-',
+                    bp: sv.presion || '-',
+                    spo2: sv.spo2 || '-',
+                    temp: sv.temperatura || '-',
+                    avdi: sv.avdi || '-'
+                })),
+                skin: row.data.sv_piel || 'No especificado',
+                assessment: row.data.evaluacion_guia || 'Sin evaluaciÃ³n',
+                plan: row.data.observacione || 'Sin plan',
+                responsibleId: row.responsable_id || 'N/A',
+                problemas: (row.data.problemas_seleccionados || []).map((p: any) => ({
+                    problema: p.problema || p.maestro?.problema || 'N/A',
+                    anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
+                    tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
+                    observacion: p.observacion_especifica || 'Sin observaciones'
+                })),
+                notasAdicionales: row.data.notas_adicionales
+            };
+
+            await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            alert("Error al generar el PDF.");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const filteredSimulations = simulations.filter(sim => {
         const matchesName = sim.paciente_nombre.toLowerCase().includes(searchTerm.toLowerCase());
         const date = new Date(sim.created_at);
@@ -284,7 +332,7 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
 
     if (showSoapForm) {
         return (
-            <div className="bg-background-dark min-h-screen">
+            <div className="bg-background-light dark:bg-background-dark min-h-screen">
                 <SoapForm
                     report={currentReport}
                     setReport={setCurrentReport as any}
@@ -305,14 +353,14 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                 {/* Overlay for providing names in simulation mode */}
                 {isEnteringName && (
                     <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-                        <div className="bg-slate-900 border border-primary/20 p-8 rounded-[32px] max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
-                            <h2 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Nueva Ficha SOAP</h2>
-                            <p className="text-slate-400 text-sm mb-6">Para comenzar la simulación, asigne un nombre ficticio a su paciente.</p>
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-primary/20 p-8 rounded-[32px] max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight">Nueva Ficha SOAP</h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Para comenzar la simulación, asigne un nombre ficticio a su paciente.</p>
                             <input
                                 autoFocus
                                 value={patientName}
                                 onChange={(e) => setPatientName(e.target.value)}
-                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all mb-6"
+                                className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all mb-6"
                                 placeholder="Nombre Completo del Paciente..."
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && patientName) setIsEnteringName(false);
@@ -359,7 +407,7 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-10 animate-pulse"></div>
                         <div className="flex-1 space-y-4">
                              <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Gestión de Incidentes <span className="text-primary block sm:inline">en Campo</span></h2>
-                             <p className="text-slate-400 max-w-xl text-sm font-medium leading-relaxed">Inicia un nuevo registro SOAP (Subjetivo, Objetivo, Evaluación, Plan) para documentar la atención de pacientes en el campo como parte de tu entrenamiento.</p>
+                             <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm font-medium leading-relaxed">Inicia un nuevo registro SOAP (Subjetivo, Objetivo, Evaluación, Plan) para documentar la atención de pacientes en el campo como parte de tu entrenamiento.</p>
                         </div>
                         <button onClick={handleCreateNew} className="flex min-w-[280px] md:min-w-[320px] cursor-pointer items-center justify-center overflow-hidden rounded-2xl h-20 px-10 bg-primary text-background-dark gap-4 text-xl font-black uppercase tracking-widest transition-all hover:scale-[1.05] active:scale-95 shadow-[0_20px_40px_-10px_rgba(19,236,109,0.4)]">
                             <span className="material-symbols-outlined text-4xl">emergency</span>
@@ -395,7 +443,7 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                         type="date" 
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="bg-slate-900/50 border border-slate-800 rounded-2xl h-14 px-6 text-xs text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                        className="bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-6 text-xs text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all font-medium"
                                     />
                                 </div>
                                 <div className="space-y-2">
@@ -404,7 +452,7 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                         type="date" 
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        className="bg-slate-900/50 border border-slate-800 rounded-2xl h-14 px-6 text-xs text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                        className="bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-6 text-xs text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all font-medium"
                                     />
                                 </div>
                                 {(searchTerm || startDate || endDate) && (
@@ -418,23 +466,23 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="overflow-hidden rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-xl shadow-2xl">
+                        <div className="overflow-hidden rounded-3xl border border-slate-200 dark:border-white/5 bg-white dark:bg-slate-900/40 backdrop-blur-xl shadow-2xl">
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-white/10">
-                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Creado</th>
-                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Actualización</th>
-                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Identificación Paciente</th>
-                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Responsable</th>
-                                            <th className="px-8 py-5 text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Estado Registro</th>
-                                            <th className="px-8 py-5 text-right text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-white/5">Gestión</th>
+                                        <tr className="bg-slate-50 dark:bg-white/10">
+                                            <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Creado</th>
+                                            <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Actualización</th>
+                                            <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Identificación Paciente</th>
+                                            <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Responsable</th>
+                                            
+                                            <th className="px-8 py-5 text-right text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Gestión</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/10">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-white/10">
                                         {loading ? (
                                             <tr>
-                                                <td colSpan={6} className="px-8 py-16 text-center">
+                                                <td colSpan={5} className="px-8 py-16 text-center">
                                                     <div className="flex flex-col items-center gap-3">
                                                         <div className="size-10 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
                                                         <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Sincronizando...</span>
@@ -443,43 +491,35 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                             </tr>
                                         ) : filteredSimulations.length === 0 ? (
                                             <tr>
-                                                <td colSpan={5} className="px-8 py-20 text-center">
+                                                <td colSpan={5} className="px-8 py-24 text-center">
                                                     <div className="flex flex-col items-center gap-4">
-                                                        <span className="material-symbols-outlined text-4xl text-slate-700 italic">search_off</span>
-                                                        <div className="space-y-1">
-                                                            <p className="text-slate-500 text-xs font-black uppercase tracking-widest">No se encontraron resultados</p>
-                                                            <p className="text-slate-600 text-[10px] font-bold">Prueba ajustando los filtros de búsqueda</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ) : filteredSimulations.length === 0 ? (
-                                            <tr>
-                                                <td colSpan={6} className="px-8 py-24 text-center">
-                                                    <div className="flex flex-col items-center gap-4">
-                                                        <div className="size-20 bg-slate-800/50 rounded-full flex items-center justify-center text-slate-500 mb-2">
+                                                        <div className="size-20 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 mb-2">
                                                             <span className="material-symbols-outlined text-4xl">inventory_2</span>
                                                         </div>
                                                         <div className="space-y-1">
-                                                            <h3 className="text-white text-lg font-black uppercase tracking-tight">No se encontraron resultados</h3>
-                                                            <p className="text-slate-500 text-xs font-medium uppercase tracking-widest italic">Prueba ajustando los filtros de búsqueda</p>
+                                                            <h3 className="text-slate-900 dark:text-white text-lg font-black uppercase tracking-tight">
+                                                                {(searchTerm || startDate || endDate) ? 'No se encontraron resultados' : 'No hay registros aún'}
+                                                            </h3>
+                                                            <p className="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-widest italic">
+                                                                {(searchTerm || startDate || endDate) ? 'Prueba ajustando los filtros de búsqueda' : 'Comience creando una nueva ficha SOAP'}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ) : (
                                             filteredSimulations.map((row) => (
-                                                <tr key={row.id} className="hover:bg-slate-800/20 transition-colors group">
+                                                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
                                                     <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex flex-col">
-                                                            <span className="text-white text-sm font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
-                                                            <span className="text-slate-400 text-[10px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex flex-col">
-                                                            <span className="text-slate-300 text-[11px] font-black tracking-tight">{row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '-'}</span>
-                                                            <span className="text-slate-500 text-[9px] font-bold uppercase">{row.updated_at ? new Date(row.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                                            <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black tracking-tight">{row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '-'}</span>
+                                                            <span className="text-slate-500 dark:text-slate-500 text-[9px] font-bold uppercase">{row.updated_at ? new Date(row.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap">
@@ -487,27 +527,30 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                                             <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
                                                                 {row.paciente_nombre.substring(0, 2).toUpperCase()}
                                                             </div>
-                                                            <span className="text-white text-sm font-black tracking-tight">{row.paciente_nombre}</span>
+                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{row.paciente_nombre}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="size-6 rounded-full bg-slate-700 flex items-center justify-center text-[8px] font-black text-slate-300 border border-white/10 uppercase">
+                                                            <div className="size-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[8px] font-black text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-white/10 uppercase">
                                                                 {row.autor_nombre?.substring(0, 1) || '?'}
                                                             </div>
-                                                            <span className="text-slate-300 text-[11px] font-black uppercase tracking-wider">{row.autor_nombre}</span>
+                                                            <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black uppercase tracking-wider">{row.autor_nombre}</span>
                                                         </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 whitespace-nowrap text-slate-300 text-sm font-medium">
-                                                        <span className={`capitalize font-black tracking-tight ${row.data.estado === 'finalizado' ? 'text-green-400' : 'text-amber-400 italic'}`}>
-                                                            {row.data.estado}
-                                                        </span>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap text-right">
                                                         <div className="flex items-center justify-end gap-2">
                                                             <button 
+                                                                onClick={() => handleDownloadRowPDF(row)}
+                                                                className="size-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all border border-primary/10"
+                                                                title="Descargar PDF"
+                                                                disabled={isGenerating}
+                                                            >
+                                                                <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
+                                                            </button>
+                                                            <button 
                                                                 onClick={() => handleEdit(row)} 
-                                                                className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${row.user_id === currentUserId ? 'bg-primary/10 hover:bg-primary/20 text-primary' : 'bg-slate-800 hover:bg-slate-700 text-slate-400'}`}
+                                                                className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${row.user_id === currentUserId ? 'bg-primary/10 hover:bg-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
                                                             >
                                                                 <span className="material-symbols-outlined text-lg">{row.user_id === currentUserId ? 'edit_note' : 'visibility'}</span> 
                                                                 {row.user_id === currentUserId ? 'Ver/Editar' : 'Ver'}
@@ -532,26 +575,26 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="bg-white/10 px-8 py-6 flex items-center justify-between border-t border-white/5">
-                                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">Mostrando {filteredSimulations.length} de {simulations.length} registros</span>
+                            <div className="bg-slate-50 dark:bg-white/10 px-8 py-6 flex items-center justify-between border-t border-slate-200 dark:border-white/5">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">Mostrando {filteredSimulations.length} de {simulations.length} registros</span>
                             </div>
                         </div>
                     </section>
                 )}
 
                 {isUniversityUser === false && !loading && (
-                    <section className="bg-slate-900/50 border border-slate-800 rounded-3xl p-12 text-center flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500">
-                        <div className="size-20 bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-2">
+                    <section className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-[40px] p-12 text-center flex flex-col items-center gap-6 animate-in zoom-in-95 duration-500 shadow-2xl">
+                        <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 border border-primary/20">
                             <span className="material-symbols-outlined text-5xl">school</span>
                         </div>
                         <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tight">Acceso Restringido</h3>
-                            <p className="text-slate-400 max-w-md mx-auto">
+                            <h3 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight italic">Acceso Restringido</h3>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto font-medium">
                                 Las herramientas de simulación clínica están disponibles exclusivamente para estudiantes registrados en TrekManager ISAUI.
                             </p>
                         </div>
                         <div className="flex gap-4 mt-4">
-                            <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            <div className="px-6 py-3 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500">
                                 Contactar soporte académico
                             </div>
                         </div>

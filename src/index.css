@@ -19,6 +19,8 @@
   --font-sans: "Inter", sans-serif;
 }
 
+@variant dark (&:where(.dark, .dark *));
+
 /* Fix for html2canvas oklch error */
 :root {
   --primary: 19, 236, 109;
@@ -29,7 +31,6 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
 }
 
 body {

@@ -9,9 +9,11 @@ interface SidebarProps {
     onLogout: () => void;
     isOpen: boolean;
     onClose: () => void;
+    isDarkMode: boolean;
+    toggleTheme: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogout, isOpen, onClose }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogout, isOpen, onClose, isDarkMode, toggleTheme }) => {
     const { isOnline, pendingReportsCount, syncing } = useOfflineSync();
     const isAdmin = user?.profile?.role === 'admin';
 
@@ -43,9 +45,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                 />
             )}
 
-            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-white/5 flex flex-col bg-background-dark h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-white/5 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6 flex items-center justify-between lg:hidden">
-                    <Logo className="h-8" variant="neon" showText={true} />
+                    <Logo className="h-8" variant={isDarkMode ? "neon" : "light"} showText={true} />
                     <button onClick={onClose} className="p-2 text-slate-400">
                         <span className="material-symbols-outlined">close</span>
                     </button>
@@ -97,13 +99,30 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                     )}
 
                     {user && (
-                        <button
-                            onClick={onLogout}
-                            className="w-full bg-slate-100 dark:bg-white/5 hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-500 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 border border-transparent hover:border-red-500/20"
-                        >
-                            <span className="material-symbols-outlined text-lg">logout</span>
-                            <span>Cerrar Sesión</span>
-                        </button>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={toggleTheme}
+                                className="w-full bg-slate-100 dark:bg-white/5 hover:bg-primary/10 text-slate-600 dark:text-slate-400 hover:text-primary py-2.5 rounded-lg text-xs font-bold flex items-center justify-between px-4 transition-all active:scale-95 border border-transparent hover:border-primary/20"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-lg">
+                                        {isDarkMode ? 'light_mode' : 'dark_mode'}
+                                    </span>
+                                    <span>Modo {isDarkMode ? 'Claro' : 'Oscuro'}</span>
+                                </div>
+                                <div className={`w-8 h-4 rounded-full bg-slate-300 dark:bg-slate-700 relative transition-colors`}>
+                                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all ${isDarkMode ? 'left-4.5' : 'left-0.5'}`}></div>
+                                </div>
+                            </button>
+
+                            <button
+                                onClick={onLogout}
+                                className="w-full bg-slate-100 dark:bg-white/5 hover:bg-red-500/10 text-slate-600 dark:text-slate-400 hover:text-red-500 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-all active:scale-95 border border-transparent hover:border-red-500/20"
+                            >
+                                <span className="material-symbols-outlined text-lg">logout</span>
+                                <span>Cerrar Sesión</span>
+                            </button>
+                        </div>
                     )}
 
                     {/* Offline Status */}

@@ -29,8 +29,28 @@ function App() {
   const [selectedSoapEnrollmentId, setSelectedSoapEnrollmentId] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const { isOnline, syncAllAdminData } = useOfflineSync();
   const hasSynced = useRef(false);
+
+  useEffect(() => {
+    console.log('[Theme] Switching to:', isDarkMode ? 'dark' : 'light');
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.style.colorScheme = 'dark';
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.style.colorScheme = 'light';
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  const toggleTheme = () => setIsDarkMode(prev => !prev);
 
   // Sync state with history for back button handling
   useEffect(() => {
@@ -249,6 +269,7 @@ function App() {
         setActiveTab={handleTabChange}
         user={user}
         onMenuClick={() => setSidebarOpen(true)}
+        isDarkMode={isDarkMode}
         onBack={activeTab !== 'home' ? () => {
           if (selectedTripId) {
             setSelectedTripId(null);
@@ -285,7 +306,7 @@ function App() {
         } : undefined}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden bg-background-light dark:bg-background-dark">
         {!selectedTripId && (
           <Sidebar
             activeTab={activeTab}
@@ -293,6 +314,8 @@ function App() {
             user={user}
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
+            isDarkMode={isDarkMode}
+            toggleTheme={toggleTheme}
             onLogout={() => {
               localStorage.removeItem('cached_session_user');
               localStorage.removeItem('cached_user_profile');

@@ -54,7 +54,7 @@ const Logo: React.FC<LogoProps> = ({ className = "size-10", showText = true, var
             </div>
             {showText && (
                 <div className="flex flex-col leading-none">
-                    <span className={`text-xl font-black tracking-tight uppercase italic ${variant === 'dark' ? 'text-background-dark' : 'text-white'}`}>
+                    <span className={`text-xl font-black tracking-tight uppercase italic ${variant === 'light' ? 'text-slate-900' : 'text-white'}`}>
                         TREK<span className="text-primary">LOGIX</span>
                     </span>
                     <span className="text-[7px] font-black uppercase tracking-[0.2em] text-trek-text-muted">

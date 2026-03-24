@@ -124,10 +124,10 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
     return (
         <div className="flex flex-1 overflow-hidden h-full">
             {/* Left Sidebar: My Upcoming Treks */}
-            <aside className="w-[320px] border-r border-white/10 flex flex-col bg-slate-50 hidden lg:flex">
+            <aside className="w-[320px] border-r border-slate-200 dark:border-white/10 flex flex-col bg-slate-50 dark:bg-trek-surface hidden lg:flex">
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-2">
-                        <h2 className="text-slate-900 text-xl font-bold tracking-tight">Mis Expediciones</h2>
+                        <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Mis Expediciones</h2>
                         {userTreks.length > 0 && (
                             <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded font-bold">{userTreks.length} Activas</span>
                         )}
@@ -153,7 +153,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             <div
                                 key={trek.id}
                                 onClick={() => onTrekClick?.(trek.id)}
-                                className="group bg-neutral-900 rounded-xl border border-white/5 p-4 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow-md"
+                                className="group bg-white dark:bg-neutral-900 rounded-xl border border-slate-200 dark:border-white/5 p-4 hover:border-primary/50 transition-all cursor-pointer shadow-sm hover:shadow-md"
                             >
                                 <div className="flex gap-4">
                                     <div
@@ -161,7 +161,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                         style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'}")` }}
                                     ></div>
                                     <div className="flex flex-col justify-center overflow-hidden">
-                                        <p className="text-white text-base font-bold truncate uppercase tracking-tight">{trek.title}</p>
+                                        <p className="text-slate-900 dark:text-white text-base font-bold truncate uppercase tracking-tight">{trek.title}</p>
                                         <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">{trek.details}</p>
                                         <div className="mt-2 flex items-center gap-2">
                                             <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${trek.status === 'confirmed' ? 'bg-primary/20 text-primary' : 'bg-orange-500/20 text-orange-500'}`}>
@@ -185,12 +185,12 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             className="border-2 border-dashed border-slate-300 rounded-xl p-8 flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 hover:border-primary/50 cursor-pointer transition-all mt-4"
                         >
                             <span className="material-symbols-outlined text-4xl mb-2 text-primary">add_circle</span>
-                            <p className="text-xs font-black uppercase tracking-widest text-slate-900">Crear Nueva Expedición</p>
+                            <p className="text-xs font-black uppercase tracking-widest text-slate-900 dark:text-slate-300">Crear Nueva Expedición</p>
                         </div>
                     )}
                 </div>
                 {isAdmin && (
-                    <div className="p-4 bg-white border-t border-slate-200">
+                    <div className="p-4 bg-white dark:bg-trek-surface border-t border-slate-200 dark:border-white/10">
                         <button
                             onClick={onCreateTrekClick}
                             className="w-full bg-primary hover:bg-primary/90 text-background-dark h-12 rounded-xl font-bold transition-transform active:scale-[0.98] flex items-center justify-center gap-2 uppercase text-[10px] tracking-widest"
@@ -202,7 +202,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
             </aside>
 
             {/* Main Content: Discover New Adventures */}
-            <section className="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
+            <section className="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-4 md:p-8">
                 <div className="max-w-6xl mx-auto">
                     {/* User's Active Treks (Only on mobile where sidebar is hidden) */}
                     {userTreks.length > 0 && (
@@ -213,7 +213,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             >
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-primary text-lg">verified</span>
-                                    <h2 className="text-slate-900 text-base font-black uppercase tracking-tight">Mis Expediciones</h2>
+                                    <h2 className="text-slate-900 dark:text-white text-base font-black uppercase tracking-tight">Mis Expediciones</h2>
                                     <span className="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full font-black">{userTreks.length}</span>
                                 </div>
                                 <span className={`material-symbols-outlined text-slate-400 text-lg transition-transform duration-300 ${showAllTreks ? 'rotate-180' : ''}`}>expand_more</span>
@@ -225,14 +225,14 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     <div
                                         key={trek.id}
                                         onClick={() => onTrekClick?.(trek.id)}
-                                        className="group bg-neutral-900 rounded-2xl border border-white/5 px-4 py-3 hover:border-primary/50 transition-all cursor-pointer flex items-center gap-3"
+                                        className="group bg-slate-100 dark:bg-neutral-900 rounded-2xl border border-slate-200 dark:border-white/5 px-4 py-3 hover:border-primary/50 transition-all cursor-pointer flex items-center gap-3"
                                     >
                                         <div
                                             className="bg-center bg-no-repeat bg-cover rounded-xl size-12 flex-shrink-0"
                                             style={{ backgroundImage: `url("${trek.image || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b'}")` }}
                                         ></div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-white text-sm font-bold truncate uppercase tracking-tight">{trek.title}</p>
+                                            <p className="text-slate-900 dark:text-white text-sm font-bold truncate uppercase tracking-tight">{trek.title}</p>
                                             <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest truncate">{trek.details}</p>
                                         </div>
                                         <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0 ${trek.status === 'confirmed' ? 'bg-primary text-background-dark' : 'bg-orange-500/20 text-orange-400'}`}>
@@ -256,7 +256,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                     )}
 
                     {installPrompt && (
-                        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-[#0c1a14] to-[#112218] border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden group">
+                        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-primary/10 to-primary/5 dark:from-[#0c1a14] dark:to-[#112218] border border-primary/20 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-primary/10 transition-colors"></div>
 
                             <div className="relative z-10 flex items-center gap-4">
@@ -264,7 +264,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     <span className="material-symbols-outlined text-2xl">download</span>
                                 </div>
                                 <div>
-                                    <h3 className="text-white font-bold uppercase tracking-wide">Instala la App Nativa</h3>
+                                    <h3 className="text-slate-900 dark:text-white font-bold uppercase tracking-wide">Instala la App Nativa</h3>
                                     <p className="text-trek-text-muted text-xs">Acceso offline, notificaciones y mayor rendimiento.</p>
                                 </div>
                             </div>
@@ -286,11 +286,11 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             ) : (
                                 <p className="text-primary font-black uppercase tracking-[0.4em] text-[10px]">Explora el Mundo</p>
                             )}
-                            <h1 className="text-slate-900 text-4xl font-black tracking-tighter uppercase italic leading-none">Rutas Destacadas</h1>
+                            <h1 className="text-slate-900 dark:text-white text-4xl font-black tracking-tighter uppercase italic leading-none">Rutas Destacadas</h1>
                         </div>
                         <button
                             onClick={onDiscoverClick}
-                            className="bg-neutral-900 border border-white/5 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all text-white flex items-center gap-2 hover:text-primary"
+                            className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-white/5 px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm hover:shadow-md transition-all text-slate-900 dark:text-white flex items-center gap-2 hover:text-primary"
                         >
                             Ver Todas
                             <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -303,7 +303,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             <div
                                 key={route.id}
                                 onClick={() => onTrekClick?.(route.id)}
-                                className="group relative flex flex-col rounded-[32px] bg-neutral-900 border border-white/5 overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer"
+                                className="group relative flex flex-col rounded-[32px] bg-white dark:bg-neutral-900 border border-slate-200 dark:border-white/5 overflow-hidden hover:shadow-2xl hover:shadow-primary/5 transition-all cursor-pointer"
                             >
                                 <div className="relative aspect-[4/3] overflow-hidden">
                                     <div
@@ -316,7 +316,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     </div>
                                 </div>
                                 <div className="p-6">
-                                    <h3 className="text-white font-black text-xl leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">{route.titulo}</h3>
+                                    <h3 className="text-slate-900 dark:text-white font-black text-xl leading-tight uppercase tracking-tight group-hover:text-primary transition-colors">{route.titulo}</h3>
                                     <div className="flex gap-4 text-slate-400 text-[10px] font-black uppercase tracking-widest mt-4">
                                         <div className="flex items-center gap-1">
                                             <span className="material-symbols-outlined text-sm text-primary">location_on</span> {route.ubicacion?.split(',')[0]}
@@ -331,7 +331,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                     </div>
 
                     {/* Featured Exp */}
-                    <div className="mt-16 relative w-full h-[450px] rounded-[40px] overflow-hidden border border-white/5 group shadow-2xl">
+                    <div className="mt-16 relative w-full h-[450px] rounded-[40px] overflow-hidden border border-slate-200 dark:border-white/5 group shadow-2xl">
                         <div
                             className="absolute inset-0 bg-center bg-no-repeat bg-cover group-hover:scale-[1.02] transition-transform duration-1000"
                             style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=80&w=1200")' }}
