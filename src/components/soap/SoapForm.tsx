@@ -168,19 +168,26 @@ const SoapForm: React.FC<SoapFormProps> = ({
         setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
     };
 
-    const handleSortProblemas = () => {
+    const handleSortProblemas = (forceUpdate = false) => {
         if (!report.problemas_seleccionados || report.problemas_seleccionados.length <= 1) return;
         
-        // Record which problem is active to maintain the focus
-        const currentActiveId = activeProblemIndex !== null ? report.problemas_seleccionados[activeProblemIndex] : null;
+        // Record the current active problem object to maintain focus after sort
+        const activeProblem = activeProblemIndex !== null ? report.problemas_seleccionados[activeProblemIndex] : null;
         
-        const sorted = [...report.problemas_seleccionados].sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
+        const sorted = [...report.problemas_seleccionados].sort((a, b) => {
+            const valA = Number(a.orden) || 999;
+            const valB = Number(b.orden) || 999;
+            return valA - valB;
+        });
+
+        const hasChanged = JSON.stringify(sorted) !== JSON.stringify(report.problemas_seleccionados);
         
-        setReport(prev => ({ ...prev, problemas_seleccionados: sorted }));
-        
-        if (currentActiveId) {
-            const newIdx = sorted.findIndex(p => p === currentActiveId);
-            if (newIdx !== -1) setActiveProblemIndex(newIdx);
+        if (hasChanged || forceUpdate) {
+            setReport(prev => ({ ...prev, problemas_seleccionados: sorted }));
+            if (activeProblem) {
+                const newIdx = sorted.findIndex(p => p === activeProblem);
+                if (newIdx !== -1) setActiveProblemIndex(newIdx);
+            }
         }
     };
 
@@ -194,19 +201,50 @@ const SoapForm: React.FC<SoapFormProps> = ({
         }
     };
 
+    // Auto-adjust all textareas height on step or active problem change
+    React.useLayoutEffect(() => {
+        const adjustHeights = () => {
+            const textareas = document.querySelectorAll('textarea.auto-expand');
+            textareas.forEach(ta => {
+                const el = ta as HTMLTextAreaElement;
+                el.style.height = '0px';
+                const scrollHeight = el.scrollHeight;
+                el.style.height = `${scrollHeight}px`;
+            });
+        };
+
+        // Run immediately and after layout settled to ensure mobile height is perfect
+        adjustHeights();
+        const t1 = setTimeout(adjustHeights, 50);
+        const t2 = setTimeout(adjustHeights, 150);
+        
+        return () => {
+            clearTimeout(t1);
+            clearTimeout(t2);
+        };
+    }, [currentStep, activeProblemIndex, report.problemas_seleccionados]);
+
+    const autoExpandHeight = (e: React.FormEvent<HTMLTextAreaElement>) => {
+        const target = e.currentTarget;
+        // Setting height to 0px before measurement is critical for mobile accuracy
+        target.style.height = '0px';
+        const scrollHeight = target.scrollHeight;
+        target.style.height = `${scrollHeight}px`;
+    };
+
     return (
         <div className="w-full max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 border-b border-slate-200 dark:border-white/5 pb-8">
-                <div>
-                    <div className="flex items-center gap-2 mb-3">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 border-b border-slate-200 dark:border-white/5 pb-8">
+                <div className="w-full md:w-auto text-center md:text-left">
+                    <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
                         <button onClick={onCancel} className="bg-neutral-800 hover:bg-neutral-700 p-2 rounded-xl text-primary transition-all border border-white/5 mr-2">
                             <span className="material-symbols-outlined">arrow_back</span>
                         </button>
-                        <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] ${report.estado === 'finalizado' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
+                        <span className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${report.estado === 'finalizado' ? 'bg-green-500/20 text-green-500' : 'bg-primary/20 text-primary'}`}>
                             {isSimulation ? 'Simulacro de Práctica' : (report.id ? (report.estado === 'finalizado' ? 'Reporte Finalizado' : 'Borrador Guardado') : 'Nuevo Reporte')}
                         </span>
-                        {patientId && <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest hidden sm:inline">ID: {patientId.substring(0, 8)}</span>}
+                        {patientId && <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest hidden lg:inline">ID: {patientId.substring(0, 8)}</span>}
                     </div>
                     <h1 className="text-white text-2xl sm:text-3xl md:text-5xl font-black uppercase tracking-tighter leading-tight sm:leading-none mb-2">
                         {title} <span className="text-primary block sm:inline italic">{isSimulation ? 'Simulacro' : 'Incidente'}</span>
@@ -229,37 +267,59 @@ const SoapForm: React.FC<SoapFormProps> = ({
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                     {onDownloadPDF && (
                         <button
                             onClick={onDownloadPDF}
                             disabled={isGenerating}
-                            className="bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] h-12 px-6 rounded-2xl border border-white/5 transition-all flex items-center gap-2 shadow-lg shadow-black/20"
+                            className="flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] h-12 px-4 md:px-6 rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20"
                         >
                             <span className="material-symbols-outlined text-lg">{isGenerating ? 'sync' : 'picture_as_pdf'}</span>
-                            {isGenerating ? 'G...' : 'PDF'}
+                            <span className="hidden xs:inline">{isGenerating ? 'G...' : 'PDF'}</span>
                         </button>
+                    )}
+                    {!readOnly && (
+                        <>
+                            <button
+                                disabled={saving}
+                                onClick={() => onSave(false)}
+                                className="flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-slate-300 font-black uppercase tracking-widest text-[10px] h-12 px-4 md:px-6 rounded-2xl border border-white/5 transition-all flex items-center justify-center gap-2 shadow-lg shadow-black/20"
+                            >
+                                <span className="material-symbols-outlined text-lg">{saving ? 'sync' : 'save'}</span>
+                                <span className="hidden xs:inline">Borrador</span>
+                            </button>
+                            <button
+                                disabled={saving}
+                                onClick={() => onSave(true)}
+                                className="flex-[2] md:flex-none bg-primary hover:bg-primary/90 text-slate-900 font-black uppercase tracking-widest text-[10px] h-12 px-4 md:px-8 rounded-2xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                            >
+                                <span className="material-symbols-outlined text-lg font-black">{saving ? 'sync' : 'verified'}</span>
+                                <span>{saving ? 'G...' : 'Finalizar'}</span>
+                            </button>
+                        </>
                     )}
                     {!readOnly && onDelete && report.id && (
                         <button
                             onClick={onDelete}
                             disabled={saving}
-                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] h-12 px-6 rounded-2xl border border-red-500/10 transition-all flex items-center gap-2"
+                            className="bg-red-500/10 hover:bg-red-500/20 text-red-500 font-black uppercase tracking-widest text-[10px] h-12 px-4 md:px-6 rounded-2xl border border-red-500/10 transition-all flex items-center justify-center gap-2"
                         >
                             <span className="material-symbols-outlined text-lg">delete</span>
-                            Borrar
+                            <span className="hidden md:inline">Borrar</span>
                         </button>
                     )}
-                    <button onClick={onCancel} className="flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] h-12 px-8 rounded-2xl border border-white/5 transition-all shadow-lg shadow-black/20">
+                    <button onClick={onCancel} className="flex-1 md:flex-none bg-neutral-800 hover:bg-neutral-700 text-white font-black uppercase tracking-widest text-[10px] h-12 px-4 md:px-8 rounded-2xl border border-white/5 transition-all shadow-lg shadow-black/20">
                         Cerrar
                     </button>
                 </div>
             </div>
 
             {/* Steps Progress */}
-            <div className="flex justify-between items-center mb-12 px-4 relative">
-                <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 dark:bg-white/5 -translate-y-1/2 z-0"></div>
-                <div className="absolute top-1/2 left-0 h-0.5 bg-primary -translate-y-1/2 z-0 transition-all duration-500" style={{ width: `${(currentStep / 3) * 100}%` }}></div>
+            <div className="flex justify-between items-center mb-12 px-2 sm:px-6 relative">
+                <div className="absolute top-1/2 left-6 right-6 h-0.5 -translate-y-1/2 z-0 overflow-hidden rounded-full">
+                    <div className="w-full h-full bg-slate-200 dark:bg-white/5"></div>
+                    <div className="absolute top-0 left-0 h-full bg-primary transition-all duration-500 shadow-[0_0_10px_rgba(19,236,109,0.5)]" style={{ width: `${(currentStep / 3) * 100}%` }}></div>
+                </div>
 
                 {steps.map((s, idx) => (
                     <button
@@ -294,12 +354,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                         disabled={readOnly} 
                                         value={report.escena} 
                                         onChange={(e) => setReport({ ...report, escena: e.target.value })} 
-                                        onInput={(e) => {
-                                            const target = e.target as HTMLTextAreaElement;
-                                            target.style.height = 'auto';
-                                            target.style.height = `${target.scrollHeight}px`;
-                                        }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[300px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-600 leading-relaxed overflow-hidden" 
+                                        onInput={autoExpandHeight}
+                                        className="w-full bg-white/5 border border-white/10 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[300px] outline-none focus:ring-1 focus:ring-primary/50 shadow-inner placeholder:text-slate-600 leading-relaxed overflow-hidden auto-expand" 
                                         placeholder="Descripción del mecanismo de daño, problemas iniciales y su tratamiento e información general: nombre, sexo, edad, fecha, hora, lugar, etc." 
                                     />
                                 </div>
@@ -325,12 +381,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             disabled={readOnly} 
                                             value={report.e_sintoma} 
                                             onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} 
-                                            onInput={(e) => {
-                                                const target = e.target as HTMLTextAreaElement;
-                                                target.style.height = 'auto';
-                                                target.style.height = `${target.scrollHeight}px`;
-                                            }}
-                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden" 
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none" 
                                             placeholder="¿Qué siente el paciente?" 
                                         />
                                     </div>
@@ -350,12 +402,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             disabled={readOnly} 
                                             value={report.e_historia_pa} 
                                             onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} 
-                                            onInput={(e) => {
-                                                const target = e.target as HTMLTextAreaElement;
-                                                target.style.height = 'auto';
-                                                target.style.height = `${target.scrollHeight}px`;
-                                            }}
-                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden" 
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none" 
                                             placeholder="Historial medico relevante" 
                                         />
                                     </div>
@@ -397,12 +445,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     disabled={readOnly} 
                                     value={report.examen_fisico} 
                                     onChange={(e) => setReport({ ...report, examen_fisico: e.target.value })} 
-                                    onInput={(e) => {
-                                        const target = e.target as HTMLTextAreaElement;
-                                        target.style.height = 'auto';
-                                        target.style.height = `${target.scrollHeight}px`;
-                                    }}
-                                    className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[220px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-700 leading-relaxed overflow-hidden" 
+                                    onInput={autoExpandHeight}
+                                    className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[220px] outline-none focus:ring-1 focus:ring-primary/50 shadow-inner placeholder:text-slate-700 leading-relaxed overflow-hidden auto-expand resize-none" 
                                     placeholder="Escriba aquí los hallazgos del examen..." 
                                 />
                             </div>
@@ -534,6 +578,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             {(!readOnly || isSimulation) && (
                                                 <>
                                                     <button 
+                                                        type="button"
                                                         onClick={handleAddCustomProblema}
                                                         className="flex-1 sm:flex-none h-14 px-6 bg-white/5 border border-white/10 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-white/10 transition-all flex items-center justify-center gap-2 shadow-lg"
                                                     >
@@ -562,14 +607,15 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     {(report.problemas_seleccionados || []).length > 0 ? (
                                         <div className="space-y-6">
                                             {/* Tabs de Edición */}
-                                            <div className="flex flex-wrap gap-2 pb-2">
-                                                {(report.problemas_seleccionados || []).map((_, idx) => (
+                                            <div className="flex flex-wrap gap-2 pb-2 overflow-x-auto no-scrollbar max-w-full">
+                                                {(report.problemas_seleccionados || []).map((p, idx) => (
                                                     <div key={idx} className="flex items-center gap-1">
                                                         <button
+                                                            type="button"
                                                             onClick={() => setActiveProblemIndex(idx)}
-                                                            className={`px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${activeProblemIndex === idx ? 'bg-primary text-slate-900 border-primary shadow-xl' : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'}`}
+                                                            className={`px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${activeProblemIndex === idx ? 'bg-primary text-slate-900 border-primary shadow-xl scale-105' : 'bg-white/5 text-slate-400 border-white/5 hover:border-white/10'}`}
                                                         >
-                                                            P{idx + 1}
+                                                            {p.orden ? `#${p.orden}` : `P${idx + 1}`}
                                                         </button>
                                                     </div>
                                                 ))}
@@ -605,7 +651,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                         onChange={(e) => {
                                                                             handleUpdateProblema(activeProblemIndex, 'orden', e.target.value);
                                                                         }}
-                                                                        onBlur={handleSortProblemas}
+                                                                        onBlur={() => handleSortProblemas()}
                                                                         className="w-full bg-neutral-900 border border-white/5 rounded-xl h-12 px-4 text-xs text-white font-black"
                                                                     />
                                                                 </div>
@@ -613,12 +659,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                     disabled={readOnly}
                                                                     value={report.problemas_seleccionados![activeProblemIndex].problema}
                                                                     onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema', e.target.value)}
-                                                                    onInput={(e) => {
-                                                                        const target = e.target as HTMLTextAreaElement;
-                                                                        target.style.height = 'auto';
-                                                                        target.style.height = `${target.scrollHeight}px`;
-                                                                    }}
-                                                                    className="flex-1 bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden"
+                                                                    onInput={autoExpandHeight}
+                                                                    className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none"
                                                                     placeholder="Describa el problema actual..."
                                                                 />
                                                             </div>
@@ -632,12 +674,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                 disabled={readOnly}
                                                                 value={report.problemas_seleccionados![activeProblemIndex].problema_anticipado}
                                                                 onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema_anticipado', e.target.value)}
-                                                                onInput={(e) => {
-                                                                    const target = e.target as HTMLTextAreaElement;
-                                                                    target.style.height = 'auto';
-                                                                    target.style.height = `${target.scrollHeight}px`;
-                                                                }}
-                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden"
+                                                                onInput={autoExpandHeight}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none"
                                                                 placeholder="¿Qué podría complicarse?"
                                                             />
                                                         </div>
@@ -650,12 +688,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                 disabled={readOnly}
                                                                 value={report.problemas_seleccionados![activeProblemIndex].tratamiento}
                                                                 onChange={(e) => handleUpdateProblema(activeProblemIndex, 'tratamiento', e.target.value)}
-                                                                onInput={(e) => {
-                                                                    const target = e.target as HTMLTextAreaElement;
-                                                                    target.style.height = 'auto';
-                                                                    target.style.height = `${target.scrollHeight}px`;
-                                                                }}
-                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden"
+                                                                onInput={autoExpandHeight}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand"
                                                                 placeholder="Describa el tratamiento o acciones a seguir..."
                                                             />
                                                         </div>
@@ -677,27 +711,30 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                             </tr>
                                                         </thead>
                                                         <tbody className="divide-y divide-white/5">
-                                                            {report.problemas_seleccionados!.map((p, idx) => (
-                                                                <tr key={idx} className={`group hover:bg-white/5 transition-colors cursor-pointer ${activeProblemIndex === idx ? 'bg-primary/5' : ''}`} onClick={() => setActiveProblemIndex(idx)}>
-                                                                    <td className="px-6 py-4 text-[10px] font-bold text-slate-400">{idx + 1}</td>
-                                                                    <td className="px-6 py-4 text-[11px] font-black text-white">{p.problema || '—'}</td>
-                                                                    <td className="px-6 py-4 text-[10px] font-bold text-red-400/80 italic">{p.problema_anticipado || '—'}</td>
-                                                                    <td className="px-6 py-4 text-[10px] font-bold text-green-400/80">{p.tratamiento || '—'}</td>
-                                                                    <td className="px-6 py-4 text-right">
-                                                                        <div className="flex items-center justify-end gap-1">
-                                                                            {!readOnly && (
-                                                                                <button 
-                                                                                    onClick={(e) => { e.stopPropagation(); handleRemoveProblema(idx); }} 
-                                                                                    className="text-red-500 hover:text-red-400 p-1.5 transition-all"
-                                                                                    title="Eliminar"
-                                                                                >
-                                                                                    <span className="material-symbols-outlined text-lg">delete</span>
-                                                                                </button>
-                                                                            )}
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            ))}
+                                                            {([...(report.problemas_seleccionados || [])]).map((p, idx) => {
+                                                                const realIdx = idx;
+                                                                return (
+                                                                    <tr key={idx} className={`group hover:bg-white/5 transition-colors cursor-pointer ${activeProblemIndex === realIdx ? 'bg-primary/5' : ''}`} onClick={() => realIdx !== undefined && setActiveProblemIndex(realIdx)}>
+                                                                        <td className="px-6 py-4 text-[10px] font-bold text-slate-400">{p.orden || '-'}</td>
+                                                                        <td className="px-6 py-4 text-[11px] font-black text-white">{p.problema || '—'}</td>
+                                                                        <td className="px-6 py-4 text-[10px] font-bold text-red-400/80 italic">{p.problema_anticipado || '—'}</td>
+                                                                        <td className="px-6 py-4 text-[10px] font-bold text-green-400/80">{p.tratamiento || '—'}</td>
+                                                                        <td className="px-6 py-4 text-right">
+                                                                            <div className="flex items-center justify-end gap-1">
+                                                                                {!readOnly && (
+                                                                                    <button 
+                                                                                        onClick={(e) => { e.stopPropagation(); realIdx !== undefined && handleRemoveProblema(realIdx); }} 
+                                                                                        className="text-red-500 hover:text-red-400 p-1.5 transition-all"
+                                                                                        title="Eliminar"
+                                                                                    >
+                                                                                        <span className="material-symbols-outlined text-lg">delete</span>
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                        </td>
+                                                                    </tr>
+                                                                );
+                                                            })}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -723,12 +760,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             disabled={readOnly}
                                             value={report.notas_adicionales}
                                             onChange={(e) => setReport({ ...report, notas_adicionales: e.target.value })}
-                                            onInput={(e) => {
-                                                const target = e.target as HTMLTextAreaElement;
-                                                target.style.height = 'auto';
-                                                target.style.height = `${target.scrollHeight}px`;
-                                            }}
-                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-700 shadow-inner overflow-hidden"
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-slate-700 shadow-inner overflow-hidden auto-expand"
                                             placeholder="Información adicional relevante, coordinación logística, decisiones del equipo, etc..."
                                         />
                                     </div>
