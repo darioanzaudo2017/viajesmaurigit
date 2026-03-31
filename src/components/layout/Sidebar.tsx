@@ -40,12 +40,12 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
             {/* Mobile Overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
                     onClick={onClose}
                 />
             )}
 
-            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-white/5 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-50 transform overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-white/5 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-[100] transform overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6 flex items-center justify-between lg:hidden">
                     <Logo className="h-8" variant={isDarkMode ? "neon" : "light"} showText={true} />
                     <button onClick={onClose} className="p-2 text-slate-400">

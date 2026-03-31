@@ -68,47 +68,67 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
+            
+            // 1. Get current user
             const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
+            
+            if (user) {
+                setCurrentUserId(user.id);
+                let isUni = false;
 
-            // Fetch profile to check flags
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('is_university, role')
-                .eq('id', user.id)
-                .single();
-
-            const isUni = !!profile?.is_university || profile?.role === 'admin';
-            setIsUniversityUser(isUni);
-            setCurrentUserId(user.id);
-
-            if (isUni) {
                 if (isOnline) {
-                    // 1. Sync pending first
-                    await syncPendingSimulations();
-                    // 2. Download fresh from server to local DB
-                    await downloadAllSimulations();
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('is_university, role')
+                        .eq('id', user.id)
+                        .single();
 
-                    // 3. Cache maestros while we are at it
-                    const { data: mData } = await supabase
-                        .from('maestro_problemas_soap')
-                        .select('*')
-                        .order('problema');
-                    if (mData) {
-                        await db.maestroProblemasSoap.clear();
-                        await db.maestroProblemasSoap.bulkPut(mData);
-                        setMaestros(mData);
+                    if (profile) {
+                        isUni = !!profile.is_university || profile.role === 'admin';
+                        setIsUniversityUser(isUni);
+                        // Cache for offline
+                        localStorage.setItem(`is_university_${user.id}`, JSON.stringify(isUni));
                     }
                 } else {
-                    // Load maestros from local cache if offline
-                    const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
-                    setMaestros(localMaestros);
+                    // Offline fallback from cache
+                    const cachedUni = localStorage.getItem(`is_university_${user.id}`);
+                    isUni = cachedUni !== null ? JSON.parse(cachedUni) : false;
+                    setIsUniversityUser(isUni);
+                }
+
+                // If specialized user, sync and download
+                if (isUni) {
+                    await syncAndDownload(isOnline);
                 }
             }
         } catch (error) {
             console.error("Error fetching simulations:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const syncAndDownload = async (online: boolean) => {
+        if (online) {
+            // 1. Sync pending first
+            await syncPendingSimulations();
+            // 2. Download fresh from server to local DB
+            await downloadAllSimulations();
+
+            // 3. Cache maestros
+            const { data: mData } = await supabase
+                .from('maestro_problemas_soap')
+                .select('*')
+                .order('problema');
+            if (mData) {
+                await db.maestroProblemasSoap.clear();
+                await db.maestroProblemasSoap.bulkPut(mData);
+                setMaestros(mData);
+            }
+        } else {
+            // Load maestros from local cache if offline
+            const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
+            setMaestros(localMaestros);
         }
     };
 
