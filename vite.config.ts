@@ -1,9 +1,15 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { execSync } from 'child_process'
+
+const commitDate = execSync('git log -1 --format=%cI').toString().trim()
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __COMMIT_DATE__: JSON.stringify(commitDate),
+  },
   plugins: [
     react(),
     VitePWA({

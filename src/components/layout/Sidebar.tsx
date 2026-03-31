@@ -45,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                 />
             )}
 
-            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-white/5 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-50 transform ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+            <aside className={`fixed lg:relative inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-white/5 flex flex-col bg-white dark:bg-background-dark h-full transition-all duration-300 z-50 transform overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-white/10 ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
                 <div className="p-6 flex items-center justify-between lg:hidden">
                     <Logo className="h-8" variant={isDarkMode ? "neon" : "light"} showText={true} />
                     <button onClick={onClose} className="p-2 text-slate-400">
@@ -125,21 +125,33 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                         </div>
                     )}
 
-                    {/* Offline Status */}
+                    {/* Offline Status & Version */}
                     <div className="pt-2">
-                        <div className="flex items-center justify-between px-2">
-                            <div className="flex items-center gap-2">
-                                <div className={`size-2 rounded-full animate-pulse ${isOnline ? 'bg-green-500' : 'bg-amber-500'}`}></div>
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                                    {isOnline ? 'Conectado' : 'Modo Montaña'}
-                                </span>
-                            </div>
-                            {pendingReportsCount > 0 && (
-                                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 rounded-full border border-primary/20">
-                                    <span className={`material-symbols-outlined text-[10px] text-primary ${syncing ? 'animate-spin' : ''}`}>sync</span>
-                                    <span className="text-[8px] font-black uppercase text-primary tracking-tighter">{pendingReportsCount} pendientes</span>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between px-2">
+                                <div className="flex items-center gap-2">
+                                    <div className={`size-2 rounded-full animate-pulse ${isOnline ? 'bg-green-500' : 'bg-amber-500'}`}></div>
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                                        {isOnline ? 'Conectado' : 'Modo Montaña'}
+                                    </span>
                                 </div>
-                            )}
+                                {pendingReportsCount > 0 && (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-primary/10 rounded-full border border-primary/20">
+                                        <span className={`material-symbols-outlined text-[10px] text-primary ${syncing ? 'animate-spin' : ''}`}>sync</span>
+                                        <span className="text-[8px] font-black uppercase text-primary tracking-tighter">{pendingReportsCount} pendientes</span>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div className="px-2 flex items-center justify-between">
+                                <p className="text-[8px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[10px]">history</span>
+                                    <span>v1.0.{new Date(__COMMIT_DATE__ as string).getTime().toString().slice(-4)}</span>
+                                </p>
+                                <p className="text-[8px] font-medium text-slate-400 dark:text-slate-500">
+                                    Actualizado: {new Date(__COMMIT_DATE__ as string).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
