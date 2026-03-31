@@ -294,7 +294,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                         disabled={readOnly} 
                                         value={report.escena} 
                                         onChange={(e) => setReport({ ...report, escena: e.target.value })} 
-                                        className="w-full bg-white/5 border border-white/10 rounded-[32px] p-8 text-sm text-white min-h-[300px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-600 leading-relaxed" 
+                                        onInput={(e) => {
+                                            const target = e.target as HTMLTextAreaElement;
+                                            target.style.height = 'auto';
+                                            target.style.height = `${target.scrollHeight}px`;
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[300px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-600 leading-relaxed overflow-hidden" 
                                         placeholder="Descripción del mecanismo de daño, problemas iniciales y su tratamiento e información general: nombre, sexo, edad, fecha, hora, lugar, etc." 
                                     />
                                 </div>
@@ -316,7 +321,18 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                 <div className="space-y-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">S (Síntomas / Queja Principal)</label>
-                                        <textarea disabled={readOnly} value={report.e_sintoma} onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="¿Qué siente el paciente?" />
+                                        <textarea 
+                                            disabled={readOnly} 
+                                            value={report.e_sintoma} 
+                                            onChange={(e) => setReport({ ...report, e_sintoma: e.target.value })} 
+                                            onInput={(e) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                target.style.height = 'auto';
+                                                target.style.height = `${target.scrollHeight}px`;
+                                            }}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden" 
+                                            placeholder="¿Qué siente el paciente?" 
+                                        />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">A (Alergias)</label>
@@ -330,7 +346,18 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                 <div className="space-y-6">
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">P (Historia Pasada)</label>
-                                        <textarea disabled={readOnly} value={report.e_historia_pa} onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Historial medico relevante" />
+                                        <textarea 
+                                            disabled={readOnly} 
+                                            value={report.e_historia_pa} 
+                                            onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} 
+                                            onInput={(e) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                target.style.height = 'auto';
+                                                target.style.height = `${target.scrollHeight}px`;
+                                            }}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden" 
+                                            placeholder="Historial medico relevante" 
+                                        />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">U (Última Ingesta)</label>
@@ -355,10 +382,10 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                 Examen
                             </h3>
                             
-                            <div className="bg-primary/5 border border-primary/20 rounded-[24px] p-6 mb-4">
+                            <div className="bg-primary/5 border border-primary/20 rounded-[24px] p-4 sm:p-6 mb-4">
                                 <div className="flex items-start gap-4">
                                     <span className="material-symbols-outlined text-primary text-xl">info</span>
-                                    <p className="text-[11px] font-bold text-slate-300 leading-relaxed uppercase tracking-wider">
+                                    <p className="text-[9px] sm:text-[11px] font-bold text-slate-300 leading-relaxed uppercase tracking-wider">
                                         Detallar los que el socorrista encuentra: dolores, molestias, inflamación, deformidad, moretón, crepitación, etc. 
                                         Movilidad, sensibilidad, circulación (MSC distal). Información pertinente sobre molestias en la columna.
                                     </p>
@@ -370,7 +397,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     disabled={readOnly} 
                                     value={report.examen_fisico} 
                                     onChange={(e) => setReport({ ...report, examen_fisico: e.target.value })} 
-                                    className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 text-sm text-white min-h-[220px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-700 leading-relaxed" 
+                                    onInput={(e) => {
+                                        const target = e.target as HTMLTextAreaElement;
+                                        target.style.height = 'auto';
+                                        target.style.height = `${target.scrollHeight}px`;
+                                    }}
+                                    className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[220px] outline-none focus:ring-1 focus:ring-primary/50 transition-all shadow-inner placeholder:text-slate-700 leading-relaxed overflow-hidden" 
                                     placeholder="Escriba aquí los hallazgos del examen..." 
                                 />
                             </div>
@@ -564,8 +596,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
                                                                 <span className="material-symbols-outlined text-sm">emergency</span> 1. Problema
                                                             </label>
-                                                            <div className="flex gap-4">
-                                                                <div className="w-24 shrink-0 space-y-2">
+                                                            <div className="flex flex-col sm:flex-row gap-4">
+                                                                <div className="w-full sm:w-24 shrink-0 space-y-2">
                                                                     <label className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Nº Orden</label>
                                                                     <input 
                                                                         type="number" 
@@ -581,7 +613,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                     disabled={readOnly}
                                                                     value={report.problemas_seleccionados![activeProblemIndex].problema}
                                                                     onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema', e.target.value)}
-                                                                    className="flex-1 bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                    onInput={(e) => {
+                                                                        const target = e.target as HTMLTextAreaElement;
+                                                                        target.style.height = 'auto';
+                                                                        target.style.height = `${target.scrollHeight}px`;
+                                                                    }}
+                                                                    className="flex-1 bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden"
                                                                     placeholder="Describa el problema actual..."
                                                                 />
                                                             </div>
@@ -595,7 +632,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                 disabled={readOnly}
                                                                 value={report.problemas_seleccionados![activeProblemIndex].problema_anticipado}
                                                                 onChange={(e) => handleUpdateProblema(activeProblemIndex, 'problema_anticipado', e.target.value)}
-                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                onInput={(e) => {
+                                                                    const target = e.target as HTMLTextAreaElement;
+                                                                    target.style.height = 'auto';
+                                                                    target.style.height = `${target.scrollHeight}px`;
+                                                                }}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden"
                                                                 placeholder="¿Qué podría complicarse?"
                                                             />
                                                         </div>
@@ -608,7 +650,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                 disabled={readOnly}
                                                                 value={report.problemas_seleccionados![activeProblemIndex].tratamiento}
                                                                 onChange={(e) => handleUpdateProblema(activeProblemIndex, 'tratamiento', e.target.value)}
-                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all"
+                                                                onInput={(e) => {
+                                                                    const target = e.target as HTMLTextAreaElement;
+                                                                    target.style.height = 'auto';
+                                                                    target.style.height = `${target.scrollHeight}px`;
+                                                                }}
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 transition-all overflow-hidden"
                                                                 placeholder="Describa el tratamiento o acciones a seguir..."
                                                             />
                                                         </div>
@@ -676,7 +723,12 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             disabled={readOnly}
                                             value={report.notas_adicionales}
                                             onChange={(e) => setReport({ ...report, notas_adicionales: e.target.value })}
-                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-700 shadow-inner"
+                                            onInput={(e) => {
+                                                const target = e.target as HTMLTextAreaElement;
+                                                target.style.height = 'auto';
+                                                target.style.height = `${target.scrollHeight}px`;
+                                            }}
+                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 transition-all placeholder:text-slate-700 shadow-inner overflow-hidden"
                                             placeholder="Información adicional relevante, coordinación logística, decisiones del equipo, etc..."
                                         />
                                     </div>
