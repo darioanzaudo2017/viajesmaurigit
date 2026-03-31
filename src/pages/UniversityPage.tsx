@@ -3,13 +3,23 @@ import { supabase } from '../api/supabase';
 import SoapForm from '../components/soap/SoapForm';
 import type { SoapReport, MaestroProblema } from '../components/soap/SoapForm';
 import { generateMedicalPDF } from '../utils/pdfGenerator';
+import { useOfflineSync } from '../hooks/useOfflineSync';
+import { db } from '../api/db';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 interface UniversityPageProps {
 }
 
 const UniversityPage: React.FC<UniversityPageProps> = () => {
     const [showSoapForm, setShowSoapForm] = useState(false);
-    const [simulations, setSimulations] = useState<any[]>([]);
+    const { isOnline, downloadAllSimulations, syncPendingSimulations } = useOfflineSync();
+    
+    // Dexie Live Query to auto-update UI from local DB
+    const localSimulations = useLiveQuery(
+        () => db.universitySimulations.toArray(),
+        []
+    ) || [];
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -52,59 +62,48 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchSimulations();
-    }, []);
+        fetchData();
+    }, [isOnline]);
 
-    const fetchSimulations = async () => {
+    const fetchData = async () => {
         try {
             setLoading(true);
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // Fetch profile to check is_university flag
+            // Fetch profile to check flags
             const { data: profile } = await supabase
                 .from('profiles')
-                .select('is_university')
+                .select('is_university, role')
                 .eq('id', user.id)
                 .single();
 
-            const isUni = !!profile?.is_university;
+            const isUni = !!profile?.is_university || profile?.role === 'admin';
             setIsUniversityUser(isUni);
             setCurrentUserId(user.id);
 
             if (isUni) {
-                // Fetch simulations and profiles in parallel for better performance and reliability
-                const [simsRes, profilesRes] = await Promise.all([
-                    supabase.from('simulacros_soap').select('*').order('created_at', { ascending: false }),
-                    supabase.from('profiles').select('id, full_name')
-                ]);
+                if (isOnline) {
+                    // 1. Sync pending first
+                    await syncPendingSimulations();
+                    // 2. Download fresh from server to local DB
+                    await downloadAllSimulations();
 
-                if (simsRes.error) throw simsRes.error;
-                if (profilesRes.error) throw profilesRes.error;
-
-                const sims = simsRes.data || [];
-                const profiles = profilesRes.data || [];
-
-                // Create lookup map
-                const profilesMap = profiles.reduce((acc: any, curr: any) => {
-                    acc[curr.id] = curr.full_name;
-                    return acc;
-                }, {});
-
-                // Merge names
-                const formattedData = sims.map((s: any) => ({
-                    ...s,
-                    autor_nombre: profilesMap[s.user_id] || 'Estudiante'
-                }));
-
-                setSimulations(formattedData);
-
-                // Cargar maestros de problemas
-                const { data: mData } = await supabase
-                    .from('maestro_problemas_soap')
-                    .select('*')
-                    .order('problema');
-                if (mData) setMaestros(mData);
+                    // 3. Cache maestros while we are at it
+                    const { data: mData } = await supabase
+                        .from('maestro_problemas_soap')
+                        .select('*')
+                        .order('problema');
+                    if (mData) {
+                        await db.maestroProblemasSoap.clear();
+                        await db.maestroProblemasSoap.bulkPut(mData);
+                        setMaestros(mData);
+                    }
+                } else {
+                    // Load maestros from local cache if offline
+                    const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
+                    setMaestros(localMaestros);
+                }
             }
         } catch (error) {
             console.error("Error fetching simulations:", error);
@@ -167,14 +166,17 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
         }
 
         try {
-            const { error } = await supabase
-                .from('simulacros_soap')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
+            if (isOnline) {
+                const { error } = await supabase
+                    .from('simulacros_soap')
+                    .delete()
+                    .eq('id', id);
+                if (error) throw error;
+            }
             
-            setSimulations(prev => prev.filter(s => s.id !== id));
+            // Always delete from local DB
+            await db.universitySimulations.delete(id);
+            
             if (showSoapForm) setShowSoapForm(false);
         } catch (error: any) {
             console.error("Error deleting simulation:", error);
@@ -193,23 +195,40 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No user found");
 
-            const payload = {
-                id: currentReport.id,
+            const localId = currentReport.id || crypto.randomUUID();
+            const createdAt = currentReport.id ? (currentReport as any).created_at : new Date().toISOString();
+            const reportData = { ...currentReport, id: localId, estado: isFinal ? 'finalizado' : 'borrador' };
+            
+            const localPayload = {
+                id: localId,
                 user_id: user.id,
                 paciente_nombre: patientName,
-                data: { ...currentReport, estado: isFinal ? 'finalizado' : 'borrador' },
-                created_at: currentReport.id ? undefined : new Date().toISOString()
+                status: isOnline ? 'synced' : 'pending',
+                data: reportData,
+                created_at: createdAt
             };
 
-            const { error } = await supabase
-                .from('simulacros_soap')
-                .upsert(payload);
+            if (isOnline) {
+                const { error } = await supabase
+                    .from('simulacros_soap')
+                    .upsert({
+                        id: localId,
+                        user_id: user.id,
+                        paciente_nombre: patientName,
+                        data: reportData,
+                        created_at: createdAt
+                    });
 
-            if (error) throw error;
+                if (error) {
+                    console.warn("Backend save failed, keeping as pending locally", error);
+                    localPayload.status = 'pending';
+                }
+            }
 
-            alert(isFinal ? "Simulacro finalizado y guardado con éxito" : "Borrador de simulación guardado");
+            await db.universitySimulations.put(localPayload as any);
+
+            alert(isFinal ? "Simulacro finalizado y guardado" : "Borrador de simulación guardado" + (!isOnline ? " localmente" : ""));
             setShowSoapForm(false);
-            fetchSimulations();
         } catch (error) {
             console.error("Error saving simulation:", error);
             alert("Error al guardar el simulacro.");
@@ -314,21 +333,23 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
         }
     };
 
-    const filteredSimulations = simulations.filter(sim => {
-        const matchesName = sim.paciente_nombre.toLowerCase().includes(searchTerm.toLowerCase());
-        const date = new Date(sim.created_at);
-        const matchesStart = startDate ? date >= new Date(startDate) : true;
-        
-        // Final del día para endDate
-        let matchesEnd = true;
-        if (endDate) {
-            const end = new Date(endDate);
-            end.setHours(23, 59, 59, 999);
-            matchesEnd = date <= end;
-        }
-        
-        return matchesName && matchesStart && matchesEnd;
-    });
+    const filteredSimulations = localSimulations
+        .filter(sim => {
+            const matchesName = sim.paciente_nombre.toLowerCase().includes(searchTerm.toLowerCase());
+            const date = new Date(sim.created_at);
+            const matchesStart = startDate ? date >= new Date(startDate) : true;
+            
+            // Final del día para endDate
+            let matchesEnd = true;
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                matchesEnd = date <= end;
+            }
+            
+            return matchesName && matchesStart && matchesEnd;
+        })
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     if (showSoapForm) {
         return (
@@ -518,8 +539,8 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex flex-col">
-                                                            <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black tracking-tight">{row.updated_at ? new Date(row.updated_at).toLocaleDateString() : '-'}</span>
-                                                            <span className="text-slate-500 dark:text-slate-500 text-[9px] font-bold uppercase">{row.updated_at ? new Date(row.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                                            <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
+                                                            <span className="text-slate-500 dark:text-slate-500 text-[9px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap">
@@ -533,9 +554,11 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                                     <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex items-center gap-3">
                                                             <div className="size-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[8px] font-black text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-white/10 uppercase">
-                                                                {row.autor_nombre?.substring(0, 1) || '?'}
+                                                                {row.status === 'pending' ? '!' : (row.user_id === currentUserId ? 'Yo' : '?')}
                                                             </div>
-                                                            <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black uppercase tracking-wider">{row.autor_nombre}</span>
+                                                            <span className={`text-[11px] font-black uppercase tracking-wider ${row.status === 'pending' ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                                {row.status === 'pending' ? 'PENDIENTE' : (row.user_id === currentUserId ? 'Mío' : 'Estudiante')}
+                                                            </span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap text-right">
@@ -576,7 +599,7 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
                                 </table>
                             </div>
                             <div className="bg-slate-50 dark:bg-white/10 px-8 py-6 flex items-center justify-between border-t border-slate-200 dark:border-white/5">
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">Mostrando {filteredSimulations.length} de {simulations.length} registros</span>
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-widest">Mostrando {filteredSimulations.length} de {localSimulations.length} registros</span>
                             </div>
                         </div>
                     </section>

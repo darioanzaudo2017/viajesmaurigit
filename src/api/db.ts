@@ -83,6 +83,15 @@ export interface LocalSoapReport {
     updated_at: number;
 }
 
+export interface LocalUniversitySimulation {
+    id: string; // uuid
+    user_id: string;
+    paciente_nombre: string;
+    status: 'pending' | 'synced' | 'error';
+    data: any; // Full Simulation JSON
+    created_at: string;
+}
+
 export class TrekDatabase extends Dexie {
     trips!: Table<LocalTrip>;
     registrations!: Table<LocalRegistration>;
@@ -91,6 +100,7 @@ export class TrekDatabase extends Dexie {
     medicalRecords!: Table<LocalMedicalRecord>;
     soapReports!: Table<LocalSoapReport>;
     maestroProblemasSoap!: Table<MaestroProblema>;
+    universitySimulations!: Table<LocalUniversitySimulation>;
 
     constructor() {
         super('TrekPWA_DB');
@@ -121,6 +131,17 @@ export class TrekDatabase extends Dexie {
             medicalRecords: 'user_id',
             soapReports: 'id, inscripcion_id, status',
             maestroProblemasSoap: 'id, problema'
+        });
+        // v5: Added universitySimulations for offline University SOAP simulations
+        this.version(5).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema',
+            universitySimulations: 'id, user_id, status'
         });
     }
 }

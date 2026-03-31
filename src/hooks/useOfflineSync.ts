@@ -12,6 +12,11 @@ export const useOfflineSync = () => {
         []
     );
 
+    const pendingSimulations = useLiveQuery(
+        () => db.universitySimulations.where('status').equals('pending').toArray(),
+        []
+    );
+
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
@@ -27,10 +32,15 @@ export const useOfflineSync = () => {
 
     // Effect to auto-sync when online
     useEffect(() => {
-        if (isOnline && pendingReports && pendingReports.length > 0 && !syncing) {
-            syncPendingReports();
+        if (isOnline && !syncing) {
+            if (pendingReports && pendingReports.length > 0) {
+                syncPendingReports();
+            }
+            if (pendingSimulations && pendingSimulations.length > 0) {
+                syncPendingSimulations();
+            }
         }
-    }, [isOnline, pendingReports, syncing]);
+    }, [isOnline, pendingReports, pendingSimulations, syncing]);
 
     const syncPendingReports = async () => {
         if (!pendingReports || pendingReports.length === 0) return;
@@ -83,6 +93,38 @@ export const useOfflineSync = () => {
                 console.error("Error syncing report:", report.id, err);
                 // Opcional: Marcar como error para evitar el loop inmediato si persiste
                 await db.soapReports.update(report.id, { status: 'error' });
+            }
+        }
+        setSyncing(false);
+    };
+
+    const syncPendingSimulations = async () => {
+        if (!pendingSimulations || pendingSimulations.length === 0) return;
+
+        setSyncing(true);
+        console.log(`Sincronizando ${pendingSimulations.length} simulacros SOAP...`);
+
+        for (const sim of pendingSimulations) {
+            try {
+                const payload = {
+                    id: sim.id,
+                    user_id: sim.user_id,
+                    paciente_nombre: sim.paciente_nombre,
+                    data: sim.data,
+                    created_at: sim.created_at
+                };
+
+                const { error } = await supabase
+                    .from('simulacros_soap')
+                    .upsert(payload);
+
+                if (error) throw error;
+
+                await db.universitySimulations.update(sim.id, { status: 'synced' });
+                console.log(`Simulacro ${sim.id} sincronizado con éxito.`);
+            } catch (err) {
+                console.error("Error syncing simulation:", sim.id, err);
+                await db.universitySimulations.update(sim.id, { status: 'error' });
             }
         }
         setSyncing(false);
@@ -257,6 +299,35 @@ export const useOfflineSync = () => {
         }
     }, []);
 
+    const downloadAllSimulations = useCallback(async () => {
+        try {
+            const { data: sims, error } = await supabase
+                .from('simulacros_soap')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            if (!sims || sims.length === 0) return { success: true, count: 0 };
+
+            // We don't clear all because it might delete pending ones from other users (unlikely but safe)
+            // Instead, we only update/insert what we got from server
+            await db.universitySimulations.bulkPut(sims.map(s => ({
+                id: s.id,
+                user_id: s.user_id,
+                paciente_nombre: s.paciente_nombre,
+                status: 'synced',
+                data: s.data,
+                created_at: s.created_at
+            })));
+
+            console.log(`[OfflineSync] ${sims.length} simulacros cacheados.`);
+            return { success: true, count: sims.length };
+        } catch (err) {
+            console.error('[OfflineSync] Error descargando simulacros:', err);
+            return { success: false, error: err };
+        }
+    }, []);
+
     // ─── NEW: Sync everything for admin offline use ───────────────
     const syncAllAdminData = useCallback(async () => {
         if (syncing) return;
@@ -279,10 +350,13 @@ export const useOfflineSync = () => {
         isOnline,
         syncing,
         pendingReportsCount: pendingReports?.length || 0,
+        pendingSimulationsCount: pendingSimulations?.length || 0,
         downloadTripData,
         downloadAllTrips,
         downloadAllEnrollments,
+        downloadAllSimulations,
         syncAllAdminData,
-        syncPendingReports
+        syncPendingReports,
+        syncPendingSimulations
     };
 };

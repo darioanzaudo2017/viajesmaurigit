@@ -162,10 +162,26 @@ const SoapForm: React.FC<SoapFormProps> = ({
         setActiveProblemIndex(newIndex);
     };
 
-    const handleUpdateProblema = (index: number, field: keyof SoapProblemaSeleccionado, value: string) => {
+    const handleUpdateProblema = (index: number, field: keyof SoapProblemaSeleccionado, value: any) => {
         const newProblemas = [...(report.problemas_seleccionados || [])];
         newProblemas[index] = { ...newProblemas[index], [field]: value };
         setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
+    };
+
+    const handleSortProblemas = () => {
+        if (!report.problemas_seleccionados || report.problemas_seleccionados.length <= 1) return;
+        
+        // Record which problem is active to maintain the focus
+        const currentActiveId = activeProblemIndex !== null ? report.problemas_seleccionados[activeProblemIndex] : null;
+        
+        const sorted = [...report.problemas_seleccionados].sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
+        
+        setReport(prev => ({ ...prev, problemas_seleccionados: sorted }));
+        
+        if (currentActiveId) {
+            const newIdx = sorted.findIndex(p => p === currentActiveId);
+            if (newIdx !== -1) setActiveProblemIndex(newIdx);
+        }
     };
 
     const handleRemoveProblema = (index: number) => {
@@ -177,35 +193,6 @@ const SoapForm: React.FC<SoapFormProps> = ({
             setActiveProblemIndex(activeProblemIndex - 1);
         }
     };
-
-    const handleMoveProblema = (index: number, direction: 'up' | 'down') => {
-        if (!report.problemas_seleccionados) return;
-        const newProblemas = [...report.problemas_seleccionados];
-        const targetIndex = direction === 'up' ? index - 1 : index + 1;
-        
-        if (targetIndex < 0 || targetIndex >= newProblemas.length) return;
-        
-        // Swap
-        [newProblemas[index], newProblemas[targetIndex]] = [newProblemas[targetIndex], newProblemas[index]];
-        
-        // Update order numbers too
-        newProblemas.forEach((p, idx) => p.orden = idx + 1);
-
-        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
-        if (activeProblemIndex === index) {
-            setActiveProblemIndex(targetIndex);
-        } else if (activeProblemIndex === targetIndex) {
-            setActiveProblemIndex(index);
-        }
-    };
-
-    const handleSortProblemas = () => {
-        if (!report.problemas_seleccionados) return;
-        const sorted = [...report.problemas_seleccionados].sort((a, b) => (a.orden || 0) - (b.orden || 0));
-        setReport(prev => ({ ...prev, problemas_seleccionados: sorted }));
-        setActiveProblemIndex(0);
-    };
-
 
     return (
         <div className="w-full max-w-5xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -512,15 +499,6 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest italic">Añada problemas manuales o desde el catálogo</p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                                            {!readOnly && (report.problemas_seleccionados?.length || 0) > 1 && (
-                                                <button 
-                                                    onClick={handleSortProblemas}
-                                                    className="flex-1 sm:flex-none h-14 px-6 bg-primary/10 border border-primary/20 text-primary rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">sort</span>
-                                                    Ordenar por Nº
-                                                </button>
-                                            )}
                                             {(!readOnly || isSimulation) && (
                                                 <>
                                                     <button 
@@ -561,24 +539,6 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                         >
                                                             P{idx + 1}
                                                         </button>
-                                                        {!readOnly && (
-                                                            <div className="flex flex-col gap-0.5">
-                                                                <button 
-                                                                    onClick={() => handleMoveProblema(idx, 'up')}
-                                                                    disabled={idx === 0}
-                                                                    className="text-slate-600 hover:text-primary disabled:opacity-0 transition-all"
-                                                                >
-                                                                    <span className="material-symbols-outlined text-[14px]">arrow_drop_up</span>
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => handleMoveProblema(idx, 'down')}
-                                                                    disabled={idx === (report.problemas_seleccionados?.length || 0) - 1}
-                                                                    className="text-slate-600 hover:text-primary disabled:opacity-0 transition-all"
-                                                                >
-                                                                    <span className="material-symbols-outlined text-[14px]">arrow_drop_down</span>
-                                                                </button>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -613,6 +573,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                         onChange={(e) => {
                                                                             handleUpdateProblema(activeProblemIndex, 'orden', e.target.value);
                                                                         }}
+                                                                        onBlur={handleSortProblemas}
                                                                         className="w-full bg-neutral-900 border border-white/5 rounded-xl h-12 px-4 text-xs text-white font-black"
                                                                     />
                                                                 </div>
@@ -678,31 +639,13 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                     <td className="px-6 py-4 text-right">
                                                                         <div className="flex items-center justify-end gap-1">
                                                                             {!readOnly && (
-                                                                                <>
-                                                                                    <button 
-                                                                                        onClick={(e) => { e.stopPropagation(); handleMoveProblema(idx, 'up'); }}
-                                                                                        disabled={idx === 0}
-                                                                                        className="text-slate-500 hover:text-primary p-1.5 transition-all disabled:opacity-20"
-                                                                                        title="Subir"
-                                                                                    >
-                                                                                        <span className="material-symbols-outlined text-lg">arrow_upward</span>
-                                                                                    </button>
-                                                                                    <button 
-                                                                                        onClick={(e) => { e.stopPropagation(); handleMoveProblema(idx, 'down'); }}
-                                                                                        disabled={idx === (report.problemas_seleccionados?.length || 0) - 1}
-                                                                                        className="text-slate-500 hover:text-primary p-1.5 transition-all disabled:opacity-20"
-                                                                                        title="Bajar"
-                                                                                    >
-                                                                                        <span className="material-symbols-outlined text-lg">arrow_downward</span>
-                                                                                    </button>
-                                                                                    <button 
-                                                                                        onClick={(e) => { e.stopPropagation(); handleRemoveProblema(idx); }} 
-                                                                                        className="text-red-500 hover:text-red-400 p-1.5 transition-all"
-                                                                                        title="Eliminar"
-                                                                                    >
-                                                                                        <span className="material-symbols-outlined text-lg">delete</span>
-                                                                                    </button>
-                                                                                </>
+                                                                                <button 
+                                                                                    onClick={(e) => { e.stopPropagation(); handleRemoveProblema(idx); }} 
+                                                                                    className="text-red-500 hover:text-red-400 p-1.5 transition-all"
+                                                                                    title="Eliminar"
+                                                                                >
+                                                                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                                                                </button>
                                                                             )}
                                                                         </div>
                                                                     </td>
