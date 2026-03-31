@@ -192,16 +192,29 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
 
         try {
             setSaving(true);
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("No user found");
+            
+            // Use the user ID from props or state, avoid network call to Supabase Auth
+            const userId = user?.id || currentUserId;
+            if (!userId) throw new Error("No user found");
 
-            const localId = currentReport.id || crypto.randomUUID();
+            const generateUUID = () => {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                    return crypto.randomUUID();
+                }
+                // Fallback for non-secure contexts
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+
+            const localId = currentReport.id || generateUUID();
             const createdAt = currentReport.id ? (currentReport as any).created_at : new Date().toISOString();
             const reportData = { ...currentReport, id: localId, estado: isFinal ? 'finalizado' : 'borrador' };
             
             const localPayload = {
                 id: localId,
-                user_id: user.id,
+                user_id: userId,
                 paciente_nombre: patientName,
                 status: isOnline ? 'synced' : 'pending',
                 data: reportData,
@@ -213,7 +226,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     .from('simulacros_soap')
                     .upsert({
                         id: localId,
-                        user_id: user.id,
+                        user_id: userId,
                         paciente_nombre: patientName,
                         data: reportData,
                         created_at: createdAt
@@ -226,12 +239,15 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             }
 
             await db.universitySimulations.put(localPayload as any);
+            console.log("Successfully saved to local database");
 
             alert(isFinal ? "Simulacro finalizado y guardado" : "Borrador de simulación guardado" + (!isOnline ? " localmente" : ""));
             setShowSoapForm(false);
-        } catch (error) {
-            console.error("Error saving simulation:", error);
-            alert("Error al guardar el simulacro.");
+        } catch (error: any) {
+            console.error("CRITICAL ERROR saving simulation:", error);
+            // Mostrar más detalle si es posible
+            const detail = error.message || "Error desconocido";
+            alert(`Error al guardar el simulacro: ${detail}\n\nPor favor, verifique que el nombre del paciente no esté vacío.`);
         } finally {
             setSaving(false);
         }
@@ -546,9 +562,9 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                                     <td className="px-8 py-5 whitespace-nowrap">
                                                         <div className="flex items-center gap-4">
                                                             <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
-                                                                {row.paciente_nombre.substring(0, 2).toUpperCase()}
+                                                                {(row.paciente_nombre || '??').substring(0, 2).toUpperCase()}
                                                             </div>
-                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{row.paciente_nombre}</span>
+                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{row.paciente_nombre || 'Sin nombre'}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-5 whitespace-nowrap">
