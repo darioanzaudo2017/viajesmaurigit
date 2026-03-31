@@ -8,9 +8,10 @@ import { db } from '../api/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
 interface UniversityPageProps {
+    user?: any;
 }
 
-const UniversityPage: React.FC<UniversityPageProps> = () => {
+const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
     const [showSoapForm, setShowSoapForm] = useState(false);
     const { isOnline, downloadAllSimulations, syncPendingSimulations } = useOfflineSync();
     
@@ -62,51 +63,30 @@ const UniversityPage: React.FC<UniversityPageProps> = () => {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
-        fetchData();
-    }, [isOnline]);
-
-    const fetchData = async () => {
-        try {
-            setLoading(true);
-            
-            // 1. Get current user
-            const { data: { user } } = await supabase.auth.getUser();
-            
+        const initAuth = async () => {
             if (user) {
                 setCurrentUserId(user.id);
-                let isUni = false;
-
-                if (isOnline) {
-                    const { data: profile } = await supabase
-                        .from('profiles')
-                        .select('is_university, role')
-                        .eq('id', user.id)
-                        .single();
-
-                    if (profile) {
-                        isUni = !!profile.is_university || profile.role === 'admin';
-                        setIsUniversityUser(isUni);
-                        // Cache for offline
-                        localStorage.setItem(`is_university_${user.id}`, JSON.stringify(isUni));
-                    }
-                } else {
-                    // Offline fallback from cache
-                    const cachedUni = localStorage.getItem(`is_university_${user.id}`);
-                    isUni = cachedUni !== null ? JSON.parse(cachedUni) : false;
-                    setIsUniversityUser(isUni);
-                }
-
-                // If specialized user, sync and download
+                const isUni = !!user.profile?.is_university || user.profile?.role === 'admin';
+                setIsUniversityUser(isUni);
+                
                 if (isUni) {
                     await syncAndDownload(isOnline);
                 }
+            } else if (!isOnline) {
+                // If offline and no user from props, check last known session directly as last resort
+                const cachedProfile = localStorage.getItem('cached_user_profile');
+                const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
+                if (profile) {
+                    setIsUniversityUser(!!profile.is_university || profile.role === 'admin');
+                    setCurrentUserId(profile.id);
+                }
             }
-        } catch (error) {
-            console.error("Error fetching simulations:", error);
-        } finally {
             setLoading(false);
-        }
-    };
+        };
+        
+        initAuth();
+    }, [user, isOnline]);
+
 
     const syncAndDownload = async (online: boolean) => {
         if (online) {

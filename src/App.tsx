@@ -252,7 +252,7 @@ function App() {
           <AuthPage onSuccess={() => handleTabChange('medical')} />
         );
       case 'university':
-        return <UniversityPage />;
+        return <UniversityPage user={user} />;
       case 'university_news':
         return <UniversityNewsPage onBack={() => handleTabChange('university')} />;
       case 'safety':
