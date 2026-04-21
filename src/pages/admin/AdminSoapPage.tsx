@@ -89,6 +89,15 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                             ...remoteSoap,
                             problemas_seleccionados: remoteSoap.problemas || []
                         };
+
+                        // Cachear en Dexie para que esté disponible offline
+                        await db.soapReports.put({
+                            id: remoteSoap.id,
+                            inscripcion_id: enrollmentId,
+                            status: 'synced',
+                            data: existingSoap,
+                            updated_at: Date.now()
+                        });
                     }
                 } else {
                     // Load from local cache
@@ -253,7 +262,19 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 if (!report.id && enrollmentId) {
                     await supabase.from('inscripciones').update({ soap_creada: true }).eq('id', enrollmentId);
                 }
-                if (data) setReport({ ...data, problemas_seleccionados: reportData.problemas_seleccionados });
+
+                // CRÍTICO: Actualizar la caché local (Dexie) con la versión confirmada por Supabase.
+                // Sin esto, al ir offline se mostraría la versión anterior guardada localmente.
+                const syncedData = { ...data, problemas_seleccionados: reportData.problemas_seleccionados };
+                await db.soapReports.put({
+                    id: data.id,
+                    inscripcion_id: enrollmentId,
+                    status: 'synced',
+                    data: syncedData,
+                    updated_at: Date.now()
+                });
+
+                if (data) setReport(syncedData);
                 alert(isFinal ? "Reporte finalizado con éxito" : "Borrador guardado");
             } else {
                 // Offline Save to Dexie
