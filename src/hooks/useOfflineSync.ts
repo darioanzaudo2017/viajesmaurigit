@@ -7,8 +7,9 @@ export const useOfflineSync = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [syncing, setSyncing] = useState(false);
 
+    // Escuchar 'pending' Y 'error' para poder reintentar reportes fallidos
     const pendingReports = useLiveQuery(
-        () => db.soapReports.where('status').equals('pending').toArray(),
+        () => db.soapReports.where('status').anyOf('pending', 'error').toArray(),
         []
     );
 
@@ -30,30 +31,22 @@ export const useOfflineSync = () => {
         };
     }, []);
 
-    // Effect to auto-sync when online
-    useEffect(() => {
-        if (isOnline && !syncing) {
-            if (pendingReports && pendingReports.length > 0) {
-                syncPendingReports();
-            }
-            if (pendingSimulations && pendingSimulations.length > 0) {
-                syncPendingSimulations();
-            }
-        }
-    }, [isOnline, pendingReports, pendingSimulations, syncing]);
-
-    const syncPendingReports = async () => {
-        if (!pendingReports || pendingReports.length === 0) return;
+    const syncPendingReports = useCallback(async () => {
+        // Leer directamente de Dexie para evitar bug de closure con el state de React
+        const reportsToSync = await db.soapReports.where('status').anyOf('pending', 'error').toArray();
+        if (reportsToSync.length === 0) return;
 
         setSyncing(true);
-        console.log(`Sincronizando ${pendingReports.length} reportes SOAP...`);
+        console.log(`[OfflineSync] Sincronizando ${reportsToSync.length} reportes SOAP...`);
 
-        for (const report of pendingReports) {
+        for (const report of reportsToSync) {
             try {
-                // Limpiar campos que no pertenecen a la tabla física
-                const { problemas_seleccionados, ...cleanData } = report.data;
+                // Marcar como 'pending' mientras se intenta (evita doble proceso)
+                await db.soapReports.update(report.id, { status: 'pending' });
 
-                // Mapeo para columna en DB corregida
+                // Limpiar campos que no pertenecen a la tabla física de Supabase
+                const { problemas_seleccionados, problemas, ...cleanData } = report.data as any;
+
                 const finalPayload = {
                     ...cleanData,
                     updated_at: new Date(report.updated_at).toISOString()
@@ -67,9 +60,8 @@ export const useOfflineSync = () => {
 
                 if (error) throw error;
 
-                // Sync problemas relacionales si existen
+                // Sincronizar problemas relacionales si existen
                 if (problemas_seleccionados && problemas_seleccionados.length > 0) {
-                    // Borrar previos para evitar duplicados en reintentos
                     await supabase
                         .from('reportes_soap_problemas')
                         .delete()
@@ -78,22 +70,49 @@ export const useOfflineSync = () => {
                     const problemasToInsert = problemas_seleccionados.map((p: any) => ({
                         reporte_soap_id: savedReport.id,
                         problema_id: p.problema_id,
-                        observacion_especifica: p.observacion_especifica
+                        observacion_especifica: p.observacion_especifica,
+                        problema: p.problema,
+                        problema_anticipado: p.problema_anticipado,
+                        tratamiento: p.tratamiento
                     }));
-
                     await supabase.from('reportes_soap_problemas').insert(problemasToInsert);
                 }
 
-                await db.soapReports.update(report.id, { status: 'synced' });
-                console.log(`Reporte ${report.id} sincronizado con éxito.`);
+                // Actualizar la copia local con el ID real devuelto por Supabase
+                // (puede diferir si el reporte fue creado offline con UUID local)
+                await db.soapReports.put({
+                    id: savedReport.id,
+                    inscripcion_id: report.inscripcion_id,
+                    status: 'synced',
+                    data: { ...savedReport, problemas_seleccionados },
+                    updated_at: Date.now()
+                });
+                // Si el ID cambió (era UUID local), borrar el registro viejo
+                if (savedReport.id !== report.id) {
+                    await db.soapReports.delete(report.id);
+                }
+
+                console.log(`[OfflineSync] Reporte ${savedReport.id} sincronizado con éxito.`);
             } catch (err) {
-                console.error("Error syncing report:", report.id, err);
-                // Opcional: Marcar como error para evitar el loop inmediato si persiste
+                console.error('[OfflineSync] Error syncing report:', report.id, err);
+                // Marcar como 'error' — el próximo evento 'online' lo reintentará
                 await db.soapReports.update(report.id, { status: 'error' });
             }
         }
         setSyncing(false);
-    };
+    }, []);
+
+    // Auto-sync al recuperar conexión o cuando aparecen reportes pendientes
+    useEffect(() => {
+        if (isOnline && !syncing) {
+            if (pendingReports && pendingReports.length > 0) {
+                syncPendingReports();
+            }
+            if (pendingSimulations && pendingSimulations.length > 0) {
+                syncPendingSimulations();
+            }
+        }
+    }, [isOnline, pendingReports, pendingSimulations, syncing, syncPendingReports]);
 
     const syncPendingSimulations = async () => {
         if (!pendingSimulations || pendingSimulations.length === 0) return;
