@@ -98,6 +98,16 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                             data: existingSoap,
                             updated_at: Date.now()
                         });
+                    } else {
+                        // FALLBACK: No está en Supabase aún (fue guardado offline y aún no subió).
+                        // Buscar en Dexie para no mostrar pantalla vacía.
+                        const localSoap = await db.soapReports
+                            .where('inscripcion_id').equals(enrollmentId)
+                            .first();
+                        if (localSoap) {
+                            existingSoap = { ...localSoap.data, id: localSoap.id };
+                            console.log('[SOAP] Reporte no está en Supabase aún, mostrando versión local (pending).');
+                        }
                     }
                 } else {
                     // Load from local cache

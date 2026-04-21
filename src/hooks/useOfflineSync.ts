@@ -102,17 +102,32 @@ export const useOfflineSync = () => {
         setSyncing(false);
     }, []);
 
-    // Auto-sync al recuperar conexión o cuando aparecen reportes pendientes
+    // Effect 2: Reacciona cuando Dexie ya cargó los pendientes Y estamos online.
+    // Separado del listener de red para evitar la race condition donde
+    // isOnline=true pero pendingReports todavía es undefined (carga asíncrona de Dexie).
     useEffect(() => {
-        if (isOnline && !syncing) {
-            if (pendingReports && pendingReports.length > 0) {
-                syncPendingReports();
+        if (!isOnline) return;
+        if (syncing) return;
+
+        const hasPendingReports = pendingReports && pendingReports.length > 0;
+        const hasPendingSimulations = pendingSimulations && pendingSimulations.length > 0;
+
+        if (!hasPendingReports && !hasPendingSimulations) return;
+
+        let cancelled = false;
+        const run = async () => {
+            setSyncing(true);
+            try {
+                if (hasPendingReports) await syncPendingReports();
+                if (hasPendingSimulations) await syncPendingSimulations();
+            } finally {
+                if (!cancelled) setSyncing(false);
             }
-            if (pendingSimulations && pendingSimulations.length > 0) {
-                syncPendingSimulations();
-            }
-        }
-    }, [isOnline, pendingReports, pendingSimulations, syncing, syncPendingReports]);
+        };
+        run();
+
+        return () => { cancelled = true; };
+    }, [isOnline, pendingReports, pendingSimulations]);
 
     const syncPendingSimulations = async () => {
         if (!pendingSimulations || pendingSimulations.length === 0) return;
