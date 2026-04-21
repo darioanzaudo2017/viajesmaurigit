@@ -213,7 +213,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
 
             if (isOnline) {
                 // Eliminar campos que NO existen en la tabla física de Supabase
-                const { problemas_seleccionados, problemas, ...cleanReportData } = reportData;
+                const { problemas_seleccionados, problemas, ...cleanReportData } = reportData as any;
 
                 // Mapear observaciones a la columna física correcta (observaciones)
                 const finalPayload = {
