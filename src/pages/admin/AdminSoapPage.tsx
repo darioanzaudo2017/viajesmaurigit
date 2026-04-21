@@ -27,8 +27,6 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
         e_sintoma: '',
         e_alergias: '',
         e_medicacion: '',
-        e_historia_pa: '',
-        e_ultima_inge: '',
         e_eventos: '',
         examen_fisico: '',
         signos_vitales: [{
@@ -42,12 +40,14 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
             piel: ''
         }],
         sv_piel: '',
-        observacione: '',
-        evaluacion_guia: '',
-        responsable_id: 'ADMIN-99-TREK',
         severity: 'mod',
         problemas_seleccionados: [],
-        notas_adicionales: ''
+        notas_adicionales: '',
+        e_historia_pasada: '',
+        e_ultima_ingesta: '',
+        observaciones: '',
+        evaluacion_guia: '',
+        responsable_id: 'ADMIN-99-TREK'
     });
 
 
@@ -166,8 +166,8 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 symptoms: report.e_sintoma || 'N/A',
                 allergies: report.e_alergias || 'Ninguna conocida',
                 medications: report.e_medicacion || 'N/A',
-                history: report.e_historia_pa || 'N/A',
-                lastIntake: report.e_ultima_inge || 'N/A',
+                history: report.e_historia_pasada || 'N/A',
+                lastIntake: report.e_ultima_ingesta || 'N/A',
                 events: report.e_eventos || 'N/A',
                 vitals: report.signos_vitales.map(sv => ({
                     time: sv.hora,
@@ -179,8 +179,9 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                     avdi: sv.avdi || '-'
                 })),
                 skin: report.sv_piel || 'No especificado',
+                examenFisico: report.examen_fisico || '',
                 assessment: report.evaluacion_guia || 'Sin evaluación',
-                plan: report.observacione || 'Sin plan',
+                plan: report.observaciones || 'Sin plan',
                 responsibleId: report.responsable_id || 'N/A',
                 problemas: (report.problemas_seleccionados || []).map(p => ({
                     problema: p.problema || p.maestro?.problema || 'N/A',
@@ -212,15 +213,13 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
 
             if (isOnline) {
                 // Eliminar campos que NO existen en la tabla física de Supabase
-                const { problemas_seleccionados, ...cleanReportData } = reportData;
+                const { problemas_seleccionados, problemas, ...cleanReportData } = reportData;
 
-                // Mapear observaciones a la columna física correcta (observacione)
+                // Mapear observaciones a la columna física correcta (observaciones)
                 const finalPayload = {
                     ...cleanReportData,
-                    observacione: (cleanReportData as any).observaciones || (cleanReportData as any).observacione || ''
+                    observaciones: cleanReportData.observaciones || ''
                 };
-                // @ts-ignore
-                if ('observaciones' in finalPayload) delete (finalPayload as any).observaciones;
 
                 const { data, error } = await supabase
                     .from('reportes_soap')
@@ -400,9 +399,9 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase text-slate-400">Historia Pasada</p>
-                                    <p className="text-sm border-b border-slate-100 pb-2 mb-4">{report.e_historia_pa || 'N/A'}</p>
+                                    <p className="text-sm border-b border-slate-100 pb-2 mb-4">{report.e_historia_pasada || 'N/A'}</p>
                                     <p className="text-[10px] font-black uppercase text-slate-400">Última Ingesta</p>
-                                    <p className="text-sm border-b border-slate-100 pb-2 mb-4">{report.e_ultima_inge || 'N/A'}</p>
+                                    <p className="text-sm border-b border-slate-100 pb-2 mb-4">{report.e_ultima_ingesta || 'N/A'}</p>
                                     <p className="text-[10px] font-black uppercase text-slate-400">Eventos Previos</p>
                                     <p className="text-sm border-b border-slate-100 pb-2 mb-4">{report.e_eventos || 'N/A'}</p>
                                 </div>
@@ -448,7 +447,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                                 </div>
                                 <div>
                                     <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Observaciones / Tratamiento</p>
-                                    <p className="text-sm p-4 bg-slate-50 rounded-2xl leading-relaxed">{report.observacione || 'Sin descripción'}</p>
+                                    <p className="text-sm p-4 bg-slate-50 rounded-2xl leading-relaxed">{report.observaciones || 'Sin descripción'}</p>
                                 </div>
                             </div>
                         </div>

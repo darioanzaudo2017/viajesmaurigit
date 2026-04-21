@@ -38,12 +38,12 @@ export interface SoapReport {
     e_sintoma: string;
     e_alergias: string;
     e_medicacion: string;
-    e_historia_pa: string;
-    e_ultima_inge: string;
+    e_historia_pasada: string;
+    e_ultima_ingesta: string;
     e_eventos: string;
     signos_vitales: VitalSign[];
     sv_piel: string;
-    observacione: string; // Tratamiento general
+    observaciones: string; // Tratamiento general
     evaluacion_guia: string;
     examen_fisico: string;
     responsable_id: string;
@@ -400,8 +400,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">P (Historia Pasada)</label>
                                         <textarea 
                                             disabled={readOnly} 
-                                            value={report.e_historia_pa} 
-                                            onChange={(e) => setReport({ ...report, e_historia_pa: e.target.value })} 
+                                            value={report.e_historia_pasada} 
+                                            onChange={(e) => setReport({ ...report, e_historia_pasada: e.target.value })} 
                                             onInput={autoExpandHeight}
                                             className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[100px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none" 
                                             placeholder="Historial medico relevante" 
@@ -409,7 +409,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">U (Última Ingesta)</label>
-                                        <input disabled={readOnly} type="text" value={report.e_ultima_inge} onChange={(e) => setReport({ ...report, e_ultima_inge: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Ultima comida / Hidratacion" />
+                                        <input disabled={readOnly} type="text" value={report.e_ultima_ingesta} onChange={(e) => setReport({ ...report, e_ultima_ingesta: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Ultima comida / Hidratacion" />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E (Evento)</label>

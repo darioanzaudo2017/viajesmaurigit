@@ -53,14 +53,11 @@ export const useOfflineSync = () => {
                 // Limpiar campos que no pertenecen a la tabla física
                 const { problemas_seleccionados, ...cleanData } = report.data;
 
-                // Mapeo defensivo para columna truncada en DB (observacione)
+                // Mapeo para columna en DB corregida
                 const finalPayload = {
                     ...cleanData,
-                    observacione: (cleanData as any).observaciones || (cleanData as any).observacione || '',
                     updated_at: new Date(report.updated_at).toISOString()
                 };
-                // @ts-ignore
-                if ('observaciones' in finalPayload) delete (finalPayload as any).observaciones;
 
                 const { data: savedReport, error } = await supabase
                     .from('reportes_soap')

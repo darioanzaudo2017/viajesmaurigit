@@ -21,12 +21,12 @@ describe('SOAP Report Validation (soapSchema)', () => {
         e_sintoma: 'Dolor de cabeza leve',
         e_alergias: 'Ninguna',
         e_medicacion: 'Ninguna',
-        e_historia_pa: 'Sin antecedentes',
-        e_ultima_inge: 'Desayuno 08:00',
+        e_historia_pasada: 'Sin antecedentes',
+        e_ultima_ingesta: 'Desayuno 08:00',
         e_eventos: 'Ascenso a 3000m',
         signos_vitales: [validVitalSign],
         sv_piel: 'Normal, rosada',
-        observacione: 'Paciente estable',
+        observaciones: 'Paciente estable',
         evaluacion_guia: 'Se recomienda descenso',
         severity: 'mod',
         estado: 'borrador',
@@ -79,7 +79,7 @@ describe('SOAP Report Validation (soapSchema)', () => {
 
         it('debe fallar si los campos del Paso 2 están vacíos', () => {
             // Arrange
-            const invalidData = { ...validSoapData, e_sintoma: '', e_historia_pa: '' };
+            const invalidData = { ...validSoapData, e_sintoma: '', e_historia_pasada: '' };
 
             // Act
             const result = soapSchema.safeParse(invalidData);
@@ -89,7 +89,7 @@ describe('SOAP Report Validation (soapSchema)', () => {
             if (!result.success) {
                 const errors = result.error.flatten().fieldErrors;
                 expect(errors.e_sintoma).toContain("Los síntomas son obligatorios");
-                expect(errors.e_historia_pa).toContain("La historia pasada es obligatoria");
+                expect(errors.e_historia_pasada).toContain("La historia pasada es obligatoria");
             }
         });
 

@@ -23,8 +23,8 @@ export const soapSchema = z.object({
     e_sintoma: z.string().min(1, "Los síntomas son obligatorios"),
     e_alergias: z.string().min(1, "Las alergias son obligatorias (poner 'Ninguna' si aplica)"),
     e_medicacion: z.string().min(1, "La medicación es obligatoria (poner 'Ninguna' si aplica)"),
-    e_historia_pa: z.string().min(1, "La historia pasada es obligatoria"),
-    e_ultima_inge: z.string().min(1, "La última ingesta es obligatoria"),
+    e_historia_pasada: z.string().min(1, "La historia pasada es obligatoria"),
+    e_ultima_ingesta: z.string().min(1, "La última ingesta es obligatoria"),
     e_eventos: z.string().min(1, "Los eventos previos son obligatorios"),
 
     // Paso 3: Objetivo (O)
@@ -32,8 +32,9 @@ export const soapSchema = z.object({
     sv_piel: z.string().min(1, "El estado de la piel es obligatorio"),
 
     // Paso 4: Evaluación y Plan
-    observacione: z.string().min(1, "Las observaciones son obligatorias"),
+    observaciones: z.string().min(1, "Las observaciones son obligatorias"),
     evaluacion_guia: z.string().min(1, "La evaluación del guía es obligatoria"),
+    examen_fisico: z.string().optional(),
     severity: z.enum(['low', 'mod', 'high', 'critical'] as const, {
         message: "La severidad debe ser: low, mod, high o critical"
     }),

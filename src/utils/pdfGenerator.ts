@@ -53,6 +53,7 @@ export interface SoapReportData {
     skin: string;
     assessment: string;
     plan: string;
+    examenFisico?: string;
     responsibleId: string;
     problemas?: {
         problema: string;
@@ -366,6 +367,11 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.text(`Estado de Piel: ${data.skin || 'No especificado'}`, 15, yPos + 5);
+
+    if (data.examenFisico) {
+        doc.text(`Examen Físico: ${data.examenFisico}`, 15, yPos + 10, { maxWidth: pageWidth - 30 });
+        yPos += 10;
+    }
 
     yPos += 15;
 
