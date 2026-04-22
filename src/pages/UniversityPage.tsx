@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
 import SoapForm from '../components/soap/SoapForm';
-import type { SoapReport, MaestroProblema } from '../components/soap/SoapForm';
+import type { SoapReport } from '../components/soap/SoapForm';
 import { generateMedicalPDF } from '../utils/pdfGenerator';
 import { useOfflineSync } from '../hooks/useOfflineSync';
 import { db } from '../api/db';
@@ -57,7 +57,6 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
     const [isEnteringName, setIsEnteringName] = useState(false);
     const [isUniversityUser, setIsUniversityUser] = useState<boolean | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [maestros, setMaestros] = useState<MaestroProblema[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -102,16 +101,6 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             // 2. Download fresh from server to local DB
             await downloadAllSimulations();
 
-            // 3. Cache maestros
-            const { data: mData } = await supabase
-                .from('maestro_problemas_soap')
-                .select('*')
-                .order('problema');
-            if (mData) {
-                await db.maestroProblemasSoap.clear();
-                await db.maestroProblemasSoap.bulkPut(mData);
-                setMaestros(mData);
-            }
 
             // 4. Fetch University Trips
             const { data: tData } = await supabase
@@ -126,8 +115,6 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             }
         } else {
             // Load from local cache if offline
-            const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
-            setMaestros(localMaestros);
             
             const localTrips = await db.trips.toArray();
             setAvailableTrips(localTrips.filter((t: any) => t.is_university));
@@ -172,8 +159,11 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
 
     const handleEdit = (sim: any) => {
         // Combinamos el ID de la tabla con los datos internos del JSON
+        const reportData = sim.data || {};
         setCurrentReport({
-            ...sim.data,
+            ...reportData,
+            // Fallback para asegurar que los problemas se vean independientemente de la clave (problemas vs problemas_seleccionados)
+            problemas_seleccionados: reportData.problemas_seleccionados || reportData.problemas || [],
             id: sim.id
         });
         setPatientName(sim.paciente_nombre);
@@ -285,7 +275,6 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
 
                             const problemasToInsert = problemas_seleccionados.map((p: any) => ({
                                 reporte_soap_id: localId,
-                                problema_id: p.problema_id,
                                 observacion_especifica: p.observacion_especifica,
                                 problema: p.problema,
                                 problema_anticipado: p.problema_anticipado,
@@ -349,9 +338,9 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 viajeNombre: availableTrips.find(t => t.id === selectedTripId)?.titulo || 'Simulacro ISAUI',
                 isSimulation: true,
                 problemas: (currentReport.problemas_seleccionados || []).map(p => ({
-                    problema: p.problema || p.maestro?.problema || 'N/A',
-                    anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
-                    tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
+                    problema: p.problema || 'N/A',
+                    anticipado: p.problema_anticipado || 'N/A',
+                    tratamiento: p.tratamiento || 'N/A',
                     observacion: p.observacion_especifica || 'Sin observaciones'
                 })),
                 notasAdicionales: currentReport.notas_adicionales || ''
@@ -453,7 +442,6 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     title="Simulacro"
                     onDownloadPDF={handleDownloadPDF}
                     isGenerating={isGenerating}
-                    maestros={maestros}
                     readOnly={!isEditingOwn}
                     onDelete={currentReport.id ? () => handleDeleteSimulation(currentReport.id!) : undefined}
                 />

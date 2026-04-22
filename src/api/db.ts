@@ -1,11 +1,5 @@
 import Dexie, { type Table } from 'dexie';
 
-export interface MaestroProblema {
-    id: string;
-    problema: string;
-    problema_anticipado: string;
-    tratamiento_sugerido: string;
-}
 
 export interface LocalTrip {
     id: string;
@@ -104,7 +98,6 @@ export class TrekDatabase extends Dexie {
     enrollments!: Table<LocalEnrollment>;
     medicalRecords!: Table<LocalMedicalRecord>;
     soapReports!: Table<LocalSoapReport>;
-    maestroProblemasSoap!: Table<MaestroProblema>;
     universitySimulations!: Table<LocalUniversitySimulation>;
 
     constructor() {

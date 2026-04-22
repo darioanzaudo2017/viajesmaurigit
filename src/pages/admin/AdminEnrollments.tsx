@@ -109,7 +109,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
 
                 const { data, error } = await query;
                 if (error) throw error;
-                
+
                 // Auto-cache to Dexie - This will trigger useLiveQuery automatically
                 if (data && data.length > 0) {
                     if (tripId) {
@@ -120,7 +120,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                             .filter(e => !e.sync_status || e.sync_status === 'synced')
                             .delete();
                     }
-                    
+
                     await db.enrollments.bulkPut(data.map(e => ({
                         id: e.id,
                         viaje_id: e.viaje_id,
@@ -159,8 +159,8 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
             // Update Dexie FIRST (local and immediate)
             const localObj = await db.enrollments.get(id);
             if (localObj) {
-                await db.enrollments.update(id, { 
-                    estado: newStatus, 
+                await db.enrollments.update(id, {
+                    estado: newStatus,
                     sync_status: isOnline ? 'synced' : 'pending',
                     updated_at: Date.now()
                 });

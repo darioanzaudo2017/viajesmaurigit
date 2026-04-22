@@ -4,7 +4,7 @@ import { generateMedicalPDF } from '../../utils/pdfGenerator';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { db } from '../../api/db';
 import SoapForm from '../../components/soap/SoapForm';
-import type { SoapReport, MaestroProblema } from '../../components/soap/SoapForm';
+import type { SoapReport } from '../../components/soap/SoapForm';
 // Removed unused useLiveQuery
 
 interface AdminSoapPageProps {
@@ -18,7 +18,6 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
     const [isGenerating, setIsGenerating] = useState(false);
     const { isOnline } = useOfflineSync();
     const [enrollmentData, setEnrollmentData] = useState<any>(null);
-    const [maestros, setMaestros] = useState<MaestroProblema[]>([]);
     const [report, setReport] = useState<SoapReport>({
         inscripcion_id: enrollmentId,
         referencia_viaje: '',
@@ -60,14 +59,6 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 let existingSoap;
 
                 if (isOnline) {
-                    // Cargar maestros de problemas y guardar en cache local
-                    const { data: mData } = await supabase.from('maestro_problemas_soap').select('*').order('problema');
-                    if (mData) {
-                        setMaestros(mData);
-                        // Cachear para uso offline
-                        await db.maestroProblemasSoap.clear();
-                        await db.maestroProblemasSoap.bulkPut(mData);
-                    }
 
                     // Try remote first
                     const { data: remoteEnrollment } = await supabase
@@ -79,7 +70,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
 
                     const { data: remoteSoap } = await supabase
                         .from('reportes_soap')
-                        .select('*, problemas:reportes_soap_problemas(*, maestro:maestro_problemas_soap(*))')
+                        .select('*, problemas:reportes_soap_problemas(*)')
                         .eq('inscripcion_id', enrollmentId)
                         .eq('es_simulacro', false)
                         .maybeSingle();
@@ -106,7 +97,12 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                             .where('inscripcion_id').equals(enrollmentId)
                             .first();
                         if (localSoap) {
-                            existingSoap = { ...localSoap.data, id: localSoap.id };
+                            const localData = localSoap.data || {};
+                            existingSoap = { 
+                                ...localData, 
+                                problemas_seleccionados: localData.problemas_seleccionados || localData.problemas || [],
+                                id: localSoap.id 
+                            };
                             console.log('[SOAP] Reporte no está en Supabase aún, mostrando versión local (pending).');
                         }
                     }
@@ -115,15 +111,14 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                     enrollment = await db.enrollments.get(enrollmentId);
                     existingSoap = await db.soapReports.where('inscripcion_id').equals(enrollmentId).first();
                     if (existingSoap) {
+                        const localData = existingSoap.data || {};
                         existingSoap = {
-                            ...existingSoap.data,
+                            ...localData,
+                            problemas_seleccionados: localData.problemas_seleccionados || localData.problemas || [],
                             id: existingSoap.id // Ensure ID is present
                         };
                     }
 
-                    // Load maestros from local cache
-                    const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
-                    setMaestros(localMaestros);
                 }
 
                 if (enrollment) {
@@ -207,9 +202,9 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 viajeNombre: enrollmentData?.viajes?.titulo || report.referencia_viaje || 'Salida de Campo',
                 isSimulation: false,
                 problemas: (report.problemas_seleccionados || []).map(p => ({
-                    problema: p.problema || p.maestro?.problema || 'N/A',
-                    anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
-                    tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
+                    problema: p.problema || 'N/A',
+                    anticipado: p.problema_anticipado || 'N/A',
+                    tratamiento: p.tratamiento || 'N/A',
                     observacion: p.observacion_especifica || 'Sin observaciones'
                 })),
                 notasAdicionales: report.notas_adicionales || ''
@@ -263,7 +258,6 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                     if (reportData.problemas_seleccionados.length > 0) {
                         const problemasToInsert = reportData.problemas_seleccionados.map(p => ({
                             reporte_soap_id: data.id,
-                            problema_id: p.problema_id,
                             observacion_especifica: p.observacion_especifica,
                             problema: p.problema,
                             problema_anticipado: p.problema_anticipado,
@@ -387,7 +381,6 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                 saving={saving}
                 isGenerating={isGenerating}
                 onDelete={handleDelete}
-                maestros={maestros}
             />
 
             {/* Hidden Printable PDF Version (used by pdfGenerator if needed via DOM) */}

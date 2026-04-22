@@ -80,7 +80,6 @@ export const useOfflineSync = () => {
 
                     const problemasToInsert = problemas_seleccionados.map((p: any) => ({
                         reporte_soap_id: savedReport.id,
-                        problema_id: p.problema_id,
                         observacion_especifica: p.observacion_especifica,
                         problema: p.problema,
                         problema_anticipado: p.problema_anticipado,
@@ -181,7 +180,6 @@ export const useOfflineSync = () => {
 
                     const problemasToInsert = problemas_seleccionados.map((p: any) => ({
                         reporte_soap_id: savedReport.id,
-                        problema_id: p.problema_id,
                         observacion_especifica: p.observacion_especifica,
                         problema: p.problema,
                         problema_anticipado: p.problema_anticipado,
@@ -433,7 +431,7 @@ export const useOfflineSync = () => {
         try {
             const { data: reports, error } = await supabase
                 .from('reportes_soap')
-                .select('*, problemas:reportes_soap_problemas(*, maestro:maestro_problemas_soap(*))');
+                .select('*, problemas:reportes_soap_problemas(*)');
 
             if (error) throw error;
             if (!reports || reports.length === 0) return { success: true, count: 0 };
@@ -462,7 +460,7 @@ export const useOfflineSync = () => {
         try {
             const { data: sims, error } = await supabase
                 .from('reportes_soap')
-                .select('*')
+                .select('*, problemas:reportes_soap_problemas(*)')
                 .eq('es_simulacro', true)
                 .order('created_at', { ascending: false });
 
@@ -478,7 +476,10 @@ export const useOfflineSync = () => {
                     alumno_nombre: s.alumno_nombre,
                     viaje_id: s.viaje_id,
                     status: 'synced',
-                    data: s,
+                    data: {
+                        ...s,
+                        problemas_seleccionados: s.problemas || []
+                    },
                     created_at: s.created_at,
                     updated_at: s.updated_at || s.created_at
                 })));

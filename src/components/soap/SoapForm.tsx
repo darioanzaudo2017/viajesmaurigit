@@ -11,12 +11,6 @@ export interface VitalSign {
     piel: string;
 }
 
-export interface MaestroProblema {
-    id: string;
-    problema: string;
-    problema_anticipado: string;
-    tratamiento_sugerido: string;
-}
 
 export interface SoapProblemaSeleccionado {
     id?: string;
@@ -25,7 +19,6 @@ export interface SoapProblemaSeleccionado {
     problema_anticipado: string;
     tratamiento: string;
     observacion_especifica?: string;
-    maestro?: MaestroProblema;
     orden?: number;
 }
 
@@ -71,7 +64,6 @@ interface SoapFormProps {
     title?: string;
     isSimulation?: boolean;
     onDelete?: () => Promise<void>;
-    maestros?: MaestroProblema[];
     readOnly?: boolean;
     setPatientName?: (name: string) => void;
 }
@@ -89,7 +81,6 @@ const SoapForm: React.FC<SoapFormProps> = ({
     title = "Ficha SOAP",
     isSimulation = false,
     onDelete,
-    maestros: _maestros = [],
     readOnly = false,
     setPatientName: updatePatientName
 }) => {
@@ -551,7 +542,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
                                         <div className="space-y-1">
                                             <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Problemas de Salud</h4>
-                                            <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest italic">Añada problemas manuales o desde el catálogo</p>
+                                            <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest italic">Añada los problemas identificados manualmente</p>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                                             {(!readOnly || isSimulation) && (
