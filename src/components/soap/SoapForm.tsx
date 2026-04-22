@@ -89,7 +89,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
     title = "Ficha SOAP",
     isSimulation = false,
     onDelete,
-    maestros = [],
+    maestros: _maestros = [],
     readOnly = false,
     setPatientName: updatePatientName
 }) => {
@@ -130,28 +130,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
         setReport(prev => ({ ...prev, signos_vitales: newVitals }));
     };
 
-    const handleAddProblema = (maestroId: string) => {
-        if (!maestroId) return;
-        const maestro = maestros.find(m => m.id === maestroId);
-        if (!maestro) return;
 
-        // Evitar duplicados
-        if (report.problemas_seleccionados?.some(p => p.problema_id === maestroId)) return;
-
-        const newProblemas = [...(report.problemas_seleccionados || [])];
-        const newIndex = newProblemas.length;
-        newProblemas.push({
-            problema_id: maestroId,
-            problema: maestro.problema,
-            problema_anticipado: maestro.problema_anticipado,
-            tratamiento: maestro.tratamiento_sugerido,
-            observacion_especifica: '',
-            maestro,
-            orden: newIndex + 1
-        });
-        setReport(prev => ({ ...prev, problemas_seleccionados: newProblemas }));
-        setActiveProblemIndex(newIndex);
-    };
 
     const handleAddCustomProblema = () => {
         const newProblemas = [...(report.problemas_seleccionados || [])];

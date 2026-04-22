@@ -342,7 +342,7 @@ const AdminSimulacrosPage: React.FC<AdminSimulacrosPageProps> = ({ onBack }) => 
     );
 };
 
-const DetailSection = ({ label, content }: { label: string, content: { k: string, v: string }[] }) => (
+const DetailSection = ({ label, content }: { label: string, content: { k: string, v: string | undefined }[] }) => (
     <div className="space-y-4">
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
         <div className="space-y-3">
