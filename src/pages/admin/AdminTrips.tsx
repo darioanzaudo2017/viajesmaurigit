@@ -17,6 +17,7 @@ interface Trip {
     dificultad: string;
     ubicacion: string;
     imagen_url: string;
+    is_university?: boolean;
 }
 
 interface AdminTripsProps {

@@ -267,7 +267,7 @@ const AdminSimulacrosPage: React.FC<AdminSimulacrosPageProps> = ({ onBack }) => 
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2">Escena / Incidente Detallado</p>
-                                        <p className="text-sm font-medium text-slate-300 leading-relaxed">{selectedSimulacro.data.escena || 'No especificada'}</p>
+                                        <p className="text-sm font-medium text-slate-300 leading-relaxed">{selectedSimulacro.escena || 'No especificada'}</p>
                                     </div>
                                 </div>
 
@@ -278,17 +278,17 @@ const AdminSimulacrosPage: React.FC<AdminSimulacrosPageProps> = ({ onBack }) => 
                                     <DetailSection
                                         label="Subjetivo (SAMPLE)"
                                         content={[
-                                            { k: 'Síntomas', v: selectedSimulacro.data.e_sintoma },
-                                            { k: 'Alergias', v: selectedSimulacro.data.e_alergias },
-                                            { k: 'Medicación', v: selectedSimulacro.data.e_medicacion }
+                                            { k: 'Síntomas', v: selectedSimulacro.e_sintoma },
+                                            { k: 'Alergias', v: selectedSimulacro.e_alergias },
+                                            { k: 'Medicación', v: selectedSimulacro.e_medicacion }
                                         ]}
                                     />
                                     <DetailSection
                                         label="Historia Pasada y Eventos"
                                         content={[
-                                            { k: 'Antecedentes', v: selectedSimulacro.data.e_historia_pasada },
-                                            { k: 'Última Ingesta', v: selectedSimulacro.data.e_ultima_ingesta },
-                                            { k: 'Eventos Previos', v: selectedSimulacro.data.e_eventos }
+                                            { k: 'Antecedentes', v: selectedSimulacro.e_historia_pasada },
+                                            { k: 'Última Ingesta', v: selectedSimulacro.e_ultima_ingesta },
+                                            { k: 'Eventos Previos', v: selectedSimulacro.e_eventos }
                                         ]}
                                     />
                                 </div>
@@ -302,10 +302,10 @@ const AdminSimulacrosPage: React.FC<AdminSimulacrosPageProps> = ({ onBack }) => 
                                         Examen Objetivo (Signos Vitales)
                                     </p>
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                        <VitalDisplay label="Pulso" value={selectedSimulacro.data.signos_vitales?.[0]?.pulso} unit="LPM" />
-                                        <VitalDisplay label="Resp" value={selectedSimulacro.data.signos_vitales?.[0]?.respiracion} unit="RPM" />
-                                        <VitalDisplay label="T.A." value={selectedSimulacro.data.signos_vitales?.[0]?.presion} />
-                                        <VitalDisplay label="SpO2" value={selectedSimulacro.data.signos_vitales?.[0]?.spo2} unit="%" />
+                                        <VitalDisplay label="Pulso" value={selectedSimulacro.signos_vitales?.[0]?.pulso} unit="LPM" />
+                                        <VitalDisplay label="Resp" value={selectedSimulacro.signos_vitales?.[0]?.respiracion} unit="RPM" />
+                                        <VitalDisplay label="T.A." value={selectedSimulacro.signos_vitales?.[0]?.presion} />
+                                        <VitalDisplay label="SpO2" value={selectedSimulacro.signos_vitales?.[0]?.spo2} unit="%" />
                                     </div>
                                 </div>
 
@@ -316,13 +316,13 @@ const AdminSimulacrosPage: React.FC<AdminSimulacrosPageProps> = ({ onBack }) => 
                                     <div>
                                         <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2">Evaluación A/P</p>
                                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-slate-300 leading-relaxed italic">
-                                            {selectedSimulacro.data.evaluacion_guia || 'Sin evaluación registrada.'}
+                                            {selectedSimulacro.evaluacion_guia || 'Sin evaluación registrada.'}
                                         </div>
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-2">Plan de Tratamiento</p>
                                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-xs text-slate-300 leading-relaxed italic">
-                                            {selectedSimulacro.data.observaciones || 'Sin plan detallado.'}
+                                            {selectedSimulacro.observaciones || 'Sin plan detallado.'}
                                         </div>
                                     </div>
                                 </div>

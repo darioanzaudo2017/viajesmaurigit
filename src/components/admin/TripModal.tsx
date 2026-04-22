@@ -14,7 +14,7 @@ interface Trip {
     dificultad: string;
     ubicacion: string;
     imagen_url: string;
-    is_university: boolean;
+    is_university?: boolean;
 }
 
 interface TripModalProps {
@@ -57,7 +57,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                 ...trip,
                 cupos_disponibles: trip.cupos_disponibles || 0,
                 fecha_inicio: formatForInput(trip.fecha_inicio),
-                fecha_fin: formatForInput(trip.fecha_fin)
+                fecha_fin: formatForInput(trip.fecha_fin),
+                is_university: trip.is_university ?? false
             });
         } else {
             setFormData(initialState);

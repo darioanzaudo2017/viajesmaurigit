@@ -15,7 +15,6 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, user, tripI
         submitRegistration, submitting, alreadyRegistered, checkingStatus
     } = useRegistration(tripId || 'GENERAL', userId);
 
-    const [loading, setLoading] = useState(false);
     const [isOffline, setIsOffline] = useState(false);
     const [tripInfo, setTripInfo] = useState<any>(null);
     const [availableTrips, setAvailableTrips] = useState<any[]>([]);

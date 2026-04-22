@@ -21,6 +21,7 @@ export interface LocalTrip {
     ubicacion: string;
     imagen_url: string;
     updated_at: string;
+    is_university?: boolean;
 }
 
 export interface LocalRegistration {
@@ -89,6 +90,8 @@ export interface LocalUniversitySimulation {
     id: string; // uuid
     user_id: string;
     paciente_nombre: string;
+    alumno_nombre?: string;
+    viaje_id?: string;
     status: 'pending' | 'synced' | 'error';
     data: any; // Full Simulation JSON
     created_at: string;

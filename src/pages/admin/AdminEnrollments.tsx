@@ -36,7 +36,6 @@ interface AdminEnrollmentsProps {
 }
 
 const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilter, onTripChange, onNewSoapReport }) => {
-    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [trips, setTrips] = useState<{ id: string, titulo: string }[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
@@ -337,7 +336,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                     {tripId && (
                         <div className="flex items-center gap-3 mt-2">
                             <p className="text-primary text-xs font-black uppercase tracking-widest">
-                                {trips.find(t => t.id === tripId)?.titulo || enrollments[0]?.viajes?.titulo || 'Filtrado por Expedición'}
+                                {trips.find(t => t.id === tripId)?.titulo || enrollmentsToList[0]?.viajes?.titulo || 'Filtrado por Expedición'}
                             </p>
                             <button
                                 onClick={onClearFilter}
