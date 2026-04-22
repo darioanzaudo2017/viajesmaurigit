@@ -17,7 +17,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
     
     // Dexie Live Query to auto-update UI from local DB
     const localSimulations = useLiveQuery(
-        () => db.universitySimulations.toArray(),
+        () => db.universitySimulations.orderBy('created_at').reverse().toArray(),
         []
     ) || [];
 
@@ -56,18 +56,24 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
     const [patientName, setPatientName] = useState('');
     const [isEnteringName, setIsEnteringName] = useState(false);
     const [isUniversityUser, setIsUniversityUser] = useState<boolean | null>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [maestros, setMaestros] = useState<MaestroProblema[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [availableTrips, setAvailableTrips] = useState<any[]>([]);
+    const [selectedTripId, setSelectedTripId] = useState<string>('');
+    const [userName, setUserName] = useState('');
 
     useEffect(() => {
         const initAuth = async () => {
             if (user) {
                 setCurrentUserId(user.id);
                 const isUni = !!user.profile?.is_university || user.profile?.role === 'admin';
+                const isAdm = user.profile?.role === 'admin';
                 setIsUniversityUser(isUni);
+                setIsAdmin(isAdm);
                 
                 if (isUni) {
                     await syncAndDownload(isOnline);
@@ -78,6 +84,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
                 if (profile) {
                     setIsUniversityUser(!!profile.is_university || profile.role === 'admin');
+                    setIsAdmin(profile.role === 'admin');
                     setCurrentUserId(profile.id);
                 }
             }
@@ -105,10 +112,25 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 await db.maestroProblemasSoap.bulkPut(mData);
                 setMaestros(mData);
             }
+
+            // 4. Fetch University Trips
+            const { data: tData } = await supabase
+                .from('viajes')
+                .select('id, titulo')
+                .eq('is_university', true)
+                .order('fecha_inicio', { ascending: false });
+            if (tData) {
+                setAvailableTrips(tData);
+                // Also cache them locally for offline start
+                await db.trips.bulkPut(tData as any);
+            }
         } else {
-            // Load maestros from local cache if offline
+            // Load from local cache if offline
             const localMaestros = await db.maestroProblemasSoap.orderBy('problema').toArray();
             setMaestros(localMaestros);
+            
+            const localTrips = await db.trips.toArray();
+            setAvailableTrips(localTrips.filter((t: any) => t.is_university));
         }
     };
 
@@ -141,6 +163,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             severity: 'mod'
         });
         setPatientName('');
+        setUserName('');
+        setSelectedTripId('');
         setIsEditingOwn(true);
         setIsEnteringName(true);
         setShowSoapForm(true);
@@ -153,6 +177,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             id: sim.id
         });
         setPatientName(sim.paciente_nombre);
+        setUserName(sim.alumno_nombre || sim.data?.alumno_nombre || '');
+        setSelectedTripId(sim.viaje_id || sim.data?.viaje_id || '');
         setIsEditingOwn(sim.user_id === currentUserId);
         setIsEnteringName(false);
         setShowSoapForm(true);
@@ -168,7 +194,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
         try {
             if (isOnline) {
                 const { error } = await supabase
-                    .from('simulacros_soap')
+                    .from('reportes_soap')
                     .delete()
                     .eq('id', id);
                 if (error) throw error;
@@ -190,10 +216,14 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             return;
         }
 
+        if (!selectedTripId) {
+            alert("Por favor seleccione la salida/viaje correspondiente.");
+            return;
+        }
+
         try {
             setSaving(true);
             
-            // Use the user ID from props or state, avoid network call to Supabase Auth
             const userId = user?.id || currentUserId;
             if (!userId) throw new Error("No user found");
 
@@ -201,7 +231,6 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     return crypto.randomUUID();
                 }
-                // Fallback for non-secure contexts
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                     var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
@@ -216,25 +245,57 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 id: localId,
                 user_id: userId,
                 paciente_nombre: patientName,
+                alumno_nombre: userName,
+                viaje_id: selectedTripId,
                 status: isOnline ? 'synced' : 'pending',
                 data: reportData,
                 created_at: createdAt
             };
 
             if (isOnline) {
-                const { error } = await supabase
-                    .from('simulacros_soap')
-                    .upsert({
-                        id: localId,
-                        user_id: userId,
-                        paciente_nombre: patientName,
-                        data: reportData,
-                        created_at: createdAt
-                    });
+                // Preparamos payload aplanado para Supabase
+                const { problemas_seleccionados, problemas, ...cleanReportData } = reportData as any;
+                const supabasePayload = {
+                    ...cleanReportData,
+                    id: localId,
+                    user_id: userId,
+                    paciente_nombre: patientName,
+                    alumno_nombre: userName,
+                    viaje_id: selectedTripId,
+                    es_simulacro: true,
+                    created_at: createdAt,
+                    updated_at: new Date().toISOString()
+                };
 
+                const { error } = await supabase
+                    .from('reportes_soap')
+                    .upsert(supabasePayload);
+                
                 if (error) {
                     console.warn("Backend save failed, keeping as pending locally", error);
                     localPayload.status = 'pending';
+                } else {
+                    // Sincronizar problemas relacionales
+                    if (problemas_seleccionados && problemas_seleccionados.length > 0) {
+                        try {
+                            await supabase
+                                .from('reportes_soap_problemas')
+                                .delete()
+                                .eq('reporte_soap_id', localId);
+
+                            const problemasToInsert = problemas_seleccionados.map((p: any) => ({
+                                reporte_soap_id: localId,
+                                problema_id: p.problema_id,
+                                observacion_especifica: p.observacion_especifica,
+                                problema: p.problema,
+                                problema_anticipado: p.problema_anticipado,
+                                tratamiento: p.tratamiento
+                            }));
+                            await supabase.from('reportes_soap_problemas').insert(problemasToInsert);
+                        } catch (pError) {
+                            console.error("Error saving relational problems", pError);
+                        }
+                    }
                 }
             }
 
@@ -245,9 +306,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             setShowSoapForm(false);
         } catch (error: any) {
             console.error("CRITICAL ERROR saving simulation:", error);
-            // Mostrar más detalle si es posible
             const detail = error.message || "Error desconocido";
-            alert(`Error al guardar el simulacro: ${detail}\n\nPor favor, verifique que el nombre del paciente no esté vacío.`);
+            alert(`Error al guardar el simulacro: ${detail}`);
         } finally {
             setSaving(false);
         }
@@ -277,20 +337,24 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     bp: sv.presion || '-',
                     spo2: sv.spo2 || '-',
                     temp: sv.temperatura || '-',
-                    avdi: sv.avdi || '-'
+                    avdi: sv.avdi || '-',
+                    skin: sv.piel || '-'
                 })),
                 skin: currentReport.sv_piel || 'No especificado',
                 examenFisico: currentReport.examen_fisico || '',
                 assessment: currentReport.evaluacion_guia || 'Sin evaluación',
                 plan: currentReport.observaciones || 'Sin plan',
                 responsibleId: currentReport.responsable_id || 'N/A',
+                alumnoNombre: userName || user?.profile?.full_name || 'Estudiante',
+                viajeNombre: availableTrips.find(t => t.id === selectedTripId)?.titulo || 'Simulacro ISAUI',
+                isSimulation: true,
                 problemas: (currentReport.problemas_seleccionados || []).map(p => ({
                     problema: p.problema || p.maestro?.problema || 'N/A',
                     anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
                     tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
                     observacion: p.observacion_especifica || 'Sin observaciones'
                 })),
-                notasAdicionales: currentReport.notas_adicionales
+                notasAdicionales: currentReport.notas_adicionales || ''
             };
 
             await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });
@@ -326,20 +390,24 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     bp: sv.presion || '-',
                     spo2: sv.spo2 || '-',
                     temp: sv.temperatura || '-',
-                    avdi: sv.avdi || '-'
+                    avdi: sv.avdi || '-',
+                    skin: sv.piel || '-'
                 })),
                 skin: row.data.sv_piel || 'No especificado',
                 examenFisico: row.data.examen_fisico || '',
                 assessment: row.data.evaluacion_guia || 'Sin evaluación',
                 plan: row.data.observaciones || 'Sin plan',
                 responsibleId: row.responsable_id || 'N/A',
+                alumnoNombre: row.alumno_nombre || row.profiles?.full_name || 'Estudiante',
+                viajeNombre: availableTrips.find(t => t.id === row.viaje_id)?.titulo || 'Simulacro ISAUI',
+                isSimulation: true,
                 problemas: (row.data.problemas_seleccionados || []).map((p: any) => ({
                     problema: p.problema || p.maestro?.problema || 'N/A',
                     anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
                     tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
                     observacion: p.observacion_especifica || 'Sin observaciones'
                 })),
-                notasAdicionales: row.data.notas_adicionales
+                notasAdicionales: row.data.notas_adicionales || ''
             };
 
             await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });
@@ -410,12 +478,65 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                     setShowSoapForm(false);
                                     setIsEnteringName(false);
                                 }} className="flex-1 px-6 py-4 rounded-2xl bg-slate-800 text-slate-300 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-700 transition-all">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* Step 2: Trip & Alumno Name selection */}
+                {isEnteringName && (
+                    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-primary/20 p-8 rounded-[32px] max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
+                            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight italic">Nueva Simulación</h2>
+                            <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-6 border-b border-slate-200 dark:border-white/5 pb-2">Identificación de Alumno y Salida</p>
+                            
+                            <div className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tu Nombre (Alumno)</label>
+                                    <input
+                                        autoFocus
+                                        value={userName}
+                                        onChange={(e) => setUserName(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                        placeholder="Tu nombre completo..."
+                                    />
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Seleccionar Salida / Viaje</label>
+                                    <select
+                                        value={selectedTripId}
+                                        onChange={(e) => setSelectedTripId(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                    >
+                                        <option value="">Seleccione una salida...</option>
+                                        {availableTrips.map(trip => (
+                                            <option key={trip.id} value={trip.id}>{trip.titulo}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre del Paciente (Simulado)</label>
+                                    <input
+                                        value={patientName}
+                                        onChange={(e) => setPatientName(e.target.value)}
+                                        className="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-4 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all font-bold italic"
+                                        placeholder="Nombre del paciente ficticio..."
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="flex gap-4 mt-8">
+                                <button onClick={() => {
+                                    setShowSoapForm(false);
+                                    setIsEnteringName(false);
+                                }} className="flex-1 px-6 py-4 rounded-2xl bg-slate-800 text-slate-300 font-bold uppercase tracking-widest text-[10px] hover:bg-slate-700 transition-all">Cancelar</button>
                                 <button
-                                    disabled={!patientName}
+                                    disabled={!patientName || !userName || !selectedTripId}
                                     onClick={() => setIsEnteringName(false)}
-                                    className="flex-1 px-6 py-4 rounded-2xl bg-primary text-background-dark font-black uppercase tracking-widest text-[10px] hover:shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                                    className="flex-[2] px-6 py-4 rounded-2xl bg-primary text-background-dark font-black uppercase tracking-widest text-[10px] hover:shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
                                 >
-                                    Comenzar
+                                    Comenzar Práctica
                                 </button>
                             </div>
                         </div>
@@ -547,71 +668,106 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            filteredSimulations.map((row) => (
-                                                <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
-                                                    <td className="px-8 py-5 whitespace-nowrap">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
-                                                            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 whitespace-nowrap">
-                                                        <div className="flex flex-col">
-                                                            <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
-                                                            <span className="text-slate-500 dark:text-slate-500 text-[9px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 whitespace-nowrap">
-                                                        <div className="flex items-center gap-4">
-                                                            <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
-                                                                {(row.paciente_nombre || '??').substring(0, 2).toUpperCase()}
-                                                            </div>
-                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{row.paciente_nombre || 'Sin nombre'}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 whitespace-nowrap">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="size-6 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-[8px] font-black text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-white/10 uppercase">
-                                                                {row.status === 'pending' ? '!' : (row.user_id === currentUserId ? 'Yo' : '?')}
-                                                            </div>
-                                                            <span className={`text-[11px] font-black uppercase tracking-wider ${row.status === 'pending' ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
-                                                                {row.status === 'pending' ? 'PENDIENTE' : (row.user_id === currentUserId ? 'Mío' : 'Estudiante')}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-8 py-5 whitespace-nowrap text-right">
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            <button 
-                                                                onClick={() => handleDownloadRowPDF(row)}
-                                                                className="size-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all border border-primary/10"
-                                                                title="Descargar PDF"
-                                                                disabled={isGenerating}
-                                                            >
-                                                                <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => handleEdit(row)} 
-                                                                className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${row.user_id === currentUserId ? 'bg-primary/10 hover:bg-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
-                                                            >
-                                                                <span className="material-symbols-outlined text-lg">{row.user_id === currentUserId ? 'edit_note' : 'visibility'}</span> 
-                                                                {row.user_id === currentUserId ? 'Ver/Editar' : 'Ver'}
-                                                            </button>
-                                                            {row.user_id === currentUserId && (
-                                                                <button 
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDeleteSimulation(row.id);
-                                                                    }} 
-                                                                    className="size-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all border border-red-500/10"
-                                                                    title="Eliminar Simulacro"
-                                                                >
-                                                                    <span className="material-symbols-outlined text-lg">delete</span>
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
+                                            (() => {
+                                                // Group by voyage title
+                                                const groups: { [key: string]: any[] } = {};
+                                                filteredSimulations.forEach(sim => {
+                                                    const trip = availableTrips.find(t => t.id === sim.viaje_id);
+                                                    const groupName = trip?.titulo || 'Otros Simulacros';
+                                                    if (!groups[groupName]) groups[groupName] = [];
+                                                    groups[groupName].push(sim);
+                                                });
+
+                                                return Object.entries(groups).map(([groupName, sims]) => (
+                                                    <React.Fragment key={groupName}>
+                                                        <tr className="bg-slate-50 dark:bg-white/5">
+                                                            <td colSpan={5} className="px-8 py-3 border-y border-slate-200 dark:border-white/5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="material-symbols-outlined text-primary text-sm">folder_open</span>
+                                                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-primary/70">{groupName}</span>
+                                                                    <span className="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-primary/20 text-slate-600 dark:text-primary text-[9px] font-black">{sims.length} FICHAS</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        {sims.map((row) => (
+                                                            <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors group">
+                                                                <td className="px-8 py-5 whitespace-nowrap">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{new Date(row.created_at).toLocaleDateString()}</span>
+                                                                        <span className="text-slate-500 dark:text-slate-400 text-[10px] font-bold uppercase">{new Date(row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-8 py-5 whitespace-nowrap">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-slate-700 dark:text-slate-300 text-[11px] font-black tracking-tight">{new Date(row.updated_at || row.created_at).toLocaleDateString()}</span>
+                                                                        <span className="text-slate-500 dark:text-slate-500 text-[9px] font-bold uppercase">{new Date(row.updated_at || row.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-8 py-5 whitespace-nowrap">
+                                                                    <div className="flex items-center gap-4">
+                                                                        <div className="size-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
+                                                                            {(row.paciente_nombre || '??').substring(0, 2).toUpperCase()}
+                                                                        </div>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-slate-900 dark:text-white text-sm font-black tracking-tight">{row.paciente_nombre || 'Sin nombre'}</span>
+                                                                            <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1">
+                                                                                <span className="material-symbols-outlined text-[10px]">person</span>
+                                                                                {row.alumno_nombre || 'Alumno desconocido'}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                 <td className="px-8 py-5 whitespace-nowrap">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="size-8 rounded-2xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase tracking-tighter border border-slate-200 dark:border-white/5">
+                                                                            {row.status === 'pending' ? '!' : (row.alumno_nombre || '??').substring(0,2).toUpperCase()}
+                                                                        </div>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight italic">
+                                                                                {row.alumno_nombre || 'Sin nombre'}
+                                                                            </span>
+                                                                            <span className={`text-[9px] font-bold uppercase tracking-widest ${row.status === 'pending' ? 'text-red-500' : 'text-slate-400'}`}>
+                                                                                {row.status === 'pending' ? 'PENDIENTE' : (row.user_id === currentUserId ? 'MÍO' : 'OTRO')}
+                                                                            </span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-8 py-5 whitespace-nowrap text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        <button 
+                                                                            onClick={() => handleDownloadRowPDF(row)}
+                                                                            className="size-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all border border-primary/10"
+                                                                            title="Descargar PDF"
+                                                                            disabled={isGenerating}
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => handleEdit(row)} 
+                                                                            className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${row.user_id === currentUserId ? 'bg-primary/10 hover:bg-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-lg">{row.user_id === currentUserId ? 'edit_note' : 'visibility'}</span> 
+                                                                            {row.user_id === currentUserId ? 'Ver/Editar' : 'Ver'}
+                                                                        </button>
+                                                                        {isAdmin && (
+                                                                            <button 
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    handleDeleteSimulation(row.id);
+                                                                                }} 
+                                                                                className="size-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all border border-red-500/10"
+                                                                                title="Eliminar Simulacro"
+                                                                            >
+                                                                                <span className="material-symbols-outlined text-lg">delete</span>
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </React.Fragment>
+                                                ));
+                                            })()
                                         )}
                                     </tbody>
                                 </table>

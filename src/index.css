@@ -90,6 +90,19 @@ body {
     animation: none !important;
     transition: none !important;
   }
+
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }
 
 /* Smooth page transition - avoids gray flash by not going fully transparent */

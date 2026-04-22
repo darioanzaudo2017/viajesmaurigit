@@ -4,7 +4,7 @@ import MedicalViewModal from '../../components/admin/MedicalViewModal';
 import { generateMedicalPDF } from '../../utils/pdfGenerator';
 import { useOfflineSync } from '../../hooks/useOfflineSync';
 import { db } from '../../api/db';
-// Removed unused useLiveQuery
+import { useLiveQuery } from 'dexie-react-hooks';
 
 interface Enrollment {
     id: string;
@@ -25,6 +25,7 @@ interface Enrollment {
     viajes: {
         titulo: string;
     };
+    sync_status?: 'pending' | 'synced' | 'error';
 }
 
 interface AdminEnrollmentsProps {
@@ -40,8 +41,23 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
-    const { isOnline, downloadTripData } = useOfflineSync();
+    const { isOnline, downloadTripData, pendingEnrollmentsCount } = useOfflineSync();
     const [isOfflineSyncing, setIsOfflineSyncing] = useState(false);
+
+    // Reactive list from Dexie
+    const localEnrollments = useLiveQuery(
+        async () => {
+            if (tripId) {
+                return await db.enrollments.where('viaje_id').equals(tripId).toArray();
+            }
+            return await db.enrollments.toArray();
+        },
+        [tripId]
+    );
+
+    // Keep the "enrollments" state for when we are fetching online but haven't saved to Dexie yet
+    // Actually, it's better to rely on localEnrollments as the single source of truth for the UI
+    const enrollmentsToList = (localEnrollments || []) as Enrollment[];
 
     // Medical Modal State
     const [medicalModal, setMedicalModal] = useState<{ isOpen: boolean, userId: string, userName: string }>({
@@ -94,13 +110,18 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
 
                 const { data, error } = await query;
                 if (error) throw error;
-                setEnrollments(data || []);
-
-                // Auto-cache to Dexie for offline use
+                
+                // Auto-cache to Dexie - This will trigger useLiveQuery automatically
                 if (data && data.length > 0) {
                     if (tripId) {
-                        await db.enrollments.where('viaje_id').equals(tripId).delete();
+                        // Delete only local records for this trip that are NOT pending
+                        await db.enrollments
+                            .where('viaje_id')
+                            .equals(tripId)
+                            .filter(e => !e.sync_status || e.sync_status === 'synced')
+                            .delete();
                     }
+                    
                     await db.enrollments.bulkPut(data.map(e => ({
                         id: e.id,
                         viaje_id: e.viaje_id,
@@ -110,29 +131,13 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                         menu: e.menu,
                         profiles: e.profiles,
                         viajes: e.viajes,
-                        soap_creada: e.soap_creada
+                        soap_creada: e.soap_creada,
+                        sync_status: 'synced' // Explicitly marked as synced
                     })));
                 }
-            } else {
-                // FALLBACK TO DEXIE
-                let localData;
-                if (tripId) {
-                    localData = await db.enrollments.where('viaje_id').equals(tripId).toArray();
-                } else {
-                    localData = await db.enrollments.toArray();
-                }
-                setEnrollments(localData as any[] || []);
             }
         } catch (error) {
             console.error("Error fetching enrollments:", error);
-            // Fallback to local if fetch fails even if "online"
-            let localData;
-            if (tripId) {
-                localData = await db.enrollments.where('viaje_id').equals(tripId).toArray();
-            } else {
-                localData = await db.enrollments.toArray();
-            }
-            setEnrollments(localData as any[] || []);
         } finally {
             setLoading(false);
         }
@@ -152,16 +157,32 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
 
     const updateStatus = async (id: string, newStatus: string) => {
         try {
-            const { error } = await supabase
-                .from('inscripciones')
-                .update({ estado: newStatus })
-                .eq('id', id);
+            // Update Dexie FIRST (local and immediate)
+            const localObj = await db.enrollments.get(id);
+            if (localObj) {
+                await db.enrollments.update(id, { 
+                    estado: newStatus, 
+                    sync_status: isOnline ? 'synced' : 'pending',
+                    updated_at: Date.now()
+                });
+            }
 
-            if (error) throw error;
-            fetchEnrollments();
+            if (isOnline) {
+                const { error } = await supabase
+                    .from('inscripciones')
+                    .update({ estado: newStatus })
+                    .eq('id', id);
+
+                if (error) {
+                    // If online update fails, mark as pending in Dexie for later sync
+                    await db.enrollments.update(id, { sync_status: 'pending' });
+                    console.warn("Update online failed, scheduled for sync:", error);
+                }
+            }
         } catch (error) {
             console.error("Error updating status:", error);
-            alert("Error al actualizar estado");
+            // Fallback: stay in Dexie as pending
+            await db.enrollments.update(id, { sync_status: 'pending' });
         }
     };
 
@@ -170,20 +191,10 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
         if (!confirmDelete) return;
 
         try {
-            // 1. Delete associated SOAP from Supabase
+            // 1. Delete associated SOAP records
             if (isOnline) {
-                // Delete SOAP reports linked to this enrollment
-                await supabase
-                    .from('reportes_soap')
-                    .delete()
-                    .eq('inscripcion_id', id);
-
-                // Delete enrollment from Supabase
-                const { error } = await supabase
-                    .from('inscripciones')
-                    .delete()
-                    .eq('id', id);
-
+                await supabase.from('reportes_soap').delete().eq('inscripcion_id', id);
+                const { error } = await supabase.from('inscripciones').delete().eq('id', id);
                 if (error) throw error;
             }
 
@@ -191,13 +202,10 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
             await db.soapReports.where('inscripcion_id').equals(id).delete();
             await db.enrollments.delete(id);
 
-            // 3. Update local state
-            setEnrollments(prev => prev.filter(e => e.id !== id));
-
             alert("Inscripción y datos asociados eliminados con éxito.");
         } catch (error) {
             console.error("Error deleting enrollment:", error);
-            alert("Error al eliminar la inscripción. Verifica tu conexión.");
+            alert("Error al eliminar la inscripción. Si estás offline, es posible que no puedas eliminar registros remotos hasta volver a conectarte.");
         }
     };
 
@@ -292,7 +300,7 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
         }
     };
 
-    const filteredEnrollments = enrollments.filter((e: Enrollment) => {
+    const filteredEnrollments = enrollmentsToList.filter((e: Enrollment) => {
         const matchesStatus = filter === 'all' ? true : e.estado === filter;
         const matchesSearch = e.profiles?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             e.viajes?.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -370,6 +378,13 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                             <span className="text-[10px] font-black uppercase tracking-widest">Modo Montaña (Offline)</span>
                         </div>
                     )}
+
+                    {isOnline && pendingEnrollmentsCount > 0 && (
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary rounded-full mt-2 border border-primary/10 animate-pulse">
+                            <span className="material-symbols-outlined text-sm animate-spin-slow">sync</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest">Sincronizando {pendingEnrollmentsCount} cambios...</span>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex gap-3">
@@ -437,7 +452,15 @@ const AdminEnrollments: React.FC<AdminEnrollmentsProps> = ({ tripId, onClearFilt
                                             {enrollment.profiles?.full_name?.charAt(0) || '?'}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-white uppercase tracking-tight">{enrollment.profiles?.full_name || 'Desconocido'}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-black text-white uppercase tracking-tight">{enrollment.profiles?.full_name || 'Desconocido'}</p>
+                                                {enrollment.sync_status === 'pending' && (
+                                                    <span className="material-symbols-outlined text-amber-500 text-xs animate-spin-slow" title="Sincronización pendiente">sync</span>
+                                                )}
+                                                {enrollment.sync_status === 'error' && (
+                                                    <span className="material-symbols-outlined text-red-500 text-xs" title="Error de sincronización">sync_problem</span>
+                                                )}
+                                            </div>
                                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                                                 <p className="text-[10px] text-primary/70 font-bold tracking-widest">{enrollment.profiles?.phone || 'Sin télefono'}</p>
                                                 {enrollment.profiles?.fichas_medicas?.[0] && (enrollment.profiles.fichas_medicas[0].telefono_emergencia_1 || enrollment.profiles.fichas_medicas[0].telefono_emergencia_2) && (

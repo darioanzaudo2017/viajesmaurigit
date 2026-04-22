@@ -18,6 +18,16 @@ export const useOfflineSync = () => {
         []
     );
 
+    const pendingEnrollments = useLiveQuery(
+        () => db.enrollments.where('sync_status').anyOf('pending', 'error').toArray(),
+        []
+    );
+
+    const readyRegistrations = useLiveQuery(
+        () => db.registrations.where('status').anyOf('ready', 'error').toArray(),
+        []
+    );
+
     useEffect(() => {
         const handleOnline = () => setIsOnline(true);
         const handleOffline = () => setIsOnline(false);
@@ -49,6 +59,7 @@ export const useOfflineSync = () => {
 
                 const finalPayload = {
                     ...cleanData,
+                    es_simulacro: false,
                     updated_at: new Date(report.updated_at).toISOString()
                 };
 
@@ -102,17 +113,164 @@ export const useOfflineSync = () => {
         setSyncing(false);
     }, []);
 
-    // Effect 2: Reacciona cuando Dexie ya cargó los pendientes Y estamos online.
-    // Separado del listener de red para evitar la race condition donde
-    // isOnline=true pero pendingReports todavía es undefined (carga asíncrona de Dexie).
+    const syncPendingEnrollments = useCallback(async () => {
+        const enrollsToSync = await db.enrollments.where('sync_status').anyOf('pending', 'error').toArray();
+        if (enrollsToSync.length === 0) return;
+
+        console.log(`[OfflineSync] Sincronizando ${enrollsToSync.length} cambios de inscripciones...`);
+
+        for (const enroll of enrollsToSync) {
+            try {
+                await db.enrollments.update(enroll.id, { sync_status: 'pending' });
+
+                const { error } = await supabase
+                    .from('inscripciones')
+                    .update({ estado: enroll.estado })
+                    .eq('id', enroll.id);
+
+                if (error) throw error;
+
+                await db.enrollments.update(enroll.id, { sync_status: 'synced' });
+                console.log(`[OfflineSync] Inscripción ${enroll.id} sincronizada.`);
+            } catch (err) {
+                console.error('[OfflineSync] Error syncing enrollment:', enroll.id, err);
+                await db.enrollments.update(enroll.id, { sync_status: 'error' });
+            }
+        }
+    }, [isOnline]);
+
+    const syncPendingSimulations = useCallback(async () => {
+        const toSync = await db.universitySimulations.where('status').anyOf('pending', 'error').toArray();
+        if (!toSync || toSync.length === 0) return;
+
+        setSyncing(true);
+        console.log(`[OfflineSync] Sincronizando ${toSync.length} simulacros SOAP...`);
+
+        for (const sim of toSync) {
+            try {
+                await db.universitySimulations.update(sim.id, { status: 'pending' });
+
+                const { problemas_seleccionados, problemas, ...cleanData } = sim.data as any;
+
+                const payload = {
+                    ...cleanData,
+                    id: sim.id,
+                    user_id: sim.user_id,
+                    paciente_nombre: sim.paciente_nombre,
+                    alumno_nombre: sim.alumno_nombre,
+                    viaje_id: sim.viaje_id,
+                    es_simulacro: true,
+                    created_at: sim.created_at,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { data: savedReport, error } = await supabase
+                    .from('reportes_soap')
+                    .upsert(payload)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Sincronizar problemas relacionales
+                if (problemas_seleccionados && problemas_seleccionados.length > 0) {
+                    await supabase
+                        .from('reportes_soap_problemas')
+                        .delete()
+                        .eq('reporte_soap_id', savedReport.id);
+
+                    const problemasToInsert = problemas_seleccionados.map((p: any) => ({
+                        reporte_soap_id: savedReport.id,
+                        problema_id: p.problema_id,
+                        observacion_especifica: p.observacion_especifica,
+                        problema: p.problema,
+                        problema_anticipado: p.problema_anticipado,
+                        tratamiento: p.tratamiento
+                    }));
+                    await supabase.from('reportes_soap_problemas').insert(problemasToInsert);
+                }
+
+                await db.universitySimulations.update(sim.id, { status: 'synced' });
+                console.log(`[OfflineSync] Simulacro ${sim.id} sincronizado en tabla unificada.`);
+            } catch (err) {
+                console.error("[OfflineSync] Error syncing simulation:", sim.id, err);
+                await db.universitySimulations.update(sim.id, { status: 'error' });
+            }
+        }
+        setSyncing(false);
+    }, [isOnline]);
+
+    const syncPendingRegistrations = useCallback(async () => {
+        const toSync = await db.registrations.where('status').anyOf('ready', 'error').toArray();
+        if (!toSync || toSync.length === 0) return;
+
+        setSyncing(true);
+        console.log(`[OfflineSync] Sincronizando ${toSync.length} inscripciones nuevas/actualizaciones...`);
+
+        for (const reg of toSync) {
+            try {
+                // 1. Upsert Medical Profile
+                const { error: medError } = await supabase
+                    .from('fichas_medicas')
+                    .upsert({
+                        user_id: reg.user_id,
+                        obra_social: reg.data.obra_social,
+                        contacto_emergencia_1: reg.data.emergency_contact_1,
+                        telefono_emergencia_1: reg.data.phone_emergency_1,
+                        contacto_emergencia_2: reg.data.emergency_contact_2,
+                        telefono_emergencia_2: reg.data.phone_emergency_2,
+                        tension_arterial: reg.data.tension_arterial,
+                        estatura: reg.data.estatura?.toString(),
+                        peso: reg.data.peso,
+                        observaciones: reg.data.observaciones,
+                        condiciones: reg.data.condiciones,
+                        grupo_sanguineo: reg.data.grupo_sanguineo,
+                        alergias: reg.data.alergias,
+                        medicamentos: reg.data.medications,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'user_id' });
+
+                if (medError) throw medError;
+
+                // 2. Upsert Trip Enrollment if applicable
+                if (reg.trip_id && reg.trip_id !== 'GENERAL') {
+                    const { error: enrollError } = await supabase
+                        .from('inscripciones')
+                        .upsert({
+                            viaje_id: reg.trip_id,
+                            user_id: reg.user_id,
+                            estado: 'pending',
+                            domicilio: (reg.data as any).domicilio,
+                            localidad: (reg.data as any).localidad,
+                            provincia: (reg.data as any).provincia,
+                            pais: (reg.data as any).pais,
+                            menu: (reg.data as any).menu,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'viaje_id,user_id' });
+
+                    if (enrollError) throw enrollError;
+                }
+
+                // 3. Mark as synced
+                await db.registrations.update(reg.id!, { status: 'synced' });
+                console.log(`[OfflineSync] Registro de usuario ${reg.user_id} sincronizado.`);
+            } catch (err) {
+                console.error("[OfflineSync] Error syncing registration:", reg.id, err);
+                await db.registrations.update(reg.id!, { status: 'error' });
+            }
+        }
+        setSyncing(false);
+    }, []);
     useEffect(() => {
         if (!isOnline) return;
         if (syncing) return;
 
         const hasPendingReports = pendingReports && pendingReports.length > 0;
         const hasPendingSimulations = pendingSimulations && pendingSimulations.length > 0;
+        const hasPendingEnrollments = pendingEnrollments && pendingEnrollments.length > 0;
+        const hasReadyRegistrations = readyRegistrations && readyRegistrations.length > 0;
 
-        if (!hasPendingReports && !hasPendingSimulations) return;
+        if (!hasPendingReports && !hasPendingSimulations && !hasPendingEnrollments && !hasReadyRegistrations) return;
 
         let cancelled = false;
         const run = async () => {
@@ -120,6 +278,8 @@ export const useOfflineSync = () => {
             try {
                 if (hasPendingReports) await syncPendingReports();
                 if (hasPendingSimulations) await syncPendingSimulations();
+                if (hasPendingEnrollments) await syncPendingEnrollments();
+                if (hasReadyRegistrations) await syncPendingRegistrations();
             } finally {
                 if (!cancelled) setSyncing(false);
             }
@@ -127,39 +287,7 @@ export const useOfflineSync = () => {
         run();
 
         return () => { cancelled = true; };
-    }, [isOnline, pendingReports, pendingSimulations]);
-
-    const syncPendingSimulations = async () => {
-        if (!pendingSimulations || pendingSimulations.length === 0) return;
-
-        setSyncing(true);
-        console.log(`Sincronizando ${pendingSimulations.length} simulacros SOAP...`);
-
-        for (const sim of pendingSimulations) {
-            try {
-                const payload = {
-                    id: sim.id,
-                    user_id: sim.user_id,
-                    paciente_nombre: sim.paciente_nombre,
-                    data: sim.data,
-                    created_at: sim.created_at
-                };
-
-                const { error } = await supabase
-                    .from('simulacros_soap')
-                    .upsert(payload);
-
-                if (error) throw error;
-
-                await db.universitySimulations.update(sim.id, { status: 'synced' });
-                console.log(`Simulacro ${sim.id} sincronizado con éxito.`);
-            } catch (err) {
-                console.error("Error syncing simulation:", sim.id, err);
-                await db.universitySimulations.update(sim.id, { status: 'error' });
-            }
-        }
-        setSyncing(false);
-    };
+    }, [isOnline, pendingReports, pendingSimulations, pendingEnrollments, syncPendingReports, syncPendingEnrollments, syncPendingSimulations]);
 
     const downloadTripData = async (tripId: string) => {
         try {
@@ -333,25 +461,30 @@ export const useOfflineSync = () => {
     const downloadAllSimulations = useCallback(async () => {
         try {
             const { data: sims, error } = await supabase
-                .from('simulacros_soap')
+                .from('reportes_soap')
                 .select('*')
+                .eq('es_simulacro', true)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            if (!sims || sims.length === 0) return { success: true, count: 0 };
+            // Clear local table first to ensure we match Supabase exactly (no ghost data)
+            await db.universitySimulations.clear();
+            
+            if (sims && sims.length > 0) {
+                await db.universitySimulations.bulkPut(sims.map(s => ({
+                    id: s.id,
+                    user_id: s.user_id,
+                    paciente_nombre: s.paciente_nombre,
+                    alumno_nombre: s.alumno_nombre,
+                    viaje_id: s.viaje_id,
+                    status: 'synced',
+                    data: s,
+                    created_at: s.created_at,
+                    updated_at: s.updated_at || s.created_at
+                })));
+            }
 
-            // We don't clear all because it might delete pending ones from other users (unlikely but safe)
-            // Instead, we only update/insert what we got from server
-            await db.universitySimulations.bulkPut(sims.map(s => ({
-                id: s.id,
-                user_id: s.user_id,
-                paciente_nombre: s.paciente_nombre,
-                status: 'synced',
-                data: s.data,
-                created_at: s.created_at
-            })));
-
-            console.log(`[OfflineSync] ${sims.length} simulacros cacheados.`);
+            console.log(`[OfflineSync] ${sims.length} simulacros cacheados desde tabla unificada.`);
             return { success: true, count: sims.length };
         } catch (err) {
             console.error('[OfflineSync] Error descargando simulacros:', err);
@@ -369,6 +502,7 @@ export const useOfflineSync = () => {
             await downloadAllTrips();
             await downloadAllEnrollments();
             await downloadAllSoapReports();
+            await downloadAllSimulations();
             console.log('[OfflineSync] Sincronización completa exitosa.');
         } catch (err) {
             console.error('[OfflineSync] Error en sincronización completa:', err);
@@ -382,12 +516,15 @@ export const useOfflineSync = () => {
         syncing,
         pendingReportsCount: pendingReports?.length || 0,
         pendingSimulationsCount: pendingSimulations?.length || 0,
+        pendingEnrollmentsCount: pendingEnrollments?.length || 0,
         downloadTripData,
         downloadAllTrips,
         downloadAllEnrollments,
         downloadAllSimulations,
         syncAllAdminData,
         syncPendingReports,
-        syncPendingSimulations
+        syncPendingSimulations,
+        syncPendingEnrollments,
+        syncPendingRegistrations
     };
 };

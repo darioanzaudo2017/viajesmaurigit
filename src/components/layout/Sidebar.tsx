@@ -52,7 +52,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                         <span className="material-symbols-outlined">close</span>
                     </button>
                 </div>
-                <div className="h-6 hidden lg:block"></div> {/* Espaciador Desktop */}
+                <div className="p-6 hidden lg:flex items-center gap-3">
+                    <Logo className="h-8" variant={isDarkMode ? "neon" : "light"} showText={true} />
+                </div>
+                <div className="h-2 hidden lg:block"></div> {/* Espaciador Desktop */}
                 <nav className="flex-1 px-4 space-y-1">
                     {menuItems.map((item) => (
                         <div
@@ -106,9 +109,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                             >
                                 <div className="flex items-center gap-2">
                                     <span className="material-symbols-outlined text-lg">
-                                        {isDarkMode ? 'light_mode' : 'dark_mode'}
+                                        {isDarkMode ? 'dark_mode' : 'light_mode'}
                                     </span>
-                                    <span>Modo {isDarkMode ? 'Claro' : 'Oscuro'}</span>
+                                    <span>{isDarkMode ? 'Modo Oscuro' : 'Modo Claro'}</span>
                                 </div>
                                 <div className={`w-8 h-4 rounded-full bg-slate-300 dark:bg-slate-700 relative transition-colors`}>
                                     <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-sm transition-all ${isDarkMode ? 'left-4.5' : 'left-0.5'}`}></div>

@@ -200,7 +200,7 @@ export const useRegistration = (tripId: string, userId: string) => {
 
     const submitRegistration = async (overrideTripId?: string) => {
         const finalTripId = overrideTripId || tripId;
-        if (alreadyRegistered && finalTripId === tripId) return { success: false, error: 'Ya estás inscrito en este viaje.' };
+        // Permitir el envío siempre para actualizar ficha médica, incluso si ya está inscrito
 
         setSubmitting(true);
         try {
@@ -277,8 +277,30 @@ export const useRegistration = (tripId: string, userId: string) => {
                 .delete();
 
             return { success: true };
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error submitting registration:", err);
+            
+            // OFFLINE BACKUP: If it's a network error or Supabase is down, save as 'ready' for sync
+            const isNetworkError = !navigator.onLine || err.message === 'Failed to fetch' || err.code === 'PGRST301';
+            
+            if (isNetworkError) {
+                console.log("Network error detected, saving to offline queue...");
+                await db.registrations.put({
+                    trip_id: finalTripId || 'GENERAL',
+                    user_id: userId,
+                    status: 'ready',
+                    data: formData,
+                    created_at: Date.now()
+                });
+                
+                // Clear the pending draft since it's now 'ready' to sync
+                await db.registrations
+                    .where({ trip_id: finalTripId, user_id: userId, status: 'pending' })
+                    .delete();
+
+                return { success: true, offline: true };
+            }
+
             return { success: false, error: err };
         } finally {
             setSubmitting(false);

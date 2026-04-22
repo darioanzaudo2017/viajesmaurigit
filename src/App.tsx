@@ -225,11 +225,13 @@ function App() {
         return <TripsPage
           onRegister={() => handleTabChange('register')}
           onViewDetails={(id) => setSelectedTripId(id)}
+          user={user}
         />;
       case 'register':
         return user ? (
           <RegistrationPage
             userId={user.id}
+            user={user}
             tripId={selectedTripId || undefined}
             onComplete={() => {
               setSelectedTripId(null);

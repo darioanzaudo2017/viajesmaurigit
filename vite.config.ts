@@ -16,8 +16,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'pwa-icon.svg'],
       manifest: {
-        name: 'TrekManage - Viajes Mauri',
-        short_name: 'TrekManage',
+        name: 'TREKKING TRACE - Gestión de Expediciones',
+        short_name: 'TREKKING TRACE',
         description: 'Gestión de expediciones y seguridad en montaña',
         theme_color: '#13ec6d',
         icons: [

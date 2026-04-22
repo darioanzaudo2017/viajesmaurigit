@@ -49,20 +49,241 @@ export interface SoapReportData {
         spo2: string;
         temp: string;
         avdi: string;
+        skin?: string;
     }[];
     skin: string;
+    examenFisico: string;
     assessment: string;
     plan: string;
-    examenFisico?: string;
     responsibleId: string;
-    problemas?: {
+    alumnoNombre?: string;
+    viajeNombre?: string;
+    isSimulation?: boolean;
+    problemas: {
         problema: string;
         anticipado: string;
         tratamiento: string;
         observacion: string;
     }[];
-    notasAdicionales?: string;
+    notasAdicionales: string;
 }
+
+const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
+    const doc = new jsPDF();
+    // Configuración estética
+    const primaryColor: [number, number, number] = [19, 236, 109]; // #13ec6d (TREKKING TRACE Green)
+    const textColor: [number, number, number] = [30, 41, 59];    // Slate 800
+    const mutedColor: [number, number, number] = [100, 116, 139]; // Slate 500
+
+    // 1. DIBUJAR LOGO (TREKKING TRACE Style)
+    const drawLogo = (x: number, y: number, size: number) => {
+        doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.setLineWidth(1.5);
+        
+        // El pulso/montaña central
+        doc.line(x, y + size/1.5, x + size/4, y + size/1.5); // Inicio
+        doc.line(x + size/4, y + size/1.5, x + size/3, y + size/3); // Pico
+        doc.line(x + size/3, y + size/3, x + size/2, y + size); // Valle
+        doc.line(x + size/2, y + size, x + size/1.5, y); // Cima
+        doc.line(x + size/1.5, y, x + size/1.2, y + size/1.5); // Bajada
+        doc.line(x + size/1.2, y + size/1.5, x + size, y + size/1.5); // Fin
+        
+        // Texto del Logo
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(18); // Ajustado para evitar solapamientos
+        doc.setFont('helvetica', 'bold');
+        doc.text('TREKKING', x + size + 5, y + size/1.3);
+        doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+        doc.text('TRACE', x + size + 38, y + size/1.3);
+        
+        doc.setFontSize(7);
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+        doc.setFont('helvetica', 'normal');
+        doc.text('PRECISIÓN EN NAVEGACIÓN AGRESTRE', x + size + 5, y + size/1.3 + 4);
+    };
+
+    drawLogo(16, 15, 15);
+
+    // 2. ENCABEZADO INSTITUCIONAL (Sólo para simulacros)
+    if (data.isSimulation) {
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('INSTITUTO SUPERIOR DE ACTIVIDADES DE MONTAÑA (ISAUI)', 200, 20, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        if (data.alumnoNombre) doc.text(`Alumno: ${data.alumnoNombre}`, 200, 25, { align: 'right' });
+    } else {
+        // Encabezado para guías (salidas reales)
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TREKKING TRACE - REGISTRO AGRESTRE', 200, 20, { align: 'right' });
+    }
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    if (data.viajeNombre) doc.text(`Salida: ${data.viajeNombre}`, 200, 30, { align: 'right' });
+    doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 200, 35, { align: 'right' });
+
+    doc.setDrawColor(226, 232, 240);
+    doc.line(16, 45, 200, 45);
+
+    let yPos = 55;
+
+    // Título del Reporte
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.text('REPORTE CLÍNICO SOAP', 16, yPos);
+    yPos += 8;
+
+    // Información del Paciente
+    doc.setFontSize(10);
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.text(`PACIENTE: ${data.patientName.toUpperCase()}`, 16, yPos);
+    doc.text(`HORA INCIDENTE: ${data.incidentTime}`, 100, yPos);
+    doc.text(`GRAVEDAD: ${data.severity.toUpperCase()}`, 160, yPos);
+    yPos += 12;
+
+    // PASO 1: ESCENA
+    doc.setFillColor(248, 250, 252);
+    doc.rect(16, yPos - 5, 184, 8, 'F');
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text('PASO 1: ESCENA Y SEGURIDAD', 18, yPos);
+    yPos += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    const sceneLines = doc.splitTextToSize(data.scene || 'No especificada', 180);
+    doc.text(sceneLines, 16, yPos);
+    yPos += (sceneLines.length * 5) + 5;
+
+    // PASO 2: EXAMEN SUBJETIVO (S.A.M.P.L.E.)
+    doc.setFillColor(248, 250, 252);
+    doc.rect(16, yPos - 5, 184, 8, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text('PASO 2: EXAMEN SUBJETIVO (S.A.M.P.L.E.)', 18, yPos);
+    yPos += 6;
+
+    autoTable(doc, {
+        startY: yPos,
+        theme: 'plain',
+        head: [['Etapa', 'Información Recabada']],
+        body: [
+            ['[S] Síntomas', data.symptoms],
+            ['[A] Alergias', data.allergies],
+            ['[M] Medicación', data.medications],
+            ['[P] Historia Pasada', data.history],
+            ['[L] Última Ingesta', data.lastIntake],
+            ['[E] Eventos', data.events],
+        ],
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fontStyle: 'bold', textColor: mutedColor },
+        columnStyles: { 0: { fontStyle: 'bold', cellWidth: 40 } },
+        margin: { left: 16 }
+    });
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+    if (yPos > 240) { doc.addPage(); yPos = 20; }
+
+    // PASO 3: EXAMEN OBJETIVO (SIGNOS VITALES)
+    if (yPos > 240) { doc.addPage(); yPos = 20; }
+    doc.setFillColor(248, 250, 252);
+    doc.rect(16, yPos - 5, 184, 8, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text('PASO 3: EXAMEN OBJETIVO', 18, yPos);
+    yPos += 8;
+
+    // EXAMEN FÍSICO DETALLADO (Ahora dentro del Paso 3)
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.text('HALLAZGOS DEL EXAMEN FÍSICO:', 16, yPos);
+    yPos += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    const examLines = doc.splitTextToSize(data.examenFisico || 'No realizado', 180);
+    doc.text(examLines, 16, yPos);
+    yPos += (examLines.length * 5) + 8;
+
+    // Tabla de Signos Vitales
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.text('MONITOREO DE SIGNOS VITALES:', 16, yPos);
+    yPos += 3;
+
+    autoTable(doc, {
+        startY: yPos,
+        theme: 'grid',
+        head: [['Hora', 'Pulso', 'Resp', 'P.A.', 'SpO2', 'Temp', 'AVDI', 'Piel']],
+        body: data.vitals.map(v => [v.time, v.pulse, v.resp, v.bp, v.spo2, v.temp, v.avdi, v.skin || '-']),
+        styles: { fontSize: 8, halign: 'center' },
+        headStyles: { fillColor: [51, 65, 85], textColor: [255, 255, 255], fontStyle: 'bold' },
+        margin: { left: 16 }
+    });
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+
+    // PASO 4: EVALUACIÓN Y PLAN
+    if (yPos > 240) { doc.addPage(); yPos = 20; }
+    
+    doc.setFillColor(248, 250, 252);
+    doc.rect(16, yPos - 5, 184, 8, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text('PASO 4: EVALUACIÓN Y PLAN', 18, yPos);
+    yPos += 8;
+
+    // LISTADO DE PROBLEMAS IDENTIFICADOS
+    if (data.problemas && data.problemas.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+        doc.text('LISTADO DE PROBLEMAS E INTERVENCIONES:', 16, yPos);
+        yPos += 5;
+
+        autoTable(doc, {
+            startY: yPos,
+            theme: 'striped',
+            head: [['Problema', 'Anticipación', 'Tratamiento Realizado']],
+            body: data.problemas.map(p => [p.problema, p.anticipado, p.tratamiento]),
+            styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+            columnStyles: {
+                0: { cellWidth: 50 },
+                1: { cellWidth: 50 },
+                2: { cellWidth: 'auto' }
+            },
+            headStyles: { fillColor: [71, 85, 105], textColor: [255, 255, 255] },
+            margin: { left: 16 }
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 12;
+    }
+
+    // NOTAS ADICIONALES (Bloque final)
+    if (data.notasAdicionales) {
+        if (yPos > 240) { doc.addPage(); yPos = 20; }
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+        doc.text('NOTAS ADICIONALES:', 16, yPos);
+        yPos += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+        const aditionalLines = doc.splitTextToSize(data.notasAdicionales, 180);
+        doc.text(aditionalLines, 16, yPos);
+        yPos += (aditionalLines.length * 5) + 15;
+    }
+
+    // PIE DE PÁGINA / FIRMA
+    if (yPos > 250) { doc.addPage(); yPos = 40; }
+    doc.setDrawColor(203, 213, 225);
+    doc.line(70, yPos + 20, 140, yPos + 20);
+    doc.setFontSize(8);
+    doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
+    doc.text('FIRMA RESPONSABLE / ALUMNO', 105, yPos + 25, { align: 'center' });
+    doc.text(`ID: ${data.responsibleId}`, 105, yPos + 29, { align: 'center' });
+
+    // 6. GUARDAR DOCUMENTO
+    doc.save(`${fileName}.pdf`);
+};
 
 // --- MAIN GENERATOR FUNCTION ---
 export const generateMedicalPDF = async (
@@ -101,24 +322,44 @@ const generateNativeMedicalPDF = (data: MedicalProfileData, fileName: string) =>
     const contentWidth = pageWidth - margin * 2;
 
     // ============================================
-    // HEADER
+    // HEADER (TREKKING TRACE Professional Style)
     // ============================================
-    doc.setFillColor(20, 50, 35); // Dark green header
-    doc.rect(0, 0, pageWidth, 42, 'F');
+    const drawLogo = (x: number, y: number, size: number) => {
+        const pColor = [19, 236, 109];
+        doc.setDrawColor(pColor[0], pColor[1], pColor[2]);
+        doc.setLineWidth(1.2);
+        doc.line(x, y + size/1.5, x + size/4, y + size/1.5);
+        doc.line(x + size/4, y + size/1.5, x + size/3, y + size/3);
+        doc.line(x + size/3, y + size/3, x + size/2, y + size);
+        doc.line(x + size/2, y + size, x + size/1.5, y);
+        doc.line(x + size/1.5, y, x + size/1.2, y + size/1.5);
+        doc.line(x + size/1.2, y + size/1.5, x + size, y + size/1.5);
+        
+        doc.setTextColor(30, 41, 59);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TREKKING', x + size + 4, y + size/1.3);
+        doc.setTextColor(pColor[0], pColor[1], pColor[2]);
+        doc.text('TRACE', x + size + 36, y + size/1.3);
+        
+        doc.setFontSize(7);
+        doc.setTextColor(100, 116, 139);
+        doc.setFont('helvetica', 'normal');
+        doc.text('PRECISIÓN EN NAVEGACIÓN AGRESTRE', x + size + 4, y + size/1.3 + 4);
+    };
 
-    doc.setFontSize(20);
-    doc.setTextColor(80, 220, 140); // Primary green
+    drawLogo(margin, 12, 12);
+
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('FICHA MEDICA DIGITAL', pageWidth / 2, 18, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(255, 255, 255);
+    doc.text('FICHA MÉDICA DIGITAL', pageWidth - margin, 18, { align: 'right' });
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Participante: ${data.fullName}`, pageWidth / 2, 28, { align: 'center' });
+    doc.text('REGISTRO DE SEGURIDAD OPERATIVA', pageWidth - margin, 23, { align: 'right' });
 
-    doc.setFontSize(8);
-    doc.setTextColor(150, 200, 170);
-    doc.text(`Documento de Seguridad - Uso Interno | Actualizado: ${data.lastUpdate || new Date().toLocaleDateString()}`, pageWidth / 2, 36, { align: 'center' });
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, 35, pageWidth - margin, 35);
 
     let yPos = 52;
 
@@ -272,177 +513,6 @@ const generateNativeMedicalPDF = (data: MedicalProfileData, fileName: string) =>
         doc.setFontSize(9);
         doc.setTextColor(100, 100, 100);
         doc.text('No se registraron contactos de emergencia.', margin + 5, yPos + 5);
-    }
-
-    // Footer
-    addFooter(doc);
-
-    doc.save(`${fileName}.pdf`);
-};
-
-const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.width;
-
-    // 1. Header
-    doc.setFillColor(240, 240, 240);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Ficha SOAP', pageWidth / 2, 20, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Reporte de Incidente - Gravedad: ${data.severity.toUpperCase()}`, pageWidth / 2, 30, { align: 'center' });
-    doc.text('PASO 1: ESCENA', pageWidth / 2, 36, { align: 'center' });
-
-    let yPos = 50;
-
-    // 2. Info Grid (Patient & Location)
-    autoTable(doc, {
-        startY: yPos,
-        head: [['Paciente', 'Ubicación', 'Hora']],
-        body: [[data.patientName, data.location, data.incidentTime]],
-        theme: 'plain',
-        styles: { fontSize: 11, fontStyle: 'bold', halign: 'center' },
-        tableLineColor: [200, 200, 200],
-        tableLineWidth: 0.1
-    });
-
-    // @ts-ignore
-    yPos = doc.lastAutoTable.finalY + 10;
-
-    // 3. Subjective Section (S)
-    doc.setFillColor(230, 230, 230);
-    doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('PASO 2: SUBJETIVO - SAMPUE', 16, yPos + 6);
-    yPos += 10;
-
-    const subjectiveData = [
-        ['Síntomas', data.symptoms],
-        ['Alergias', data.allergies],
-        ['Medicamentos', data.medications],
-        ['Historia Pasada', data.history],
-        ['Última Ingesta', data.lastIntake],
-        ['Evento', data.events],
-        ['Escena', data.scene]
-    ];
-
-    autoTable(doc, {
-        startY: yPos,
-        body: subjectiveData,
-        theme: 'grid',
-        showHead: 'firstPage',
-        columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold', fillColor: [250, 250, 250] } },
-        styles: { fontSize: 9, cellPadding: 3 }
-    });
-
-    // @ts-ignore
-    yPos = doc.lastAutoTable.finalY + 10;
-
-    // 4. Objective Section (O) - Vitals
-    doc.setFillColor(230, 230, 230);
-    doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-    doc.text('PASO 3: OBJETIVO - EXAMEN FÍSICO Y SIGNOS VITALES', 16, yPos + 6);
-    yPos += 10;
-
-    const vitalsBody = data.vitals.map(v => [v.time, v.pulse, v.resp, v.bp, v.spo2, v.temp, v.avdi]);
-
-    autoTable(doc, {
-        startY: yPos,
-        head: [['Hora', 'Pulso', 'Resp', 'T/A', 'SpO2', 'Temp', 'AVDI']],
-        body: vitalsBody,
-        theme: 'striped',
-        headStyles: { fillColor: [50, 50, 50], halign: 'center' },
-        bodyStyles: { halign: 'center' },
-        styles: { fontSize: 9 }
-    });
-
-    // @ts-ignore
-    yPos = doc.lastAutoTable.finalY + 5;
-
-    // Skin condition
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Estado de Piel: ${data.skin || 'No especificado'}`, 15, yPos + 5);
-
-    if (data.examenFisico) {
-        doc.text(`Examen Físico: ${data.examenFisico}`, 15, yPos + 10, { maxWidth: pageWidth - 30 });
-        yPos += 10;
-    }
-
-    yPos += 15;
-
-    // 5. Assessment & Plan (A/P)
-    doc.setFillColor(230, 230, 230);
-    doc.rect(14, yPos, pageWidth - 28, 8, 'F');
-    doc.setFontSize(11);
-    doc.text('PASO 4: EVALUACIÓN Y TRATAMIENTO. NOTAS ADICIONALES.', 16, yPos + 6);
-    yPos += 10;
-
-    autoTable(doc, {
-        startY: yPos,
-        body: [
-            ['Evaluación Global', data.assessment]
-        ],
-        theme: 'grid',
-        columnStyles: { 0: { cellWidth: 40, fontStyle: 'bold', fillColor: [250, 250, 250] } },
-        styles: { fontSize: 9, cellPadding: 5 }
-    });
-
-    // @ts-ignore
-    yPos = doc.lastAutoTable.finalY + 8;
-
-    // 6. Problemas Detallados
-    if (data.problemas && data.problemas.length > 0) {
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('PROBLEMAS IDENTIFICADOS Y TRATAMIENTO', 14, yPos + 4);
-        yPos += 8;
-
-        const problemasBody: any[] = [];
-        data.problemas.forEach((p, idx) => {
-            // Fila de Encabezado de Problema
-            problemasBody.push([
-                { content: `${idx + 1}. ${p.problema}`, colSpan: 2, styles: { fillColor: [80, 80, 80], textColor: [255, 255, 255], fontStyle: 'bold' } }
-            ]);
-            // Filas de Detalles
-            problemasBody.push(['P. Anticipado', p.anticipado]);
-            problemasBody.push(['T. Sugerido', p.tratamiento]);
-            if (p.observacion) {
-                problemasBody.push(['Observación', p.observacion]);
-            }
-        });
-
-        autoTable(doc, {
-            startY: yPos,
-            body: problemasBody,
-            theme: 'grid',
-            columnStyles: {
-                0: { cellWidth: 35, fontStyle: 'bold', fillColor: [245, 245, 245] }
-            },
-            styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-            margin: { left: 14, right: 14, bottom: 20 },
-            pageBreak: 'auto', // Permite que la tabla fluya entre páginas
-            rowPageBreak: 'avoid' // Pero evita romper una fila individual (como el nombre del problema)
-        });
-
-        // @ts-ignore
-        yPos = doc.lastAutoTable.finalY + 8;
-    }
-
-    // 7. Notas Adicionales
-    if (data.notasAdicionales) {
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
-        doc.text('NOTAS ADICIONALES', 14, yPos + 5);
-        yPos += 8;
-
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'italic');
-        doc.text(data.notasAdicionales, 14, yPos, { maxWidth: pageWidth - 28 });
     }
 
     // Footer

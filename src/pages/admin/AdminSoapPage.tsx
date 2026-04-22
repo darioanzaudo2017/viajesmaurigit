@@ -81,6 +81,7 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                         .from('reportes_soap')
                         .select('*, problemas:reportes_soap_problemas(*, maestro:maestro_problemas_soap(*))')
                         .eq('inscripcion_id', enrollmentId)
+                        .eq('es_simulacro', false)
                         .maybeSingle();
 
                     if (remoteSoap) {
@@ -195,20 +196,23 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
                     bp: sv.presion || '-',
                     spo2: sv.spo2 || '-',
                     temp: sv.temperatura || '-',
-                    avdi: sv.avdi || '-'
+                    avdi: sv.avdi || '-',
+                    skin: sv.piel || '-'
                 })),
                 skin: report.sv_piel || 'No especificado',
                 examenFisico: report.examen_fisico || '',
                 assessment: report.evaluacion_guia || 'Sin evaluación',
                 plan: report.observaciones || 'Sin plan',
                 responsibleId: report.responsable_id || 'N/A',
+                viajeNombre: enrollmentData?.viajes?.titulo || report.referencia_viaje || 'Salida de Campo',
+                isSimulation: false,
                 problemas: (report.problemas_seleccionados || []).map(p => ({
                     problema: p.problema || p.maestro?.problema || 'N/A',
                     anticipado: p.problema_anticipado || p.maestro?.problema_anticipado || 'N/A',
                     tratamiento: p.tratamiento || p.maestro?.tratamiento_sugerido || 'N/A',
                     observacion: p.observacion_especifica || 'Sin observaciones'
                 })),
-                notasAdicionales: report.notas_adicionales
+                notasAdicionales: report.notas_adicionales || ''
             };
 
             await generateMedicalPDF('', fileName, '#ffffff', { type: 'soap', content: soapData });

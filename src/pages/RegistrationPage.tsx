@@ -4,23 +4,32 @@ import { supabase } from '../api/supabase';
 
 interface RegistrationPageProps {
     userId: string;
+    user: any;
     tripId?: string;
     onComplete?: () => void;
 }
 
-const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onComplete }) => {
+const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, user, tripId, onComplete }) => {
     const {
         step, setStep, formData, updateField, toggleCondition,
         submitRegistration, submitting, alreadyRegistered, checkingStatus
     } = useRegistration(tripId || 'GENERAL', userId);
 
+    const [loading, setLoading] = useState(false);
+    const [isOffline, setIsOffline] = useState(false);
     const [tripInfo, setTripInfo] = useState<any>(null);
     const [availableTrips, setAvailableTrips] = useState<any[]>([]);
     const [selectedTripId, setSelectedTripId] = useState<string>(tripId || 'GENERAL');
 
     useEffect(() => {
-        // Fetch all trips for selection if none provided
-        supabase.from('viajes').select('id, titulo').eq('estado', 'published').then(({ data }) => {
+        // Fetch all trips for selection if none provided, filtering by university access
+        let query = supabase.from('viajes').select('id, titulo').eq('estado', 'published');
+        
+        if (!user?.profile?.is_university) {
+            query = query.eq('is_university', false);
+        }
+
+        query.then(({ data }) => {
             if (data) setAvailableTrips(data);
         });
 
@@ -38,6 +47,14 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
             if (selectedTripId && selectedTripId !== 'GENERAL') {
                 // 1. Get Trip Info
                 const { data: trip } = await supabase.from('viajes').select('*').eq('id', selectedTripId).single();
+                
+                // Security check: If trip is university but user is not authorized
+                if (trip?.is_university && !user?.profile?.is_university) {
+                    alert('Esta es una expedición exclusiva del ISAUI. No tienes permiso para inscribirte.');
+                    setSelectedTripId('GENERAL');
+                    return;
+                }
+
                 if (trip) setTripInfo(trip);
 
                 // 2. Check if already registered for THIS selected trip
@@ -110,18 +127,24 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
         );
     }
 
-    if (alreadyRegistered && step < 4) {
+    if (alreadyRegistered && step === 1) {
         return (
             <div className="max-w-[800px] mx-auto px-6 py-20 text-center space-y-8 animate-in fade-in duration-700">
                 <div className="size-24 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4 border border-primary/20">
                     <span className="material-symbols-outlined text-5xl">verified</span>
                 </div>
-                <h2 className="text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Ya estás Inscrito</h2>
-                <p className="text-trek-text-muted text-lg font-medium">Ya registramos tu participación para <b>{tripInfo?.titulo || 'esta expedición'}</b>. No es necesario completar el formulario nuevamente.</p>
-                <div className="pt-6">
+                <h2 className="text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Inscripción Confirmada</h2>
+                <p className="text-trek-text-muted text-lg font-medium">Ya estás inscrito en <b>{tripInfo?.titulo || 'esta expedición'}</b>. ¿Necesitas actualizar tus datos médicos o de emergencia?</p>
+                <div className="pt-6 flex flex-wrap gap-4 justify-center">
+                    <button
+                        onClick={() => setStep(2)}
+                        className="px-10 py-4 bg-primary text-black font-black rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all uppercase tracking-widest text-sm"
+                    >
+                        Actualizar mis datos
+                    </button>
                     <button
                         onClick={() => onComplete?.()}
-                        className="px-10 py-4 bg-primary text-black font-black rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all uppercase tracking-widest text-sm"
+                        className="px-10 py-4 bg-white/5 text-slate-400 font-black rounded-xl hover:bg-white/10 transition-all uppercase tracking-widest text-sm border border-white/5"
                     >
                         Volver al Panel
                     </button>
@@ -131,8 +154,9 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
     }
 
     const handleFinalize = async () => {
-        const result = await submitRegistration(selectedTripId !== 'GENERAL' ? selectedTripId : undefined);
+        const result = await (submitRegistration as any)(selectedTripId !== 'GENERAL' ? selectedTripId : undefined);
         if (result.success) {
+            setIsOffline(!!result.offline);
             setStep(4);
         } else {
             alert("Error al guardar: " + (result.error as any).message);
@@ -451,11 +475,21 @@ const RegistrationPage: React.FC<RegistrationPageProps> = ({ userId, tripId, onC
                 return (
                     <section className="bg-white dark:bg-zinc-900/50 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="p-10 text-center space-y-6">
-                            <div className="size-24 bg-primary/10 rounded-full flex items-center justify-center text-primary mx-auto mb-4">
-                                <span className="material-symbols-outlined text-6xl">cloud_done</span>
+                            <div className={`size-24 ${isOffline ? 'bg-amber-500/10 text-amber-500' : 'bg-primary/10 text-primary'} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                                <span className="material-symbols-outlined text-6xl">{isOffline ? 'cloud_off' : 'cloud_done'}</span>
                             </div>
-                            <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">¡Registro Completado!</h3>
-                            <p className="text-trek-text-muted max-w-md mx-auto">Tus datos médicos y de inscripción para <b>{selectedTripId !== 'GENERAL' ? tripInfo?.titulo : 'tu perfil general'}</b> han sido guardados con éxito.</p>
+                            <h3 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+                                {isOffline ? 'Guardado Localmente' : (alreadyRegistered ? '¡Datos Actualizados!' : '¡Registro Completado!')}
+                            </h3>
+                            <p className="text-trek-text-muted max-w-md mx-auto">
+                                {isOffline 
+                                    ? <>No detectamos conexión a internet, pero tus datos para <b>{tripInfo?.titulo || 'tu expedición'}</b> están a salvo en tu dispositivo y se sincronizarán solos apenas recuperes señal.</>
+                                    : (alreadyRegistered 
+                                        ? <>Tus datos médicos han sido actualizados para tu viaje <b>{tripInfo?.titulo || 'activo'}</b>.</>
+                                        : <>Tus datos médicos y de inscripción para <b>{selectedTripId !== 'GENERAL' ? tripInfo?.titulo : 'tu perfil general'}</b> han sido guardados con éxito.</>
+                                    )
+                                }
+                            </p>
                             <button
                                 onClick={() => onComplete?.()}
                                 className="mt-8 px-12 py-4 bg-primary text-black font-black rounded-xl shadow-xl shadow-primary/20 hover:scale-[1.05] transition-all"

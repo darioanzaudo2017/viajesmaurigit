@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../api/supabase';
+import { useOfflineSync } from '../hooks/useOfflineSync';
 
 interface Viaje {
     id: string;
@@ -13,6 +14,7 @@ interface Viaje {
     dificultad?: string;
     ubicacion?: string;
     imagen_url?: string;
+    is_university?: boolean;
 }
 
 interface BeforeInstallPromptEvent extends Event {
@@ -33,6 +35,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
     const [loading, setLoading] = useState(true);
     const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showAllTreks, setShowAllTreks] = useState(false);
+    const { isOnline, downloadAllEnrollments } = useOfflineSync();
 
     const isAdmin = user?.profile?.role === 'admin';
 
@@ -45,9 +48,12 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                     .from('viajes')
                     .select('*')
                     .eq('estado', 'published')
-                    .limit(6);
+                    .limit(10);
 
-                if (discoveryData) setDiscoveryRoutes(discoveryData);
+                if (discoveryData) {
+                    const visibleRoutes = discoveryData.filter(v => !v.is_university || user?.profile?.is_university);
+                    setDiscoveryRoutes(visibleRoutes);
+                }
 
                 // If user is logged in, fetch their registrations
                 if (user?.id) {
@@ -71,9 +77,14 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                             id: reg.viaje.id,
                             title: reg.viaje.titulo,
                             details: `${new Date(reg.viaje.fecha_inicio).toLocaleDateString()} • ${reg.viaje.ubicacion}`,
-                            image: reg.viaje.imagen_url,
+                            image: reg.viaje.image_url || reg.viaje.imagen_url,
                             status: reg.estado
                         })));
+
+                        // Sync to local Dexie for offline consistency
+                        if (isOnline) {
+                            downloadAllEnrollments();
+                        }
                     }
                 }
             } catch (err) {
@@ -312,7 +323,15 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                     ></div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
                                     <div className="absolute top-4 left-4 flex gap-2">
-                                        <span className="bg-primary/90 backdrop-blur-md text-background-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">{route.dificultad || 'Moderada'}</span>
+                                        <span className="bg-primary/90 backdrop-blur-md text-background-dark text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+                                            {route.dificultad || 'Moderada'}
+                                        </span>
+                                        {route.is_university && (
+                                            <span className="bg-trek-surface-light dark:bg-white/10 backdrop-blur-md text-slate-900 dark:text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-primary/30 flex items-center gap-1 shadow-lg">
+                                                <span className="material-symbols-outlined text-[12px] text-primary">school</span>
+                                                ISAUI
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="p-6">

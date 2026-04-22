@@ -13,9 +13,14 @@ interface Viaje {
     dificultad?: string;
     ubicacion?: string;
     imagen_url?: string;
+    is_university?: boolean;
 }
 
-const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) => void }> = ({ onRegister, onViewDetails }) => {
+const TripsPage: React.FC<{ 
+    onRegister: () => void, 
+    onViewDetails: (id: string) => void,
+    user?: any 
+}> = ({ onRegister, onViewDetails, user }) => {
     const [viajes, setViajes] = useState<Viaje[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -35,10 +40,12 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
         fetchViajes();
     }, []);
 
-    const filteredViajes = viajes.filter(v =>
-        v.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        v.ubicacion?.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredViajes = viajes.filter(v => 
+        (!v.is_university || user?.profile?.is_university) && (
+            v.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            v.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            v.ubicacion?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
     );
 
     return (
@@ -87,6 +94,12 @@ const TripsPage: React.FC<{ onRegister: () => void, onViewDetails: (id: string) 
                                         <span className="px-4 py-1.5 rounded-full bg-primary text-background-dark shadow-xl shadow-primary/20 text-[9px] font-black uppercase tracking-[0.2em]">
                                             {viaje.estado === 'published' ? 'Abierto' : viaje.estado}
                                         </span>
+                                        {viaje.is_university && (
+                                            <span className="px-4 py-1.5 rounded-full bg-trek-surface-light dark:bg-white/10 backdrop-blur-md text-slate-900 dark:text-white text-[9px] font-black uppercase tracking-[0.2em] border border-primary/30 flex items-center gap-1 shadow-lg">
+                                                <span className="material-symbols-outlined text-[12px] text-primary">school</span>
+                                                ISAUI
+                                            </span>
+                                        )}
                                         <span className="px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-[0.2em] border border-white/10">
                                             {viaje.dificultad || 'Moderado'}
                                         </span>

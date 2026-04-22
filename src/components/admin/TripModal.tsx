@@ -14,6 +14,7 @@ interface Trip {
     dificultad: string;
     ubicacion: string;
     imagen_url: string;
+    is_university: boolean;
 }
 
 interface TripModalProps {
@@ -35,7 +36,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
         estado: 'published',
         dificultad: 'Moderate',
         ubicacion: '',
-        imagen_url: ''
+        imagen_url: '',
+        is_university: false
     };
 
     const [formData, setFormData] = useState<Trip>(initialState);
@@ -286,7 +288,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Estado del Viaje</label>
                             <select
@@ -299,6 +301,27 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                                 <option value="cancelled">Cancelled (Cancelado)</option>
                                 <option value="finished">Finished (Finalizado)</option>
                             </select>
+                        </div>
+                        <div className="space-y-4">
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Categoría Especial</label>
+                            <div 
+                                onClick={() => setFormData({ ...formData, is_university: !formData.is_university })}
+                                className={`flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all ${
+                                    formData.is_university 
+                                    ? 'bg-primary/10 border-primary text-primary' 
+                                    : 'bg-neutral-800 border-white/10 text-slate-400 hover:border-white/20'
+                                }`}
+                            >
+                                <div className={`size-6 rounded-md border-2 flex items-center justify-center transition-all ${
+                                    formData.is_university ? 'bg-primary border-primary' : 'border-white/20'
+                                }`}>
+                                    {formData.is_university && <span className="material-symbols-outlined text-background-dark text-lg font-bold">check</span>}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-xs font-black uppercase tracking-wider">Salida Universitaria (ISAUI)</p>
+                                    <p className="text-[9px] font-medium opacity-70 italic whitespace-nowrap">Exclusiva para simulacros y formación</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

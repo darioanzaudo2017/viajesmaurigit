@@ -50,7 +50,14 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                     .eq('id', tripId)
                     .single();
 
-                if (tripData) setTrip(tripData);
+                if (tripData) {
+                    // Security check: University trips are restricted to ISAUI users
+                    if (tripData.is_university && !user?.profile?.is_university) {
+                        setTrip(null);
+                        return;
+                    }
+                    setTrip(tripData);
+                }
 
                 // Fetch participants (joining inscripciones and profiles)
                 const { data: participantsData } = await supabase

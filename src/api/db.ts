@@ -27,7 +27,7 @@ export interface LocalRegistration {
     id?: string; // local uuid
     trip_id: string;
     user_id: string;
-    status: 'pending' | 'synced' | 'error';
+    status: 'pending' | 'ready' | 'synced' | 'error';
     data: {
         emergency_contact_1: string;
         phone_emergency_1: string;
@@ -68,6 +68,8 @@ export interface LocalEnrollment {
         titulo: string;
     };
     soap_creada?: boolean;
+    sync_status?: 'pending' | 'synced' | 'error';
+    updated_at?: number;
 }
 
 export interface LocalMedicalRecord {
@@ -142,6 +144,50 @@ export class TrekDatabase extends Dexie {
             soapReports: 'id, inscripcion_id, status',
             maestroProblemasSoap: 'id, problema',
             universitySimulations: 'id, user_id, status'
+        });
+        // v6: Added sync_status to enrollments for offline status updates
+        this.version(6).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id, sync_status',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema',
+            universitySimulations: 'id, user_id, status'
+        });
+        // v7: Added viaje_id and alumno_nombre to universitySimulations for ISAUI grouping
+        this.version(7).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id, sync_status',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema',
+            universitySimulations: 'id, user_id, status, viaje_id, alumno_nombre'
+        });
+        // v8: Added created_at index for sorting simulations
+        this.version(8).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id, sync_status',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema',
+            universitySimulations: 'id, user_id, status, viaje_id, alumno_nombre, created_at'
+        });
+        // v9: Added support for robust offline registration sync
+        this.version(9).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id, sync_status',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema',
+            universitySimulations: 'id, user_id, status, viaje_id, alumno_nombre, created_at'
         });
     }
 }

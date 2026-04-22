@@ -51,6 +51,11 @@ export interface SoapReport {
     estado?: string;
     problemas_seleccionados?: SoapProblemaSeleccionado[];
     notas_adicionales?: string;
+    es_simulacro?: boolean;
+    paciente_nombre?: string;
+    alumno_nombre?: string;
+    viaje_id?: string;
+    user_id?: string;
 }
 
 interface SoapFormProps {
@@ -222,7 +227,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
             clearTimeout(t1);
             clearTimeout(t2);
         };
-    }, [currentStep, activeProblemIndex, report.problemas_seleccionados]);
+    }, [currentStep, activeProblemIndex, report]);
 
     const autoExpandHeight = (e: React.FormEvent<HTMLTextAreaElement>) => {
         const target = e.currentTarget;
@@ -330,9 +335,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                         <div className={`size-10 sm:size-12 rounded-2xl flex items-center justify-center transition-all duration-500 border-2 ${currentStep >= idx ? 'bg-primary border-primary text-slate-900 shadow-xl shadow-primary/20 scale-110' : 'bg-neutral-900 border-white/10 text-slate-500 group-hover:border-primary/50'}`}>
                             <span className="material-symbols-outlined text-xl sm:text-2xl font-black">{s.icon}</span>
                         </div>
-                        <span className={`absolute -bottom-7 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-colors duration-500 ${currentStep >= idx ? 'text-primary' : 'text-slate-500'}`}>
-                            <span className="hidden sm:inline">{s.label}</span>
-                            <span className="sm:hidden">{s.label.split(' ')[0]}</span>
+                        <span className={`absolute -bottom-7 left-1/2 -translate-x-1/2 text-[7px] sm:text-[10px] font-black uppercase tracking-tighter sm:tracking-widest whitespace-nowrap transition-colors duration-500 ${currentStep >= idx ? 'text-primary' : 'text-slate-500'}`}>
+                            {s.label}
                         </span>
                     </button>
                 ))}
@@ -530,12 +534,8 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                         rows={1}
                                                         value={(sv as any)[key]}
                                                         onChange={(e) => handleVitalChange(idx, key as any, e.target.value)}
-                                                        onInput={(e) => {
-                                                            const target = e.target as HTMLTextAreaElement;
-                                                            target.style.height = 'auto';
-                                                            target.style.height = `${target.scrollHeight}px`;
-                                                        }}
-                                                        className="bg-transparent text-white text-sm font-bold outline-none w-full placeholder:text-slate-700 resize-none overflow-hidden leading-tight py-1"
+                                                        onInput={autoExpandHeight}
+                                                        className="bg-transparent text-white text-sm font-bold outline-none w-full placeholder:text-slate-700 resize-none overflow-hidden leading-tight py-1 auto-expand"
                                                         placeholder="—"
                                                     />
                                                 </div>
@@ -585,20 +585,6 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                         <span className="material-symbols-outlined text-sm">add</span>
                                                         Nuevo Problema
                                                     </button>
-                                                    <div className="flex-1 sm:w-64">
-                                                        <select
-                                                            onChange={(e) => {
-                                                                handleAddProblema(e.target.value);
-                                                                e.target.value = "";
-                                                            }}
-                                                            className="w-full h-14 bg-primary/10 border border-primary/20 text-primary rounded-2xl px-6 text-[9px] font-black uppercase tracking-widest outline-none cursor-pointer focus:ring-1 focus:ring-primary/50 transition-all"
-                                                        >
-                                                            <option value="" disabled selected>Catálogo Maestro</option>
-                                                            {maestros.map(m => (
-                                                                <option key={m.id} value={m.id} className="bg-neutral-900 text-white py-4 font-sans text-sm">{m.problema}</option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
                                                 </>
                                             )}
                                         </div>
@@ -689,7 +675,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                 value={report.problemas_seleccionados![activeProblemIndex].tratamiento}
                                                                 onChange={(e) => handleUpdateProblema(activeProblemIndex, 'tratamiento', e.target.value)}
                                                                 onInput={autoExpandHeight}
-                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand"
+                                                                className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-6 text-xs text-white min-h-[80px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none"
                                                                 placeholder="Describa el tratamiento o acciones a seguir..."
                                                             />
                                                         </div>
@@ -715,10 +701,10 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                                 const realIdx = idx;
                                                                 return (
                                                                     <tr key={idx} className={`group hover:bg-white/5 transition-colors cursor-pointer ${activeProblemIndex === realIdx ? 'bg-primary/5' : ''}`} onClick={() => realIdx !== undefined && setActiveProblemIndex(realIdx)}>
-                                                                        <td className="px-6 py-4 text-[10px] font-bold text-slate-400">{p.orden || '-'}</td>
-                                                                        <td className="px-6 py-4 text-[11px] font-black text-white">{p.problema || '—'}</td>
-                                                                        <td className="px-6 py-4 text-[10px] font-bold text-red-400/80 italic">{p.problema_anticipado || '—'}</td>
-                                                                        <td className="px-6 py-4 text-[10px] font-bold text-green-400/80">{p.tratamiento || '—'}</td>
+                                                                         <td className="px-6 py-4 text-[10px] font-bold text-slate-400">{p.orden || '-'}</td>
+                                                                         <td className="px-6 py-4 text-[11px] font-black text-white whitespace-pre-wrap">{p.problema || '—'}</td>
+                                                                         <td className="px-6 py-4 text-[10px] font-bold text-red-400/80 italic whitespace-pre-wrap">{p.problema_anticipado || '—'}</td>
+                                                                         <td className="px-6 py-4 text-[10px] font-bold text-green-400/80 whitespace-pre-wrap">{p.tratamiento || '—'}</td>
                                                                         <td className="px-6 py-4 text-right">
                                                                             <div className="flex items-center justify-end gap-1">
                                                                                 {!readOnly && (
@@ -761,7 +747,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             value={report.notas_adicionales}
                                             onChange={(e) => setReport({ ...report, notas_adicionales: e.target.value })}
                                             onInput={autoExpandHeight}
-                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-slate-700 shadow-inner overflow-hidden auto-expand"
+                                            className="w-full bg-white/5 border border-white/5 rounded-[32px] p-4 sm:p-8 text-sm text-white min-h-[160px] outline-none focus:ring-1 focus:ring-primary/50 placeholder:text-slate-700 shadow-inner overflow-hidden auto-expand resize-none"
                                             placeholder="Información adicional relevante, coordinación logística, decisiones del equipo, etc..."
                                         />
                                     </div>

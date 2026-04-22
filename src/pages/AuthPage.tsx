@@ -10,7 +10,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
-    const [isUniversity, setIsUniversity] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +32,7 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                     options: {
                         data: {
                             full_name: fullName,
-                            is_university: isUniversity,
+                            is_university: false,
                         },
                     },
                 });
@@ -112,15 +111,6 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-3 p-4 bg-primary/5 border border-primary/20 rounded-2xl cursor-pointer hover:bg-primary/10 transition-all group mt-2" onClick={() => setIsUniversity(!isUniversity)}>
-                                        <div className={`size-6 rounded-lg border-2 flex items-center justify-center transition-all ${isUniversity ? 'bg-primary border-primary' : 'border-slate-300 dark:border-[#2a4435]'}`}>
-                                            {isUniversity && <span className="material-symbols-outlined text-background-dark text-sm font-bold">check</span>}
-                                        </div>
-                                            <div className="flex-1">
-                                                <p className="text-xs font-black uppercase tracking-widest text-[#13ec6d]">Estudiante ISAUI</p>
-                                                <p className="text-[10px] text-slate-500 font-medium">Habilitar herramientas de simulación clínica</p>
-                                            </div>
-                                    </div>
                                 </>
                             )}
 
