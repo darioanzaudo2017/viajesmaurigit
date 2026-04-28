@@ -22,7 +22,7 @@ export interface LocalRegistration {
     id?: string; // local uuid
     trip_id: string;
     user_id: string;
-    status: 'pending' | 'ready' | 'synced' | 'error';
+    status: 'pending' | 'ready' | 'syncing' | 'synced' | 'error';
     data: {
         emergency_contact_1: string;
         phone_emergency_1: string;
@@ -63,7 +63,7 @@ export interface LocalEnrollment {
         titulo: string;
     };
     soap_creada?: boolean;
-    sync_status?: 'pending' | 'synced' | 'error';
+    sync_status?: 'pending' | 'syncing' | 'synced' | 'error';
     updated_at?: number;
 }
 
@@ -75,7 +75,7 @@ export interface LocalMedicalRecord {
 export interface LocalSoapReport {
     id: string; // uuid
     inscripcion_id: string;
-    status: 'pending' | 'synced' | 'error';
+    status: 'pending' | 'syncing' | 'synced' | 'error';
     data: any; // Full SOAP report JSON
     updated_at: number;
 }
@@ -86,7 +86,7 @@ export interface LocalUniversitySimulation {
     paciente_nombre: string;
     alumno_nombre?: string;
     viaje_id?: string;
-    status: 'pending' | 'synced' | 'error';
+    status: 'pending' | 'syncing' | 'synced' | 'error';
     data: any; // Full Simulation JSON
     created_at: string;
 }

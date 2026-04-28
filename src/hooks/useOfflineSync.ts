@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../api/supabase';
 import { db } from '../api/db';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -6,6 +6,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 export const useOfflineSync = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [syncing, setSyncing] = useState(false);
+    const isSyncingRef = useRef(false);
 
     // Escuchar 'pending' Y 'error' para poder reintentar reportes fallidos
     const pendingReports = useLiveQuery(
@@ -51,8 +52,8 @@ export const useOfflineSync = () => {
 
         for (const report of reportsToSync) {
             try {
-                // Marcar como 'pending' mientras se intenta (evita doble proceso)
-                await db.soapReports.update(report.id, { status: 'pending' });
+                // Marcar como 'syncing' mientras se intenta (evita doble proceso por useLiveQuery)
+                await db.soapReports.update(report.id, { status: 'syncing' as any });
 
                 // Limpiar campos que no pertenecen a la tabla física de Supabase
                 const { problemas_seleccionados, problemas, ...cleanData } = report.data as any;
@@ -130,7 +131,7 @@ export const useOfflineSync = () => {
 
         for (const enroll of enrollsToSync) {
             try {
-                await db.enrollments.update(enroll.id, { sync_status: 'pending' });
+                await db.enrollments.update(enroll.id, { sync_status: 'syncing' as any });
 
                 const { error } = await supabase
                     .from('inscripciones')
@@ -157,7 +158,7 @@ export const useOfflineSync = () => {
 
         for (const sim of toSync) {
             try {
-                await db.universitySimulations.update(sim.id, { status: 'pending' });
+                await db.universitySimulations.update(sim.id, { status: 'syncing' as any });
 
                 const { problemas_seleccionados, problemas, ...cleanData } = sim.data as any;
 
@@ -217,6 +218,7 @@ export const useOfflineSync = () => {
 
         for (const reg of toSync) {
             try {
+                await db.registrations.update(reg.id!, { status: 'syncing' as any });
                 // 1. Upsert Medical Profile
                 const { error: medError } = await supabase
                     .from('fichas_medicas')
@@ -271,7 +273,6 @@ export const useOfflineSync = () => {
     }, []);
     useEffect(() => {
         if (!isOnline) return;
-        if (syncing) return;
 
         const hasPendingReports = pendingReports && pendingReports.length > 0;
         const hasPendingSimulations = pendingSimulations && pendingSimulations.length > 0;
@@ -280,8 +281,14 @@ export const useOfflineSync = () => {
 
         if (!hasPendingReports && !hasPendingSimulations && !hasPendingEnrollments && !hasReadyRegistrations) return;
 
+        if (isSyncingRef.current) {
+            console.log('[OfflineSync] Sync ya en progreso, ignorando disparo.');
+            return;
+        }
+
         let cancelled = false;
         const run = async () => {
+            isSyncingRef.current = true;
             setSyncing(true);
             try {
                 if (hasPendingReports) await syncPendingReports();
@@ -289,7 +296,10 @@ export const useOfflineSync = () => {
                 if (hasPendingEnrollments) await syncPendingEnrollments();
                 if (hasReadyRegistrations) await syncPendingRegistrations();
             } finally {
-                if (!cancelled) setSyncing(false);
+                if (!cancelled) {
+                    isSyncingRef.current = false;
+                    setSyncing(false);
+                }
             }
         };
         run();
