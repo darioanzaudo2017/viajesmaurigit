@@ -318,7 +318,9 @@ export const useOfflineSync = () => {
     ]);
 
     const downloadTripData = async (tripId: string) => {
+        if (isSyncingRef.current) return { success: false, error: 'Sync in progress' };
         try {
+            isSyncingRef.current = true;
             setSyncing(true);
 
             // 1. Fetch Enrollments
@@ -535,12 +537,15 @@ export const useOfflineSync = () => {
 
     // ─── NEW: Sync everything for admin offline use ───────────────
     const syncAllAdminData = useCallback(async () => {
-        if (syncing) return;
+        if (isSyncingRef.current) return;
+        
+        isSyncingRef.current = true;
         setSyncing(true);
         console.log('[OfflineSync] Iniciando sincronización completa para admin...');
 
         try {
             // Primero subir los pendientes, LUEGO descargar el estado limpio
+            // Usamos las funciones internas sin check de mutex para evitar auto-bloqueo
             await syncPendingReports();
             await syncPendingSimulations();
             await syncPendingEnrollments();
@@ -556,6 +561,7 @@ export const useOfflineSync = () => {
         } catch (err) {
             console.error('[OfflineSync] Error en sincronización completa:', err);
         } finally {
+            isSyncingRef.current = false;
             setSyncing(false);
         }
     }, [
