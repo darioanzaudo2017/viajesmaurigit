@@ -90,13 +90,23 @@ export const useOfflineSync = () => {
 
                 // Actualizar la copia local con el ID real devuelto por Supabase
                 // (puede diferir si el reporte fue creado offline con UUID local)
+                // Re-fetch los problemas confirmados desde Supabase para evitar duplicados
+                const { data: confirmedProblemas } = await supabase
+                    .from('reportes_soap_problemas')
+                    .select('*')
+                    .eq('reporte_soap_id', savedReport.id);
+
                 await db.soapReports.put({
                     id: savedReport.id,
                     inscripcion_id: report.inscripcion_id,
                     status: 'synced',
-                    data: { ...savedReport, problemas_seleccionados },
+                    data: { 
+                        ...savedReport, 
+                        problemas_seleccionados: confirmedProblemas || []
+                    },
                     updated_at: Date.now()
                 });
+
                 // Si el ID cambió (era UUID local), borrar el registro viejo
                 if (savedReport.id !== report.id) {
                     await db.soapReports.delete(report.id);
@@ -458,7 +468,8 @@ export const useOfflineSync = () => {
                     status: 'synced' as const,
                     data: {
                         ...r,
-                        problemas_seleccionados: r.problemas || []
+                        problemas_seleccionados: r.problemas || [],
+                        problemas: undefined
                     },
                     updated_at: new Date(r.updated_at || Date.now()).getTime()
                 })));
@@ -519,17 +530,35 @@ export const useOfflineSync = () => {
         console.log('[OfflineSync] Iniciando sincronización completa para admin...');
 
         try {
+            // Primero subir los pendientes, LUEGO descargar el estado limpio
+            await syncPendingReports();
+            await syncPendingSimulations();
+            await syncPendingEnrollments();
+            await syncPendingRegistrations();
+
+            // Recién después de confirmar que todo subió, bajar el estado definitivo
             await downloadAllTrips();
             await downloadAllEnrollments();
             await downloadAllSoapReports();
             await downloadAllSimulations();
+
             console.log('[OfflineSync] Sincronización completa exitosa.');
         } catch (err) {
             console.error('[OfflineSync] Error en sincronización completa:', err);
         } finally {
             setSyncing(false);
         }
-    }, [syncing, downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations]);
+    }, [
+        syncing,
+        syncPendingReports,
+        syncPendingSimulations,
+        syncPendingEnrollments,
+        syncPendingRegistrations,
+        downloadAllTrips,
+        downloadAllEnrollments,
+        downloadAllSoapReports,
+        downloadAllSimulations
+    ]);
 
     return {
         isOnline,
