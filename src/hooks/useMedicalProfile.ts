@@ -12,27 +12,27 @@ export const useMedicalProfile = (userId: string) => {
             setLoading(true);
 
             if (navigator.onLine) {
-                const { data, error: sbError } = await supabase
+                const { data: medData, error: sbError } = await supabase
                     .from('fichas_medicas')
-                    .select(`
-                        *,
-                        user:user_id (
-                            full_name
-                        )
-                    `)
+                    .select('*')
                     .eq('user_id', userId)
                     .single();
 
-                if (sbError) {
-                    if (sbError.code === 'PGRST116') {
-                        setProfile(null);
-                    } else {
-                        throw sbError;
-                    }
-                } else {
-                    setProfile(data);
+                if (sbError && sbError.code !== 'PGRST116') throw sbError;
+
+                const { data: profileData } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', userId)
+                    .single();
+
+                if (medData) {
+                    const fullProfile = { ...medData, user: profileData };
+                    setProfile(fullProfile);
                     // Update cache
-                    await db.medicalRecords.put({ user_id: userId, data });
+                    await db.medicalRecords.put({ user_id: userId, data: fullProfile });
+                } else {
+                    setProfile(null);
                 }
             } else {
                 // FALLBACK TO DEXIE

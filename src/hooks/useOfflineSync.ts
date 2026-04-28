@@ -285,7 +285,17 @@ export const useOfflineSync = () => {
         run();
 
         return () => { cancelled = true; };
-    }, [isOnline, pendingReports, pendingSimulations, pendingEnrollments, syncPendingReports, syncPendingEnrollments, syncPendingSimulations]);
+    }, [
+        isOnline,
+        pendingReports,
+        pendingSimulations,
+        pendingEnrollments,
+        readyRegistrations,
+        syncPendingReports,
+        syncPendingEnrollments,
+        syncPendingSimulations,
+        syncPendingRegistrations
+    ]);
 
     const downloadTripData = async (tripId: string) => {
         try {
@@ -431,25 +441,31 @@ export const useOfflineSync = () => {
         try {
             const { data: reports, error } = await supabase
                 .from('reportes_soap')
-                .select('*, problemas:reportes_soap_problemas(*)');
+                .select('*, problemas:reportes_soap_problemas(*)')
+                .eq('es_simulacro', false);
 
             if (error) throw error;
-            if (!reports || reports.length === 0) return { success: true, count: 0 };
+            
+            // Solo borrar synced, preservar pending/error locales
+            await db.soapReports
+                .where('status').equals('synced')
+                .delete();
+            
+            if (reports && reports.length > 0) {
+                await db.soapReports.bulkPut(reports.map(r => ({
+                    id: r.id,
+                    inscripcion_id: r.inscripcion_id,
+                    status: 'synced' as const,
+                    data: {
+                        ...r,
+                        problemas_seleccionados: r.problemas || []
+                    },
+                    updated_at: new Date(r.updated_at || Date.now()).getTime()
+                })));
+            }
 
-            await db.soapReports.clear();
-            await db.soapReports.bulkPut(reports.map(r => ({
-                id: r.id,
-                inscripcion_id: r.inscripcion_id,
-                status: 'synced',
-                data: {
-                    ...r,
-                    problemas_seleccionados: r.problemas || []
-                },
-                updated_at: new Date(r.updated_at || Date.now()).getTime()
-            })));
-
-            console.log(`[OfflineSync] ${reports.length} reportes SOAP cacheados.`);
-            return { success: true, count: reports.length };
+            console.log(`[OfflineSync] ${reports?.length ?? 0} reportes SOAP cacheados.`);
+            return { success: true, count: reports?.length ?? 0 };
         } catch (err) {
             console.error('[OfflineSync] Error descargando reportes SOAP:', err);
             return { success: false, error: err };
@@ -465,9 +481,12 @@ export const useOfflineSync = () => {
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
-            // Clear local table first to ensure we match Supabase exactly (no ghost data)
-            await db.universitySimulations.clear();
-            
+
+            // Solo borrar synced, preservar pending/error locales
+            await db.universitySimulations
+                .where('status').equals('synced')
+                .delete();
+
             if (sims && sims.length > 0) {
                 await db.universitySimulations.bulkPut(sims.map(s => ({
                     id: s.id,
@@ -475,7 +494,7 @@ export const useOfflineSync = () => {
                     paciente_nombre: s.paciente_nombre,
                     alumno_nombre: s.alumno_nombre,
                     viaje_id: s.viaje_id,
-                    status: 'synced',
+                    status: 'synced' as const,
                     data: {
                         ...s,
                         problemas_seleccionados: s.problemas || []
@@ -485,8 +504,8 @@ export const useOfflineSync = () => {
                 })));
             }
 
-            console.log(`[OfflineSync] ${sims.length} simulacros cacheados desde tabla unificada.`);
-            return { success: true, count: sims.length };
+            console.log(`[OfflineSync] ${sims?.length ?? 0} simulacros cacheados.`);
+            return { success: true, count: sims?.length ?? 0 };
         } catch (err) {
             console.error('[OfflineSync] Error descargando simulacros:', err);
             return { success: false, error: err };
@@ -510,7 +529,7 @@ export const useOfflineSync = () => {
         } finally {
             setSyncing(false);
         }
-    }, [syncing, downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports]);
+    }, [syncing, downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations]);
 
     return {
         isOnline,

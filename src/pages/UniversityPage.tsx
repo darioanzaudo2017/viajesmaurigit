@@ -14,7 +14,7 @@ interface UniversityPageProps {
 const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
     const [showSoapForm, setShowSoapForm] = useState(false);
     const { isOnline, downloadAllSimulations, syncPendingSimulations } = useOfflineSync();
-    
+
     // Dexie Live Query to auto-update UI from local DB
     const localSimulations = useLiveQuery(
         () => db.universitySimulations.orderBy('created_at').reverse().toArray(),
@@ -73,7 +73,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 const isAdm = user.profile?.role === 'admin';
                 setIsUniversityUser(isUni);
                 setIsAdmin(isAdm);
-                
+
                 if (isUni) {
                     await syncAndDownload(isOnline);
                 }
@@ -89,7 +89,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             }
             setLoading(false);
         };
-        
+
         initAuth();
     }, [user, isOnline]);
 
@@ -115,7 +115,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             }
         } else {
             // Load from local cache if offline
-            
+
             const localTrips = await db.trips.toArray();
             setAvailableTrips(localTrips.filter((t: any) => t.is_university));
         }
@@ -189,10 +189,10 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     .eq('id', id);
                 if (error) throw error;
             }
-            
+
             // Always delete from local DB
             await db.universitySimulations.delete(id);
-            
+
             if (showSoapForm) setShowSoapForm(false);
         } catch (error: any) {
             console.error("Error deleting simulation:", error);
@@ -213,7 +213,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
 
         try {
             setSaving(true);
-            
+
             const userId = user?.id || currentUserId;
             if (!userId) throw new Error("No user found");
 
@@ -221,7 +221,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     return crypto.randomUUID();
                 }
-                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
                     var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
@@ -230,7 +230,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             const localId = currentReport.id || generateUUID();
             const createdAt = currentReport.id ? (currentReport as any).created_at : new Date().toISOString();
             const reportData = { ...currentReport, id: localId, estado: isFinal ? 'finalizado' : 'borrador' };
-            
+
             const localPayload = {
                 id: localId,
                 user_id: userId,
@@ -260,7 +260,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 const { error } = await supabase
                     .from('reportes_soap')
                     .upsert(supabasePayload);
-                
+
                 if (error) {
                     console.warn("Backend save failed, keeping as pending locally", error);
                     localPayload.status = 'pending';
@@ -413,7 +413,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             const matchesName = sim.paciente_nombre.toLowerCase().includes(searchTerm.toLowerCase());
             const date = new Date(sim.created_at);
             const matchesStart = startDate ? date >= new Date(startDate) : true;
-            
+
             // Final del día para endDate
             let matchesEnd = true;
             if (endDate) {
@@ -421,7 +421,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 end.setHours(23, 59, 59, 999);
                 matchesEnd = date <= end;
             }
-            
+
             return matchesName && matchesStart && matchesEnd;
         })
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -476,7 +476,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-primary/20 p-8 rounded-[32px] max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-300">
                             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 uppercase tracking-tight italic">Nueva Simulación</h2>
                             <p className="text-slate-500 dark:text-slate-400 text-[10px] font-black uppercase tracking-widest mb-6 border-b border-slate-200 dark:border-white/5 pb-2">Identificación de Alumno y Salida</p>
-                            
+
                             <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tu Nombre (Alumno)</label>
@@ -513,7 +513,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                     />
                                 </div>
                             </div>
-                            
+
                             <div className="flex gap-4 mt-8">
                                 <button onClick={() => {
                                     setShowSoapForm(false);
@@ -554,8 +554,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     <section className="bg-primary/5 border border-primary/20 rounded-3xl p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 shadow-2xl">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 blur-[100px] -z-10 animate-pulse"></div>
                         <div className="flex-1 space-y-4">
-                             <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Gestión de Incidentes <span className="text-primary block sm:inline">en Campo</span></h2>
-                             <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm font-medium leading-relaxed">Inicia un nuevo registro SOAP (Subjetivo, Objetivo, Evaluación, Plan) para documentar la atención de pacientes en el campo como parte de tu entrenamiento.</p>
+                            <h2 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">Gestión de Incidentes <span className="text-primary block sm:inline">en Campo</span></h2>
+                            <p className="text-slate-500 dark:text-slate-400 max-w-xl text-sm font-medium leading-relaxed">Inicia un nuevo registro SOAP (Subjetivo, Objetivo, Evaluación, Plan) para documentar la atención de pacientes en el campo como parte de tu entrenamiento.</p>
                         </div>
                         <button onClick={handleCreateNew} className="flex min-w-[280px] md:min-w-[320px] cursor-pointer items-center justify-center overflow-hidden rounded-2xl h-20 px-10 bg-primary text-background-dark gap-4 text-xl font-black uppercase tracking-widest transition-all hover:scale-[1.05] active:scale-95 shadow-[0_20px_40px_-10px_rgba(19,236,109,0.4)]">
                             <span className="material-symbols-outlined text-4xl">emergency</span>
@@ -575,11 +575,11 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                 </h3>
                                 <div className="relative group">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-500 group-focus-within:text-primary transition-colors">search</span>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder="Buscar por nombre del paciente..." 
+                                        placeholder="Buscar por nombre del paciente..."
                                         className="w-full bg-slate-100 dark:bg-slate-900/50 border border-slate-300 dark:border-slate-800 rounded-2xl h-14 pl-12 pr-6 text-sm text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all font-medium"
                                     />
                                 </div>
@@ -587,8 +587,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-widest ml-1">Desde</label>
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
                                         className="bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-6 text-xs text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all font-medium"
@@ -596,15 +596,15 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-700 dark:text-slate-500 uppercase tracking-widest ml-1">Hasta</label>
-                                    <input 
-                                        type="date" 
+                                    <input
+                                        type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
                                         className="bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-6 text-xs text-slate-900 dark:text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all font-medium"
                                     />
                                 </div>
                                 {(searchTerm || startDate || endDate) && (
-                                    <button 
+                                    <button
                                         onClick={() => { setSearchTerm(''); setStartDate(''); setEndDate(''); }}
                                         className="mt-6 size-14 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/10 flex items-center justify-center hover:bg-red-500/20 transition-all active:scale-95"
                                         title="Limpiar filtros"
@@ -623,7 +623,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                             <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Actualización</th>
                                             <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Identificación Paciente</th>
                                             <th className="px-8 py-5 text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Responsable</th>
-                                            
+
                                             <th className="px-8 py-5 text-right text-slate-500 dark:text-slate-200 text-[10px] font-black uppercase tracking-widest border-b border-slate-200 dark:border-white/5">Gestión</th>
                                         </tr>
                                     </thead>
@@ -705,10 +705,10 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                                                         </div>
                                                                     </div>
                                                                 </td>
-                                                                 <td className="px-8 py-5 whitespace-nowrap">
+                                                                <td className="px-8 py-5 whitespace-nowrap">
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="size-8 rounded-2xl bg-slate-100 dark:bg-white/10 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase tracking-tighter border border-slate-200 dark:border-white/5">
-                                                                            {row.status === 'pending' ? '!' : (row.alumno_nombre || '??').substring(0,2).toUpperCase()}
+                                                                            {row.status === 'pending' ? '!' : (row.alumno_nombre || '??').substring(0, 2).toUpperCase()}
                                                                         </div>
                                                                         <div className="flex flex-col">
                                                                             <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight italic">
@@ -722,7 +722,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                                                 </td>
                                                                 <td className="px-8 py-5 whitespace-nowrap text-right">
                                                                     <div className="flex items-center justify-end gap-2">
-                                                                        <button 
+                                                                        <button
                                                                             onClick={() => handleDownloadRowPDF(row)}
                                                                             className="size-10 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary flex items-center justify-center transition-all border border-primary/10"
                                                                             title="Descargar PDF"
@@ -730,19 +730,19 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                                                                         >
                                                                             <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
                                                                         </button>
-                                                                        <button 
-                                                                            onClick={() => handleEdit(row)} 
+                                                                        <button
+                                                                            onClick={() => handleEdit(row)}
                                                                             className={`inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 ${row.user_id === currentUserId ? 'bg-primary/10 hover:bg-primary/20 text-primary' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
                                                                         >
-                                                                            <span className="material-symbols-outlined text-lg">{row.user_id === currentUserId ? 'edit_note' : 'visibility'}</span> 
+                                                                            <span className="material-symbols-outlined text-lg">{row.user_id === currentUserId ? 'edit_note' : 'visibility'}</span>
                                                                             {row.user_id === currentUserId ? 'Ver/Editar' : 'Ver'}
                                                                         </button>
                                                                         {isAdmin && (
-                                                                            <button 
+                                                                            <button
                                                                                 onClick={(e) => {
                                                                                     e.stopPropagation();
                                                                                     handleDeleteSimulation(row.id);
-                                                                                }} 
+                                                                                }}
                                                                                 className="size-10 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-500 flex items-center justify-center transition-all border border-red-500/10"
                                                                                 title="Eliminar Simulacro"
                                                                             >
