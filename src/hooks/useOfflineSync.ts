@@ -216,11 +216,58 @@ export const useOfflineSync = () => {
         } catch (err) { return { success: false, error: err }; }
     }, []);
 
+    const downloadTripData = useCallback(async (tripId: string) => {
+        if (!isOnline) return { success: false, error: 'Sin conexión' };
+        try {
+            // 1. Descargar inscripciones del viaje
+            const { data: enrolls, error: eError } = await supabase
+                .from('inscripciones')
+                .select('*,profiles(full_name,phone,fichas_medicas(telefono_emergencia_1,telefono_emergencia_2)),viajes(titulo)')
+                .eq('viaje_id', tripId);
+            if (eError) throw eError;
+            if (enrolls) await db.enrollments.bulkPut(enrolls);
+
+            // 2. Descargar fichas médicas asociadas
+            const userIds = enrolls?.map(e => e.user_id) || [];
+            if (userIds.length > 0) {
+                const { data: medical, error: mError } = await supabase
+                    .from('fichas_medicas')
+                    .select('*')
+                    .in('user_id', userIds);
+                if (mError) throw mError;
+                if (medical) {
+                    await db.medicalRecords.bulkPut(medical.map(m => ({ user_id: m.user_id, data: m })));
+                }
+            }
+
+            // 3. Descargar reportes SOAP existentes
+            const { data: soaps, error: sError } = await supabase
+                .from('reportes_soap')
+                .select('*, problemas:reportes_soap_problemas(*)')
+                .in('inscripcion_id', enrolls?.map(e => e.id) || []);
+            if (sError) throw sError;
+            if (soaps) {
+                await db.soapReports.bulkPut(soaps.map(r => ({
+                    id: r.id, inscripcion_id: r.inscripcion_id, status: 'synced' as const,
+                    data: { ...r, problemas_seleccionados: r.problemas || [] }, updated_at: Date.now()
+                })));
+            }
+
+            return { success: true };
+        } catch (err) {
+            console.error('Error downloadTripData:', err);
+            return { success: false, error: err };
+        }
+    }, [isOnline]);
+
     const syncPendingReports = useCallback(async () => {
         if (isSyncingRef.current || !isOnline) return;
         isSyncingRef.current = true; setSyncing(true);
         try { await _internalSyncReports(); } finally { isSyncingRef.current = false; setSyncing(false); }
     }, [isOnline]);
+
+    // Alias para compatibilidad con UniversityPage
+    const syncPendingSimulations = syncPendingReports;
 
     const syncAllAdminData = useCallback(async () => {
         if (isSyncingRef.current || !isOnline) return;
@@ -248,8 +295,9 @@ export const useOfflineSync = () => {
     }, [isOnline, pendingReports, pendingSimulations, pendingEnrollments, readyRegistrations, syncAllAdminData]);
 
     return {
-        isOnline, syncing, syncPendingReports, syncAllAdminData, 
-        downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations,
-        pendingReportsCount: pendingReports?.length || 0
+        isOnline, syncing, syncPendingReports, syncPendingSimulations, syncAllAdminData, 
+        downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations, downloadTripData,
+        pendingReportsCount: pendingReports?.length || 0,
+        pendingEnrollmentsCount: pendingEnrollments?.length || 0
     };
 };
