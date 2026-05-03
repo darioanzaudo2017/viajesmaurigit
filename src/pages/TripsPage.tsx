@@ -31,6 +31,7 @@ const TripsPage: React.FC<{
             const { data } = await supabase
                 .from('viajes')
                 .select('*')
+                .neq('estado', 'anulado')
                 .order('fecha_inicio', { ascending: true });
 
             if (data) setViajes(data);

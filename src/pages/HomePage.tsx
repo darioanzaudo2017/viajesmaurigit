@@ -67,13 +67,15 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                                 titulo,
                                 fecha_inicio,
                                 imagen_url,
-                                ubicacion
+                                ubicacion,
+                                estado
                             )
                         `)
                         .eq('user_id', user.id);
 
                     if (registrationData) {
-                        setUserTreks(registrationData.map((reg: any) => ({
+                        const validRegistrations = registrationData.filter((reg: any) => reg.viaje && reg.viaje.estado !== 'anulado');
+                        setUserTreks(validRegistrations.map((reg: any) => ({
                             id: reg.viaje.id,
                             title: reg.viaje.titulo,
                             details: `${new Date(reg.viaje.fecha_inicio).toLocaleDateString()} • ${reg.viaje.ubicacion}`,

@@ -10,7 +10,7 @@ export interface LocalTrip {
     cupos_totales: number;
     cupos_disponibles: number;
     min_participantes: number;
-    estado: 'published' | 'confirmed' | 'cancelled' | 'finished';
+    estado: 'published' | 'confirmed' | 'cancelled' | 'finished' | 'anulado';
     dificultad: string;
     ubicacion: string;
     imagen_url: string;

@@ -301,6 +301,7 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                                 <option value="confirmed">Confirmed (Confirmado)</option>
                                 <option value="cancelled">Cancelled (Cancelado)</option>
                                 <option value="finished">Finished (Finalizado)</option>
+                                <option value="anulado">Voided (Anulado)</option>
                             </select>
                         </div>
                         <div className="space-y-4">
