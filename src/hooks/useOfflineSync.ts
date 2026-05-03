@@ -105,7 +105,15 @@ export const useOfflineSync = () => {
             try {
                 await db.universitySimulations.update(sim.id, { status: 'syncing' as any });
                 const { problemas_seleccionados, problemas, ...cleanData } = sim.data as any;
-                const payload = { ...cleanData, user_id: sim.user_id, es_simulacro: true, updated_at: new Date().toISOString() };
+                const payload = { 
+                    ...cleanData, 
+                    user_id: sim.user_id, 
+                    paciente_nombre: sim.paciente_nombre,
+                    alumno_nombre: sim.alumno_nombre,
+                    viaje_id: sim.viaje_id,
+                    es_simulacro: true, 
+                    updated_at: new Date().toISOString() 
+                };
                 const { data: saved, error } = await supabase.from('reportes_soap').upsert(payload).select('id').single();
                 if (error) throw error;
                 await supabase.from('reportes_soap_problemas').delete().eq('reporte_soap_id', saved.id);
@@ -266,8 +274,11 @@ export const useOfflineSync = () => {
         try { await _internalSyncReports(); } finally { isSyncingRef.current = false; setSyncing(false); }
     }, [isOnline]);
 
-    // Alias para compatibilidad con UniversityPage
-    const syncPendingSimulations = syncPendingReports;
+    const syncPendingSimulations = useCallback(async () => {
+        if (isSyncingRef.current || !isOnline) return;
+        isSyncingRef.current = true; setSyncing(true);
+        try { await _internalSyncSimulations(); } finally { isSyncingRef.current = false; setSyncing(false); }
+    }, [isOnline]);
 
     const syncAllAdminData = useCallback(async () => {
         if (isSyncingRef.current || !isOnline) return;
