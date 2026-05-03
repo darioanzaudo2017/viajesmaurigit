@@ -36,13 +36,13 @@ export const useOfflineSync = () => {
         for (const report of reportsToSync) {
             try {
                 await db.soapReports.update(report.id, { status: 'syncing' as any });
-                
+
                 const { problemas_seleccionados, problemas, ...cleanData } = report.data as any;
-                
+
                 // DEDUPLICACIÓN DE SEGURIDAD: Evitar enviar duplicados si el estado local está corrupto
                 const uniqueProblemas = (problemas_seleccionados || []).reduce((acc: any[], curr: any) => {
-                    const isDup = acc.find(p => 
-                        p.problema === curr.problema && 
+                    const isDup = acc.find(p =>
+                        p.problema === curr.problema &&
                         p.problema_anticipado === curr.problema_anticipado &&
                         p.tratamiento === curr.tratamiento
                     );
@@ -50,16 +50,16 @@ export const useOfflineSync = () => {
                     return acc;
                 }, []);
 
-                const payload = { 
-                    ...cleanData, 
-                    es_simulacro: false, 
-                    updated_at: new Date(report.updated_at).toISOString() 
+                const payload = {
+                    ...cleanData,
+                    es_simulacro: false,
+                    updated_at: new Date(report.updated_at).toISOString()
                 };
-                
+
                 const { data: savedReport, error } = await supabase
                     .from('reportes_soap')
                     .upsert(payload)
-                    .select('id') 
+                    .select('id')
                     .single();
 
                 if (error) throw error;
@@ -201,14 +201,14 @@ export const useOfflineSync = () => {
             await db.universitySimulations.where('status').equals('synced').delete();
             if (data) {
                 await db.universitySimulations.bulkPut(data.map(s => ({
-                    id: s.id, 
-                    user_id: s.user_id, 
+                    id: s.id,
+                    user_id: s.user_id,
                     paciente_nombre: s.paciente_nombre || 'N/A', // Extraer campo obligatorio
                     alumno_nombre: s.alumno_nombre,
                     viaje_id: s.viaje_id,
                     status: 'synced' as const,
-                    data: { ...s, problemas_seleccionados: s.problemas || [] }, 
-                    created_at: s.created_at, 
+                    data: { ...s, problemas_seleccionados: s.problemas || [] },
+                    created_at: s.created_at,
                     updated_at: s.updated_at
                 })));
             }
@@ -287,15 +287,15 @@ export const useOfflineSync = () => {
     // Auto-sync
     useEffect(() => {
         if (!isOnline || isSyncingRef.current) return;
-        const hasWork = (pendingReports?.length || 0) > 0 || (pendingSimulations?.length || 0) > 0 || 
-                        (pendingEnrollments?.length || 0) > 0 || (readyRegistrations?.length || 0) > 0;
+        const hasWork = (pendingReports?.length || 0) > 0 || (pendingSimulations?.length || 0) > 0 ||
+            (pendingEnrollments?.length || 0) > 0 || (readyRegistrations?.length || 0) > 0;
         if (!hasWork) return;
         const timer = setTimeout(() => syncAllAdminData(), 3000);
         return () => clearTimeout(timer);
     }, [isOnline, pendingReports, pendingSimulations, pendingEnrollments, readyRegistrations, syncAllAdminData]);
 
     return {
-        isOnline, syncing, syncPendingReports, syncPendingSimulations, syncAllAdminData, 
+        isOnline, syncing, syncPendingReports, syncPendingSimulations, syncAllAdminData,
         downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations, downloadTripData,
         pendingReportsCount: pendingReports?.length || 0,
         pendingEnrollmentsCount: pendingEnrollments?.length || 0

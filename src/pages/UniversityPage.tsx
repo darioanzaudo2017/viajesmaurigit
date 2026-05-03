@@ -105,7 +105,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             // 4. Fetch University Trips
             const { data: tData } = await supabase
                 .from('viajes')
-                .select('id, titulo')
+                .select('*')
                 .eq('is_university', true)
                 .order('fecha_inicio', { ascending: false });
             if (tData) {
