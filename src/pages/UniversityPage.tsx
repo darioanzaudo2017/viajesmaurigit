@@ -107,7 +107,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 .from('viajes')
                 .select('*')
                 .eq('is_university', true)
-                .neq('estado', 'anulado')
+                .neq('estado', 'cancelled')
                 .order('fecha_inicio', { ascending: false });
             if (tData) {
                 setAvailableTrips(tData);
@@ -118,7 +118,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             // Load from local cache if offline
 
             const localTrips = await db.trips.toArray();
-            setAvailableTrips(localTrips.filter((t: any) => t.is_university && t.estado !== 'anulado'));
+            setAvailableTrips(localTrips.filter((t: any) => t.is_university && t.estado !== 'cancelled'));
         }
     };
 

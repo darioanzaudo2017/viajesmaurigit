@@ -74,7 +74,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                         .eq('user_id', user.id);
 
                     if (registrationData) {
-                        const validRegistrations = registrationData.filter((reg: any) => reg.viaje && reg.viaje.estado !== 'anulado');
+                        const validRegistrations = registrationData.filter((reg: any) => reg.viaje && reg.viaje.estado !== 'cancelled');
                         setUserTreks(validRegistrations.map((reg: any) => ({
                             id: reg.viaje.id,
                             title: reg.viaje.titulo,

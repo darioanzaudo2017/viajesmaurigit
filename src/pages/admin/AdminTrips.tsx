@@ -53,7 +53,7 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                 const { data, error } = await supabase
                     .from('viajes')
                     .select('*')
-                    .neq('estado', 'anulado')
+                    .neq('estado', 'cancelled')
                     .order('fecha_inicio', { ascending: true });
 
                 if (error) throw error;
@@ -80,14 +80,14 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                 }
             } else {
                 // OFFLINE: Load from local DB
-                const localTrips = await db.trips.orderBy('fecha_inicio').filter(t => t.estado !== 'anulado').toArray();
+                const localTrips = await db.trips.orderBy('fecha_inicio').filter(t => t.estado !== 'cancelled').toArray();
                 setTrips(localTrips as any[] || []);
                 setIsDataFromCache(true);
             }
         } catch (error) {
             console.error("Error fetching trips:", error);
             // Fallback to local DB even if we thought we were online
-            const localTrips = await db.trips.orderBy('fecha_inicio').filter(t => t.estado !== 'anulado').toArray();
+            const localTrips = await db.trips.orderBy('fecha_inicio').filter(t => t.estado !== 'cancelled').toArray();
             setTrips(localTrips as any[] || []);
             setIsDataFromCache(true);
         } finally {
