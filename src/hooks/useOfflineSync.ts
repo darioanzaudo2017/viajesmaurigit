@@ -3,6 +3,10 @@ import { supabase } from '../api/supabase';
 import { db } from '../api/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 
+// Bloqueo a nivel de módulo para evitar que múltiples instancias del hook
+// disparen la sincronización simultáneamente (especialmente crítico en móviles)
+let globalIsSyncing = false;
+
 export const useOfflineSync = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [syncing, setSyncing] = useState(false);
@@ -30,106 +34,126 @@ export const useOfflineSync = () => {
     // ─────────────────────────────────────────────────────────────────────────
 
     const _internalSyncReports = async () => {
+        // Doble check del bloqueo global
+        if (globalIsSyncing) return;
+        
         const reportsToSync = await db.soapReports.where('status').anyOf('pending', 'error').toArray();
         if (reportsToSync.length === 0) return;
 
-        for (const report of reportsToSync) {
-            try {
-                await db.soapReports.update(report.id, { status: 'syncing' as any });
+        globalIsSyncing = true;
+        try {
+            // Marcado atómico inicial para evitar que otros procesos los vean
+            await Promise.all(reportsToSync.map(r => db.soapReports.update(r.id, { status: 'syncing' as any })));
 
-                const { problemas_seleccionados, problemas, ...cleanData } = report.data as any;
+            for (const report of reportsToSync) {
+                try {
+                    const { problemas_seleccionados, problemas, ...cleanData } = report.data as any;
 
-                // DEDUPLICACIÓN DE SEGURIDAD: Evitar enviar duplicados si el estado local está corrupto
-                const uniqueProblemas = (problemas_seleccionados || []).reduce((acc: any[], curr: any) => {
-                    const isDup = acc.find(p =>
-                        p.problema === curr.problema &&
-                        p.problema_anticipado === curr.problema_anticipado &&
-                        p.tratamiento === curr.tratamiento
-                    );
-                    if (!isDup) acc.push(curr);
-                    return acc;
-                }, []);
+                    // DEDUPLICACIÓN LOCAL: Limpieza de datos antes de enviar
+                    const uniqueProblemas = (problemas_seleccionados || []).reduce((acc: any[], curr: any) => {
+                        const isDup = acc.find(p =>
+                            p.problema === curr.problema &&
+                            p.problema_anticipado === curr.problema_anticipado &&
+                            p.tratamiento === curr.tratamiento
+                        );
+                        if (!isDup) acc.push(curr);
+                        return acc;
+                    }, []);
 
-                const payload = {
-                    ...cleanData,
-                    es_simulacro: false,
-                    updated_at: new Date(report.updated_at).toISOString()
-                };
+                    const payload = {
+                        ...cleanData,
+                        es_simulacro: false,
+                        updated_at: new Date(report.updated_at).toISOString()
+                    };
 
-                const { data: savedReport, error } = await supabase
-                    .from('reportes_soap')
-                    .upsert(payload)
-                    .select('id')
-                    .single();
+                    const { data: savedReport, error } = await supabase
+                        .from('reportes_soap')
+                        .upsert(payload)
+                        .select('id')
+                        .single();
 
-                if (error) throw error;
+                    if (error) throw error;
 
-                // Limpieza absoluta
-                await supabase.from('reportes_soap_problemas').delete().eq('reporte_soap_id', savedReport.id);
+                    // Limpieza y carga de problemas en Supabase
+                    await supabase.from('reportes_soap_problemas').delete().eq('reporte_soap_id', savedReport.id);
 
-                if (uniqueProblemas.length > 0) {
-                    const toInsert = uniqueProblemas.map((p: any) => ({
-                        reporte_soap_id: savedReport.id,
-                        observacion_especifica: p.observacion_especifica,
-                        problema: p.problema,
-                        problema_anticipado: p.problema_anticipado,
-                        tratamiento: p.tratamiento
-                    }));
-                    await supabase.from('reportes_soap_problemas').insert(toInsert);
+                    if (uniqueProblemas.length > 0) {
+                        const toInsert = uniqueProblemas.map((p: any) => ({
+                            reporte_soap_id: savedReport.id,
+                            observacion_especifica: p.observacion_especifica,
+                            problema: p.problema,
+                            problema_anticipado: p.problema_anticipado,
+                            tratamiento: p.tratamiento
+                        }));
+                        await supabase.from('reportes_soap_problemas').insert(toInsert);
+                    }
+
+                    // Sincronización exitosa: actualizar local y limpiar
+                    const { data: confirmed } = await supabase.from('reportes_soap_problemas').select('*').eq('reporte_soap_id', savedReport.id);
+                    const { data: fullReport } = await supabase.from('reportes_soap').select('*').eq('id', savedReport.id).single();
+
+                    await db.soapReports.put({
+                        id: savedReport.id,
+                        inscripcion_id: report.inscripcion_id,
+                        status: 'synced',
+                        data: { ...fullReport, problemas_seleccionados: confirmed || [] },
+                        updated_at: Date.now()
+                    });
+
+                    if (savedReport.id !== report.id) await db.soapReports.delete(report.id);
+                    console.log(`[OfflineSync] Reporte ${savedReport.id} sincronizado.`);
+                } catch (err) {
+                    console.error('[OfflineSync] Error en reporte individual:', report.id, err);
+                    await db.soapReports.update(report.id, { status: 'error' });
                 }
-
-                // ... (re-fetch y update Dexie igual que antes)
-                const { data: confirmed } = await supabase.from('reportes_soap_problemas').select('*').eq('reporte_soap_id', savedReport.id);
-                const { data: fullReport } = await supabase.from('reportes_soap').select('*').eq('id', savedReport.id).single();
-
-                await db.soapReports.put({
-                    id: savedReport.id,
-                    inscripcion_id: report.inscripcion_id,
-                    status: 'synced',
-                    data: { ...fullReport, problemas_seleccionados: confirmed || [] },
-                    updated_at: Date.now()
-                });
-
-                if (savedReport.id !== report.id) await db.soapReports.delete(report.id);
-                console.log(`[OfflineSync] Reporte ${savedReport.id} sincronizado, deduplicado y limpio.`);
-            } catch (err) {
-                console.error('[OfflineSync] Error Reporte:', report.id, err);
-                await db.soapReports.update(report.id, { status: 'error' });
             }
+        } finally {
+            globalIsSyncing = false;
         }
     };
 
     const _internalSyncSimulations = async () => {
+        if (globalIsSyncing) return;
         const toSync = await db.universitySimulations.where('status').anyOf('pending', 'error').toArray();
-        for (const sim of toSync) {
-            try {
-                await db.universitySimulations.update(sim.id, { status: 'syncing' as any });
-                const { problemas_seleccionados, problemas, ...cleanData } = sim.data as any;
-                const payload = { 
-                    ...cleanData, 
-                    user_id: sim.user_id, 
-                    paciente_nombre: sim.paciente_nombre,
-                    alumno_nombre: sim.alumno_nombre,
-                    viaje_id: sim.viaje_id,
-                    es_simulacro: true, 
-                    updated_at: new Date().toISOString() 
-                };
-                const { data: saved, error } = await supabase.from('reportes_soap').upsert(payload).select('id').single();
-                if (error) throw error;
-                await supabase.from('reportes_soap_problemas').delete().eq('reporte_soap_id', saved.id);
-                if (problemas_seleccionados?.length > 0) {
-                    await supabase.from('reportes_soap_problemas').insert(problemas_seleccionados.map((p: any) => ({
-                        reporte_soap_id: saved.id,
-                        problema: p.problema,
-                        problema_anticipado: p.problema_anticipado,
-                        tratamiento: p.tratamiento,
-                        observacion_especifica: p.observacion_especifica
-                    })));
+        if (toSync.length === 0) return;
+
+        globalIsSyncing = true;
+        try {
+            await Promise.all(toSync.map(s => db.universitySimulations.update(s.id, { status: 'syncing' as any })));
+
+            for (const sim of toSync) {
+                try {
+                    const { problemas_seleccionados, problemas, ...cleanData } = sim.data as any;
+                    const payload = { 
+                        ...cleanData, 
+                        user_id: sim.user_id, 
+                        paciente_nombre: sim.paciente_nombre,
+                        alumno_nombre: sim.alumno_nombre,
+                        viaje_id: sim.viaje_id,
+                        es_simulacro: true, 
+                        updated_at: new Date().toISOString() 
+                    };
+                    const { data: saved, error } = await supabase.from('reportes_soap').upsert(payload).select('id').single();
+                    if (error) throw error;
+                    
+                    await supabase.from('reportes_soap_problemas').delete().eq('reporte_soap_id', saved.id);
+                    if (problemas_seleccionados?.length > 0) {
+                        await supabase.from('reportes_soap_problemas').insert(problemas_seleccionados.map((p: any) => ({
+                            reporte_soap_id: saved.id,
+                            problema: p.problema,
+                            problema_anticipado: p.problema_anticipado,
+                            tratamiento: p.tratamiento,
+                            observacion_especifica: p.observacion_especifica
+                        })));
+                    }
+                    await db.universitySimulations.update(sim.id, { status: 'synced' });
+                } catch (err) {
+                    console.error('[OfflineSync] Error en simulación individual:', sim.id, err);
+                    await db.universitySimulations.update(sim.id, { status: 'error' });
                 }
-                await db.universitySimulations.update(sim.id, { status: 'synced' });
-            } catch (err) {
-                await db.universitySimulations.update(sim.id, { status: 'error' });
             }
+        } finally {
+            globalIsSyncing = false;
         }
     };
 
