@@ -127,6 +127,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
         const newProblemas = [...(report.problemas_seleccionados || [])];
         const newIndex = newProblemas.length;
         newProblemas.push({
+            id: crypto.randomUUID(),
             problema: '',
             problema_anticipado: '',
             tratamiento: '',

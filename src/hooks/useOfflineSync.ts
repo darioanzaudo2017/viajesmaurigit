@@ -79,13 +79,14 @@ export const useOfflineSync = () => {
 
                     if (uniqueProblemas.length > 0) {
                         const toInsert = uniqueProblemas.map((p: any) => ({
+                            id: p.id, // Usar el ID único generado localmente
                             reporte_soap_id: savedReport.id,
                             observacion_especifica: p.observacion_especifica,
                             problema: p.problema,
                             problema_anticipado: p.problema_anticipado,
                             tratamiento: p.tratamiento
                         }));
-                        await supabase.from('reportes_soap_problemas').insert(toInsert);
+                        await supabase.from('reportes_soap_problemas').upsert(toInsert);
                     }
 
                     // Sincronización exitosa: actualizar local y limpiar
@@ -138,7 +139,8 @@ export const useOfflineSync = () => {
                     
                     await supabase.from('reportes_soap_problemas').delete().eq('reporte_soap_id', saved.id);
                     if (problemas_seleccionados?.length > 0) {
-                        await supabase.from('reportes_soap_problemas').insert(problemas_seleccionados.map((p: any) => ({
+                        await supabase.from('reportes_soap_problemas').upsert(problemas_seleccionados.map((p: any) => ({
+                            id: p.id, // Usar el ID único generado localmente
                             reporte_soap_id: saved.id,
                             problema: p.problema,
                             problema_anticipado: p.problema_anticipado,
