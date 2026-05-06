@@ -121,7 +121,9 @@ export const useOfflineSync = () => {
                     await supabase.from('reportes_soap_problemas').insert(problemas_seleccionados.map((p: any) => ({
                         reporte_soap_id: saved.id,
                         problema: p.problema,
-                        tratamiento: p.tratamiento
+                        problema_anticipado: p.problema_anticipado,
+                        tratamiento: p.tratamiento,
+                        observacion_especifica: p.observacion_especifica
                     })));
                 }
                 await db.universitySimulations.update(sim.id, { status: 'synced' });
