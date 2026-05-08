@@ -35,6 +35,7 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
     });
     const { isOnline, syncing, syncAllAdminData } = useOfflineSync();
     const [isDataFromCache, setIsDataFromCache] = useState(false);
+    const [currentTab, setCurrentTab] = useState<'active' | 'cancelled' | 'all'>('active');
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,7 +54,6 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                 const { data, error } = await supabase
                     .from('viajes')
                     .select('*')
-                    .neq('estado', 'cancelled')
                     .order('fecha_inicio', { ascending: true });
 
                 if (error) throw error;
@@ -75,19 +75,20 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
                         dificultad: t.dificultad || '',
                         ubicacion: t.ubicacion || '',
                         imagen_url: t.imagen_url || '',
+                        is_university: t.is_university || false,
                         updated_at: t.updated_at || new Date().toISOString()
                     })));
                 }
             } else {
                 // OFFLINE: Load from local DB
-                const localTrips = await db.trips.orderBy('fecha_inicio').filter(t => t.estado !== 'cancelled').toArray();
+                const localTrips = await db.trips.orderBy('fecha_inicio').toArray();
                 setTrips(localTrips as any[] || []);
                 setIsDataFromCache(true);
             }
         } catch (error) {
             console.error("Error fetching trips:", error);
             // Fallback to local DB even if we thought we were online
-            const localTrips = await db.trips.orderBy('fecha_inicio').filter(t => t.estado !== 'cancelled').toArray();
+            const localTrips = await db.trips.orderBy('fecha_inicio').toArray();
             setTrips(localTrips as any[] || []);
             setIsDataFromCache(true);
         } finally {
@@ -110,7 +111,13 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
         setIsModalOpen(true);
     };
 
-    const filteredTrips = trips.filter(t => {
+    const displayTrips = trips.filter(t => {
+        if (currentTab === 'active') return t.estado !== 'cancelled';
+        if (currentTab === 'cancelled') return t.estado === 'cancelled';
+        return true;
+    });
+
+    const filteredTrips = displayTrips.filter(t => {
         const matchesSearch = t.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
             t.ubicacion.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filters.status === 'Any Status' || t.estado.toLowerCase() === filters.status.toLowerCase();
@@ -120,8 +127,9 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
         return matchesSearch && matchesStatus && matchesDifficulty && matchesRegion;
     });
 
-    const totalRevenue = trips.length * 5950;
-    const activeTrekkers = trips.reduce((acc, t) => acc + (t.cupos_totales - t.cupos_disponibles), 0);
+    const activeTrips = trips.filter(t => t.estado !== 'cancelled');
+    const totalRevenue = activeTrips.length * 5950;
+    const activeTrekkers = activeTrips.reduce((acc, t) => acc + (t.cupos_totales - t.cupos_disponibles), 0);
 
     if (loading) {
         return (
@@ -188,9 +196,24 @@ const AdminTrips: React.FC<AdminTripsProps> = ({ onViewInscriptos }) => {
             {/* Filters */}
             <div className="bg-neutral-900 border border-white/5 rounded-2xl p-6 lg:p-8 space-y-6">
                 <div className="flex flex-wrap items-center gap-6 border-b border-white/5 pb-4">
-                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 border-primary text-white">Todos los Viajes ({trips.length})</button>
-                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-white transition-colors">Activos</button>
-                    <button className="px-4 py-2 text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-white transition-colors">Pendientes</button>
+                    <button 
+                        onClick={() => setCurrentTab('active')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${currentTab === 'active' ? 'border-b-2 border-primary text-white' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        Activos ({trips.filter(t => t.estado !== 'cancelled').length})
+                    </button>
+                    <button 
+                        onClick={() => setCurrentTab('cancelled')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${currentTab === 'cancelled' ? 'border-b-2 border-primary text-white' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        Cancelados ({trips.filter(t => t.estado === 'cancelled').length})
+                    </button>
+                    <button 
+                        onClick={() => setCurrentTab('all')}
+                        className={`px-4 py-2 text-xs font-black uppercase tracking-widest transition-all ${currentTab === 'all' ? 'border-b-2 border-primary text-white' : 'text-slate-500 hover:text-white'}`}
+                    >
+                        Todos ({trips.length})
+                    </button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -320,6 +343,12 @@ const TripCard = ({ trip, onEdit, onViewInscriptos }: { trip: Trip, onEdit: () =
                         }`}>
                         {trip.estado}
                     </span>
+                    {trip.is_university && (
+                        <span className="px-4 py-1.5 bg-trek-surface-light dark:bg-white/10 backdrop-blur-md text-slate-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-full border border-primary/30 flex items-center gap-1 shadow-lg">
+                            <span className="material-symbols-outlined text-[14px] text-primary">school</span>
+                            ISAUI
+                        </span>
+                    )}
                     {isConfirmable && trip.estado === 'published' && (
                         <span className="px-4 py-1.5 bg-amber-500/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-full animate-pulse">
                             Listo para confirmar

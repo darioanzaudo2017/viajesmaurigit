@@ -351,28 +351,7 @@ const HomePage: React.FC<HomePageProps> = ({ onDiscoverClick, onTrekClick, onCre
                         ))}
                     </div>
 
-                    {/* Featured Exp */}
-                    <div className="mt-16 relative w-full h-[450px] rounded-[40px] overflow-hidden border border-slate-200 dark:border-white/5 group shadow-2xl">
-                        <div
-                            className="absolute inset-0 bg-center bg-no-repeat bg-cover group-hover:scale-[1.02] transition-transform duration-1000"
-                            style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&q=80&w=1200")' }}
-                        ></div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/40 to-transparent"></div>
-                        <div className="absolute inset-0 p-12 flex flex-col justify-center max-w-xl space-y-6">
-                            <span className="text-primary text-[10px] font-black uppercase tracking-[0.5em]">Expedición Premium</span>
-                            <h3 className="text-white text-5xl font-black uppercase italic leading-none tracking-tighter">Ascenso al Fitz Roy</h3>
-                            <p className="text-trek-text-muted text-sm md:text-base leading-relaxed font-medium italic">Vive el desafío definitivo en el corazón de la Patagonia. Una ruta técnica diseñada para exploradores que buscan superar sus límites.</p>
-                            <div className="flex gap-4 pt-4">
-                                <button
-                                    onClick={onDiscoverClick}
-                                    className="bg-primary hover:bg-primary/90 text-background-dark px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs transition-all active:scale-95 shadow-xl shadow-primary/20"
-                                >
-                                    Ver Expedición
-                                </button>
-                                <button className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-white/20 transition-all">Más Info</button>
-                            </div>
-                        </div>
-                    </div>
+
                 </div>
             </section>
         </div>

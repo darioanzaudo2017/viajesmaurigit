@@ -109,7 +109,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
         doc.setTextColor(textColor[0], textColor[1], textColor[2]);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
-        doc.text('INSTITUTO SUPERIOR DE ACTIVIDADES DE MONTAÑA (ISAUI)', 200, 20, { align: 'right' });
+        doc.text('INSTITUTO SUPERIOR ARTURO UMBERTO ILLIA (ISAUI)', 200, 20, { align: 'right' });
         doc.setFont('helvetica', 'normal');
         if (data.alumnoNombre) doc.text(`Alumno: ${data.alumnoNombre}`, 200, 25, { align: 'right' });
     } else {
@@ -142,7 +142,6 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
     doc.text(`PACIENTE: ${data.patientName.toUpperCase()}`, 16, yPos);
     doc.text(`HORA INCIDENTE: ${data.incidentTime}`, 100, yPos);
-    doc.text(`GRAVEDAD: ${data.severity.toUpperCase()}`, 160, yPos);
     yPos += 12;
 
     // PASO 1: ESCENA

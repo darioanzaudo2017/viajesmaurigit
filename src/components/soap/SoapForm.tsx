@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 export interface VitalSign {
+    dia: string;
     hora: string;
     pulso: string;
     respiracion: string;
@@ -95,10 +96,15 @@ const SoapForm: React.FC<SoapFormProps> = ({
     ];
 
     const handleAddVitalSign = () => {
+        const lastDay = report.signos_vitales.length > 0 
+            ? report.signos_vitales[report.signos_vitales.length - 1].dia 
+            : 'Día 1';
+
         setReport(prev => ({
             ...prev,
             signos_vitales: [...prev.signos_vitales, {
-                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                dia: lastDay,
+                hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' HS',
                 pulso: '',
                 respiracion: '',
                 presion: '',
@@ -121,7 +127,30 @@ const SoapForm: React.FC<SoapFormProps> = ({
         setReport(prev => ({ ...prev, signos_vitales: newVitals }));
     };
 
+    const handleTimeChange = (index: number, value: string) => {
+        // Si el usuario está borrando, permitimos el borrado natural
+        const prevValue = report.signos_vitales[index].hora || '';
+        if (value.length < prevValue.length) {
+            // Si borra el espacio o la S de HS, limpiamos el sufijo completo
+            const cleanValue = value.replace(' HS', '').replace(' H', '');
+            handleVitalChange(index, 'hora', cleanValue);
+            return;
+        }
 
+        // Solo permitimos números
+        const digits = value.replace(/\D/g, '').slice(0, 4);
+        let formatted = digits;
+        
+        if (digits.length >= 3) {
+            formatted = digits.slice(0, 2) + ':' + digits.slice(2);
+        }
+        
+        if (digits.length === 4) {
+            formatted += ' HS';
+        }
+        
+        handleVitalChange(index, 'hora', formatted);
+    };
 
     const handleAddCustomProblema = () => {
         const newProblemas = [...(report.problemas_seleccionados || [])];
@@ -363,11 +392,25 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">A (Alergias)</label>
-                                        <input disabled={readOnly} type="text" value={report.e_alergias} onChange={(e) => setReport({ ...report, e_alergias: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Si tiene alergias o no a que?" />
+                                        <textarea 
+                                            disabled={readOnly} 
+                                            value={report.e_alergias} 
+                                            onChange={(e) => setReport({ ...report, e_alergias: e.target.value })} 
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[60px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none transition-all" 
+                                            placeholder="Si tiene alergias o no a que?" 
+                                        />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">M (Medicamentos)</label>
-                                        <input disabled={readOnly} type="text" value={report.e_medicacion} onChange={(e) => setReport({ ...report, e_medicacion: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="¿Qué está tomando?" />
+                                        <textarea 
+                                            disabled={readOnly} 
+                                            value={report.e_medicacion} 
+                                            onChange={(e) => setReport({ ...report, e_medicacion: e.target.value })} 
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[60px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none transition-all" 
+                                            placeholder="¿Qué está tomando?" 
+                                        />
                                     </div>
                                 </div>
                                 <div className="space-y-6">
@@ -384,11 +427,25 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">U (Última Ingesta)</label>
-                                        <input disabled={readOnly} type="text" value={report.e_ultima_ingesta} onChange={(e) => setReport({ ...report, e_ultima_ingesta: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Ultima comida / Hidratacion" />
+                                        <textarea 
+                                            disabled={readOnly} 
+                                            value={report.e_ultima_ingesta} 
+                                            onChange={(e) => setReport({ ...report, e_ultima_ingesta: e.target.value })} 
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[60px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none transition-all" 
+                                            placeholder="Ultima comida / Hidratacion" 
+                                        />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">E (Evento)</label>
-                                        <input disabled={readOnly} type="text" value={report.e_eventos} onChange={(e) => setReport({ ...report, e_eventos: e.target.value })} className="w-full bg-white/5 border border-white/5 rounded-2xl h-14 px-6 text-sm text-white outline-none focus:ring-1 focus:ring-primary/50 transition-all" placeholder="Si recuerda o no lo que paso" />
+                                        <textarea 
+                                            disabled={readOnly} 
+                                            value={report.e_eventos} 
+                                            onChange={(e) => setReport({ ...report, e_eventos: e.target.value })} 
+                                            onInput={autoExpandHeight}
+                                            className="w-full bg-white/5 border border-white/5 rounded-2xl p-4 text-sm text-white min-h-[60px] outline-none focus:ring-1 focus:ring-primary/50 overflow-hidden auto-expand resize-none transition-all" 
+                                            placeholder="Si recuerda o no lo que paso" 
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -456,17 +513,29 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                             <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary border border-primary/10 group-hover:bg-primary group-hover:text-slate-900 transition-all duration-500">
                                                 <span className="material-symbols-outlined text-2xl font-black italic">schedule</span>
                                             </div>
-                                            <div>
-                                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Toma #{idx + 1}</p>
-                                                <input
-                                                    disabled={readOnly}
-                                                    type="text"
-                                                    inputMode="numeric"
-                                                    value={sv.hora}
-                                                    onChange={(e) => handleVitalChange(idx, 'hora', e.target.value)}
-                                                    className="bg-transparent text-white text-xl font-black outline-none cursor-pointer hover:text-primary transition-colors disabled:cursor-default w-24"
-                                                    placeholder="00:00"
-                                                />
+                                            <div className="flex gap-8">
+                                                <div>
+                                                    <p className="text-[8px] font-black text-primary uppercase tracking-[0.2em] mb-1">Día</p>
+                                                    <input
+                                                        disabled={readOnly}
+                                                        type="text"
+                                                        value={sv.dia}
+                                                        onChange={(e) => handleVitalChange(idx, 'dia', e.target.value)}
+                                                        className="bg-transparent text-xl font-black text-primary outline-none w-20 placeholder:text-slate-800 uppercase"
+                                                        placeholder="Día 1"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Hora (Toma #{idx + 1})</p>
+                                                    <input
+                                                        disabled={readOnly}
+                                                        type="text"
+                                                        value={sv.hora}
+                                                        onChange={(e) => handleTimeChange(idx, e.target.value)}
+                                                        className="bg-transparent text-xl font-black text-white outline-none w-32 placeholder:text-slate-800"
+                                                        placeholder="00:00 HS"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3 w-full md:w-auto">

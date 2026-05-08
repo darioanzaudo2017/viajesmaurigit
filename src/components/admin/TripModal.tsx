@@ -104,7 +104,9 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
 
             const dataToSave = {
                 ...saveData,
-                cupos_disponibles: trip ? trip.cupos_disponibles : formData.cupos_totales
+                cupos_disponibles: trip 
+                    ? formData.cupos_totales - (trip.cupos_totales - trip.cupos_disponibles)
+                    : formData.cupos_totales
             };
 
             if (trip?.id) {
@@ -299,9 +301,8 @@ const TripModal: React.FC<TripModalProps> = ({ isOpen, onClose, onSave, trip }) 
                             >
                                 <option value="published">Published (Abierto)</option>
                                 <option value="confirmed">Confirmed (Confirmado)</option>
-                                <option value="cancelled">Cancelled (Cancelado)</option>
+                                <option value="cancelled">Cancelled (Cancelado / Anulado)</option>
                                 <option value="finished">Finished (Finalizado)</option>
-                                <option value="cancelled">Voided (Anulado)</option>
                             </select>
                         </div>
                         <div className="space-y-4">
