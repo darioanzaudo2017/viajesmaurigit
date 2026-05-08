@@ -165,7 +165,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             ...reportData,
             // Fallback para asegurar que los problemas se vean independientemente de la clave (problemas vs problemas_seleccionados)
             problemas_seleccionados: reportData.problemas_seleccionados || reportData.problemas || [],
-            id: sim.id
+            id: sim.id,
+            created_at: sim.created_at // Preservamos la fecha de creación original
         });
         setPatientName(sim.paciente_nombre);
         setUserName(sim.alumno_nombre || sim.data?.alumno_nombre || '');
@@ -229,7 +230,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             };
 
             const localId = currentReport.id || generateUUID();
-            const createdAt = currentReport.id ? (currentReport as any).created_at : new Date().toISOString();
+            const createdAt = (currentReport as any).created_at || new Date().toISOString();
             const reportData = { ...currentReport, id: localId, estado: isFinal ? 'finalizado' : 'borrador' };
 
             const localPayload = {
@@ -240,7 +241,8 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                 viaje_id: selectedTripId,
                 status: isOnline ? 'synced' : 'pending',
                 data: reportData,
-                created_at: createdAt
+                created_at: createdAt,
+                updated_at: new Date().toISOString()
             };
 
             if (isOnline) {
