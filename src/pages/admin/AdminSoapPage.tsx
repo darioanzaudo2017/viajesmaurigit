@@ -28,7 +28,8 @@ const AdminSoapPage: React.FC<AdminSoapPageProps> = ({ enrollmentId, onBack }) =
         e_eventos: '',
         examen_fisico: '',
         signos_vitales: [{
-            hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            dia: 'Día 1',
+            hora: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' HS',
             pulso: '',
             respiracion: '',
             presion: '',

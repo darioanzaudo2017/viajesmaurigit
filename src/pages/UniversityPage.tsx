@@ -36,6 +36,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
         e_eventos: '',
         examen_fisico: '',
         signos_vitales: [{
+            dia: 'Día 1',
             hora: '',
             pulso: '',
             respiracion: '',
@@ -135,6 +136,7 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
             e_eventos: '',
             examen_fisico: '',
             signos_vitales: [{
+                dia: 'Día 1',
                 hora: '',
                 pulso: '',
                 respiracion: '',
