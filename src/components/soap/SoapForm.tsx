@@ -519,7 +519,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                                     <input
                                                         disabled={readOnly}
                                                         type="text"
-                                                        value={sv.dia}
+                                                        value={sv.dia || ''}
                                                         onChange={(e) => handleVitalChange(idx, 'dia', e.target.value)}
                                                         className="bg-transparent text-xl font-black text-primary outline-none w-20 placeholder:text-slate-800 uppercase"
                                                         placeholder="Día 1"
@@ -794,19 +794,7 @@ const SoapForm: React.FC<SoapFormProps> = ({
                                 </div>
                             </div>
 
-                            {/* Responsable y Firma */}
-                            <div className="mt-12 pt-12 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="flex flex-col">
-                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">ID Responsable</label>
-                                    <input disabled={readOnly} type="text" value={report.responsable_id} onChange={(e) => setReport({ ...report, responsable_id: e.target.value })} className="bg-neutral-800 border border-white/5 rounded-2xl h-14 px-6 text-xs text-white font-black tracking-widest uppercase outline-none focus:ring-1 focus:ring-primary/50 transition-all disabled:opacity-80" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">Firma Digital</label>
-                                    <div className="h-14 w-full bg-neutral-800 rounded-2xl border border-dashed border-white/10 flex items-center justify-center">
-                                        <span className="text-slate-600 text-[10px] font-black uppercase tracking-[0.2em]">Firma Requerida</span>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                 )}

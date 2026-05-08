@@ -19,7 +19,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
 
     const menuItems = [
         { id: 'home', icon: 'home', label: 'Inicio' },
-        { id: 'trips', icon: 'explore', label: 'Descubrir' },
         { id: 'medical', icon: 'medical_information', label: 'Ficha Médica' },
         { id: 'register', icon: 'app_registration', label: 'Inscripción', hidden: isAdmin },
         // Admin Profile Items
@@ -28,7 +27,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
         { id: 'admin_trips', icon: 'map', label: 'Viajes', adminOnly: true },
         { id: 'admin_enrollments', icon: 'assignment_ind', label: 'Inscripciones', adminOnly: true },
         { id: 'university', icon: 'school', label: 'ISAUI' },
-        { id: 'safety', icon: 'health_and_safety', label: 'Protocolos' },
     ].filter(item => {
         if (item.adminOnly && !isAdmin) return false;
         if (item.hidden) return false;
@@ -75,13 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                     ))}
                 </nav>
                 <div className="p-4 space-y-3 border-t border-slate-200 dark:border-slate-800">
-                    <button
-                        onClick={() => setActiveTab('trips')}
-                        className="w-full bg-primary hover:bg-primary/90 text-[#112218] py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-transform active:scale-95"
-                    >
-                        <span className="material-symbols-outlined text-lg">travel_explore</span>
-                        <span>Descubrir Viajes</span>
-                    </button>
+
 
                     {user && (
                         <div className="mb-4">
