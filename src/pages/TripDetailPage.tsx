@@ -24,6 +24,7 @@ interface TripDetail {
     dificultad?: string;
     ubicacion?: string;
     imagen_url?: string;
+    is_university?: boolean;
 }
 
 interface TripDetailPageProps {
@@ -158,19 +159,21 @@ const TripDetailPage: React.FC<TripDetailPageProps> = ({ tripId, onBack, onRegis
                         </div>
                     </div>
                     <div className="flex gap-4">
-                        {isUserEnrolled ? (
-                            <div className="bg-primary/20 backdrop-blur-md border border-primary/30 text-primary px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center gap-3 shadow-xl">
-                                <span className="material-symbols-outlined font-black">check_circle</span>
-                                Ya estás Inscrito
-                            </div>
-                        ) : (
-                            <button
-                                onClick={onRegister}
-                                className="bg-primary hover:bg-primary/90 text-background-dark px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center gap-3 transition-all active:scale-95 shadow-2xl shadow-primary/20"
-                            >
-                                <span className="material-symbols-outlined font-black">hiking</span>
-                                Inscribirse Ahora
-                            </button>
+                        {!trip.is_university && (
+                            isUserEnrolled ? (
+                                <div className="bg-primary/20 backdrop-blur-md border border-primary/30 text-primary px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center gap-3 shadow-xl">
+                                    <span className="material-symbols-outlined font-black">check_circle</span>
+                                    Ya estás Inscrito
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={onRegister}
+                                    className="bg-primary hover:bg-primary/90 text-background-dark px-10 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-xs flex items-center gap-3 transition-all active:scale-95 shadow-2xl shadow-primary/20"
+                                >
+                                    <span className="material-symbols-outlined font-black">hiking</span>
+                                    Inscribirse Ahora
+                                </button>
+                            )
                         )}
                         <button className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/20 px-5 py-5 rounded-2xl transition-all">
                             <span className="material-symbols-outlined font-black">share</span>
