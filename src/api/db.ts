@@ -189,3 +189,12 @@ export class TrekDatabase extends Dexie {
 }
 
 export const db = new TrekDatabase();
+
+// Al arrancar la app, cualquier registro que quedó en 'syncing' (app cerrada a mitad de sync)
+// se resetea a 'error' para que el próximo ciclo de sync los reintente.
+export const recoverStuckSyncingRecords = async () => {
+    await db.soapReports.where('status').equals('syncing').modify({ status: 'error' });
+    await db.universitySimulations.where('status').equals('syncing').modify({ status: 'error' });
+    await db.enrollments.where('sync_status').equals('syncing').modify({ sync_status: 'error' });
+    await db.registrations.where('status').equals('syncing').modify({ status: 'error' });
+};

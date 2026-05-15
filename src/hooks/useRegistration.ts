@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { db } from '../api/db';
 import { supabase } from '../api/supabase';
+import { useOfflineSync } from './useOfflineSync';
 
 export const useRegistration = (tripId: string, userId: string) => {
+    const { isOnline } = useOfflineSync();
     const [step, setStep] = useState(1);
     const [submitting, setSubmitting] = useState(false);
     const [alreadyRegistered, setAlreadyRegistered] = useState(false);
@@ -45,6 +47,15 @@ export const useRegistration = (tripId: string, userId: string) => {
 
             setCheckingStatus(true);
             try {
+                if (!isOnline) {
+                    // Offline: verificar en IndexedDB
+                    const local = await db.enrollments
+                        .where({ viaje_id: tripId, user_id: userId })
+                        .first();
+                    if (local) setAlreadyRegistered(true);
+                    return;
+                }
+
                 const { data } = await supabase
                     .from('inscripciones')
                     .select('id')
@@ -57,84 +68,107 @@ export const useRegistration = (tripId: string, userId: string) => {
                 }
             } catch (err) {
                 console.error("Error checking registration status:", err);
+                // En caso de fallo de red, intentar IndexedDB como fallback
+                const local = await db.enrollments
+                    .where({ viaje_id: tripId, user_id: userId })
+                    .first();
+                if (local) setAlreadyRegistered(true);
             } finally {
                 setCheckingStatus(false);
             }
         };
 
         checkRegistration();
-    }, [tripId, userId]);
+    }, [tripId, userId, isOnline]);
 
-    // Load existing data from Supabase (Medical Profile + Last Inscription)
+    // Load existing data from Supabase (Medical Profile + Last Inscription), con fallback a IndexedDB offline
     useEffect(() => {
         const fetchExistingData = async () => {
-            if (!userId) {
-                console.log("No userId provided to useRegistration");
-                return;
-            }
+            if (!userId) return;
 
-            console.log("Fetching existing data for userId:", userId);
             try {
                 setCheckingStatus(true);
-                // 1. Fetch Medical Profile
-                const { data: medicalProfile, error: medError } = await supabase
-                    .from('fichas_medicas')
-                    .select('*')
-                    .eq('user_id', userId)
-                    .maybeSingle();
+                let medicalProfile: any = null;
+                let lastInscription: any = null;
 
-                if (medError) console.error("Error fetching medicalProfile:", medError);
+                if (!isOnline) {
+                    // Offline: leer ficha médica desde IndexedDB
+                    const localRecord = await db.medicalRecords.get(userId);
+                    if (localRecord) medicalProfile = localRecord.data;
+                } else {
+                    // Online: fetch desde Supabase
+                    const { data: mp, error: medError } = await supabase
+                        .from('fichas_medicas')
+                        .select('*')
+                        .eq('user_id', userId)
+                        .maybeSingle();
+                    if (medError) console.error("Error fetching medicalProfile:", medError);
+                    else medicalProfile = mp;
 
-                // 2. Fetch last address/location data from previous inscriptions
-                const { data: lastInscription, error: insError } = await supabase
-                    .from('inscripciones')
-                    .select('domicilio, localidad, provincia, pais, menu')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-
-                if (insError) console.error("Error fetching lastInscription:", insError);
-
-                console.log("Data from Supabase found:", { medicalProfile, lastInscription });
+                    const { data: li, error: insError } = await supabase
+                        .from('inscripciones')
+                        .select('domicilio, localidad, provincia, pais, menu')
+                        .eq('user_id', userId)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .maybeSingle();
+                    if (insError) console.error("Error fetching lastInscription:", insError);
+                    else lastInscription = li;
+                }
 
                 if (medicalProfile || lastInscription) {
-                    setFormData(prev => {
-                        const next = {
-                            ...prev,
-                            emergency_contact_1: medicalProfile?.contacto_emergencia_1 || prev.emergency_contact_1 || '',
-                            phone_emergency_1: medicalProfile?.telefono_emergencia_1?.toString() || prev.phone_emergency_1 || '',
-                            emergency_contact_2: medicalProfile?.contacto_emergencia_2 || prev.emergency_contact_2 || '',
-                            phone_emergency_2: medicalProfile?.telefono_emergencia_2?.toString() || prev.phone_emergency_2 || '',
-                            obra_social: medicalProfile?.obra_social || prev.obra_social || '',
-                            peso: medicalProfile?.peso || prev.peso,
-                            estatura: medicalProfile?.estatura ? parseFloat(medicalProfile.estatura) : prev.estatura,
-                            tension_arterial: medicalProfile?.tension_arterial || prev.tension_arterial || '',
-                            observaciones: medicalProfile?.observaciones || prev.observaciones || '',
-                            grupo_sanguineo: medicalProfile?.grupo_sanguineo || prev.grupo_sanguineo || '',
-                            alergias: medicalProfile?.alergias || prev.alergias || '',
-                            medications: medicalProfile?.medicamentos || prev.medications || [],
-                            condiciones: medicalProfile?.condiciones || prev.condiciones || [],
-                            // Location from last inscription
-                            domicilio: lastInscription?.domicilio || prev.domicilio || '',
-                            localidad: lastInscription?.localidad || prev.localidad || '',
-                            provincia: lastInscription?.provincia || prev.provincia || '',
-                            pais: lastInscription?.pais || prev.pais || 'Argentina',
-                            menu: lastInscription?.menu || prev.menu || 'General',
-                        };
-                        console.log("Updated formData from Supabase:", next);
-                        return next;
-                    });
+                    setFormData(prev => ({
+                        ...prev,
+                        emergency_contact_1: medicalProfile?.contacto_emergencia_1 || prev.emergency_contact_1 || '',
+                        phone_emergency_1: medicalProfile?.telefono_emergencia_1?.toString() || prev.phone_emergency_1 || '',
+                        emergency_contact_2: medicalProfile?.contacto_emergencia_2 || prev.emergency_contact_2 || '',
+                        phone_emergency_2: medicalProfile?.telefono_emergencia_2?.toString() || prev.phone_emergency_2 || '',
+                        obra_social: medicalProfile?.obra_social || prev.obra_social || '',
+                        peso: medicalProfile?.peso || prev.peso,
+                        estatura: medicalProfile?.estatura ? parseFloat(medicalProfile.estatura) : prev.estatura,
+                        tension_arterial: medicalProfile?.tension_arterial || prev.tension_arterial || '',
+                        observaciones: medicalProfile?.observaciones || prev.observaciones || '',
+                        grupo_sanguineo: medicalProfile?.grupo_sanguineo || prev.grupo_sanguineo || '',
+                        alergias: medicalProfile?.alergias || prev.alergias || '',
+                        medications: medicalProfile?.medicamentos || prev.medications || [],
+                        condiciones: medicalProfile?.condiciones || prev.condiciones || [],
+                        domicilio: lastInscription?.domicilio || prev.domicilio || '',
+                        localidad: lastInscription?.localidad || prev.localidad || '',
+                        provincia: lastInscription?.provincia || prev.provincia || '',
+                        pais: lastInscription?.pais || prev.pais || 'Argentina',
+                        menu: lastInscription?.menu || prev.menu || 'General',
+                    }));
                 }
             } catch (err) {
                 console.error("Error fetching existing data:", err);
+                // Último recurso: intentar IndexedDB si el fetch online falló
+                const localRecord = await db.medicalRecords.get(userId);
+                if (localRecord?.data) {
+                    const mp = localRecord.data;
+                    setFormData(prev => ({
+                        ...prev,
+                        emergency_contact_1: mp.contacto_emergencia_1 || prev.emergency_contact_1 || '',
+                        phone_emergency_1: mp.telefono_emergencia_1?.toString() || prev.phone_emergency_1 || '',
+                        emergency_contact_2: mp.contacto_emergencia_2 || prev.emergency_contact_2 || '',
+                        phone_emergency_2: mp.telefono_emergencia_2?.toString() || prev.phone_emergency_2 || '',
+                        obra_social: mp.obra_social || prev.obra_social || '',
+                        peso: mp.peso || prev.peso,
+                        estatura: mp.estatura ? parseFloat(mp.estatura) : prev.estatura,
+                        tension_arterial: mp.tension_arterial || prev.tension_arterial || '',
+                        observaciones: mp.observaciones || prev.observaciones || '',
+                        grupo_sanguineo: mp.grupo_sanguineo || prev.grupo_sanguineo || '',
+                        alergias: mp.alergias || prev.alergias || '',
+                        medications: mp.medicamentos || prev.medications || [],
+                        condiciones: mp.condiciones || prev.condiciones || [],
+                    }));
+                }
             } finally {
                 setCheckingStatus(false);
             }
         };
 
         fetchExistingData();
-    }, [userId]);
+    }, [userId, isOnline]);
 
     // Load draft from Dexie (local override)
     useEffect(() => {

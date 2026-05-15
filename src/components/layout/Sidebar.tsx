@@ -14,7 +14,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogout, isOpen, onClose, isDarkMode, toggleTheme }) => {
-    const { isOnline, pendingReportsCount, syncing } = useOfflineSync();
+    const { isOnline, pendingReportsCount, syncing, lastSyncAt } = useOfflineSync();
     const isAdmin = user?.profile?.role === 'admin';
 
     const menuItems = [
@@ -137,6 +137,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, user, onLogo
                                     </div>
                                 )}
                             </div>
+                            {!isOnline && lastSyncAt && (
+                                <div className="px-2">
+                                    <p className="text-[8px] text-amber-500/80 font-medium flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[10px]">cloud_off</span>
+                                        Datos al {new Date(lastSyncAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                            )}
                             
                             <div className="px-2 flex items-center justify-between">
                                 <p className="text-[8px] font-medium text-slate-400 dark:text-slate-500 flex items-center gap-1">

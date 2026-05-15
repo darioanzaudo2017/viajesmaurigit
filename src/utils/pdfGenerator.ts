@@ -79,27 +79,27 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     const drawLogo = (x: number, y: number, size: number) => {
         doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
         doc.setLineWidth(1.5);
-        
+
         // El pulso/montaña central
-        doc.line(x, y + size/1.5, x + size/4, y + size/1.5); // Inicio
-        doc.line(x + size/4, y + size/1.5, x + size/3, y + size/3); // Pico
-        doc.line(x + size/3, y + size/3, x + size/2, y + size); // Valle
-        doc.line(x + size/2, y + size, x + size/1.5, y); // Cima
-        doc.line(x + size/1.5, y, x + size/1.2, y + size/1.5); // Bajada
-        doc.line(x + size/1.2, y + size/1.5, x + size, y + size/1.5); // Fin
-        
+        doc.line(x, y + size / 1.5, x + size / 4, y + size / 1.5); // Inicio
+        doc.line(x + size / 4, y + size / 1.5, x + size / 3, y + size / 3); // Pico
+        doc.line(x + size / 3, y + size / 3, x + size / 2, y + size); // Valle
+        doc.line(x + size / 2, y + size, x + size / 1.5, y); // Cima
+        doc.line(x + size / 1.5, y, x + size / 1.2, y + size / 1.5); // Bajada
+        doc.line(x + size / 1.2, y + size / 1.5, x + size, y + size / 1.5); // Fin
+
         // Texto del Logo
         doc.setTextColor(30, 41, 59);
         doc.setFontSize(18); // Ajustado para evitar solapamientos
         doc.setFont('helvetica', 'bold');
-        doc.text('TREKKING', x + size + 5, y + size/1.3);
+        doc.text('TREKKING', x + size + 5, y + size / 1.3);
         doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-        doc.text('TRACE', x + size + 38, y + size/1.3);
-        
+        doc.text('TRACE', x + size + 38, y + size / 1.3);
+
         doc.setFontSize(7);
         doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
         doc.setFont('helvetica', 'normal');
-        doc.text('PRECISIÓN EN NAVEGACIÓN AGRESTRE', x + size + 5, y + size/1.3 + 4);
+        doc.text('PRECISIÓN EN NAVEGACIÓN AGRESTRE', x + size + 5, y + size / 1.3 + 4);
     };
 
     drawLogo(16, 15, 15);
@@ -142,6 +142,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
     doc.setTextColor(mutedColor[0], mutedColor[1], mutedColor[2]);
     doc.text(`PACIENTE: ${data.patientName.toUpperCase()}`, 16, yPos);
     doc.text(`HORA INCIDENTE: ${data.incidentTime}`, 100, yPos);
+    doc.text(`GRAVEDAD: ${data.severity.toUpperCase()}`, 160, yPos);
     yPos += 12;
 
     // PASO 1: ESCENA
@@ -225,7 +226,7 @@ const generateNativeSoapPDF = (data: SoapReportData, fileName: string) => {
 
     // PASO 4: EVALUACIÓN Y PLAN
     if (yPos > 240) { doc.addPage(); yPos = 20; }
-    
+
     doc.setFillColor(248, 250, 252);
     doc.rect(16, yPos - 5, 184, 8, 'F');
     doc.setFont('helvetica', 'bold');
@@ -327,24 +328,24 @@ const generateNativeMedicalPDF = (data: MedicalProfileData, fileName: string) =>
         const pColor = [19, 236, 109];
         doc.setDrawColor(pColor[0], pColor[1], pColor[2]);
         doc.setLineWidth(1.2);
-        doc.line(x, y + size/1.5, x + size/4, y + size/1.5);
-        doc.line(x + size/4, y + size/1.5, x + size/3, y + size/3);
-        doc.line(x + size/3, y + size/3, x + size/2, y + size);
-        doc.line(x + size/2, y + size, x + size/1.5, y);
-        doc.line(x + size/1.5, y, x + size/1.2, y + size/1.5);
-        doc.line(x + size/1.2, y + size/1.5, x + size, y + size/1.5);
-        
+        doc.line(x, y + size / 1.5, x + size / 4, y + size / 1.5);
+        doc.line(x + size / 4, y + size / 1.5, x + size / 3, y + size / 3);
+        doc.line(x + size / 3, y + size / 3, x + size / 2, y + size);
+        doc.line(x + size / 2, y + size, x + size / 1.5, y);
+        doc.line(x + size / 1.5, y, x + size / 1.2, y + size / 1.5);
+        doc.line(x + size / 1.2, y + size / 1.5, x + size, y + size / 1.5);
+
         doc.setTextColor(30, 41, 59);
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
-        doc.text('TREKKING', x + size + 4, y + size/1.3);
+        doc.text('TREKKING', x + size + 4, y + size / 1.3);
         doc.setTextColor(pColor[0], pColor[1], pColor[2]);
-        doc.text('TRACE', x + size + 36, y + size/1.3);
-        
+        doc.text('TRACE', x + size + 36, y + size / 1.3);
+
         doc.setFontSize(7);
         doc.setTextColor(100, 116, 139);
         doc.setFont('helvetica', 'normal');
-        doc.text('PRECISIÓN EN NAVEGACIÓN AGRESTRE', x + size + 4, y + size/1.3 + 4);
+        doc.text('PRECISIÓN EN NAVEGACIÓN AGRESTRE', x + size + 4, y + size / 1.3 + 4);
     };
 
     drawLogo(margin, 12, 12);

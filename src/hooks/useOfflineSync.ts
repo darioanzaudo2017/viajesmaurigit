@@ -7,6 +7,18 @@ import { useLiveQuery } from 'dexie-react-hooks';
 // disparen la sincronización simultáneamente (especialmente crítico en móviles)
 let globalIsSyncing = false;
 
+// Verifica conectividad real haciendo un HEAD request al proyecto Supabase.
+// navigator.onLine puede ser true en portales cautivos o redes sin datos reales.
+const checkRealConnectivity = async (): Promise<boolean> => {
+    try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/`;
+        const res = await fetch(url, { method: 'HEAD', cache: 'no-store', signal: AbortSignal.timeout(5000) });
+        return res.ok || res.status === 401; // 401 = servidor responde (auth requerida), cuenta como online
+    } catch {
+        return false;
+    }
+};
+
 export const useOfflineSync = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [syncing, setSyncing] = useState(false);
@@ -19,7 +31,13 @@ export const useOfflineSync = () => {
     const readyRegistrations = useLiveQuery(() => db.registrations.where('status').anyOf('ready', 'error').toArray(), []);
 
     useEffect(() => {
-        const handleOnline = () => setIsOnline(true);
+        // Al arrancar, verificar conectividad real (no confiar solo en navigator.onLine)
+        checkRealConnectivity().then(setIsOnline);
+
+        const handleOnline = async () => {
+            const real = await checkRealConnectivity();
+            setIsOnline(real);
+        };
         const handleOffline = () => setIsOnline(false);
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
@@ -320,6 +338,7 @@ export const useOfflineSync = () => {
             await downloadAllEnrollments();
             await downloadAllSoapReports();
             await downloadAllSimulations();
+            localStorage.setItem('last_sync_at', new Date().toISOString());
         } finally { isSyncingRef.current = false; setSyncing(false); }
     }, [isOnline, downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations]);
 
@@ -337,6 +356,7 @@ export const useOfflineSync = () => {
         isOnline, syncing, syncPendingReports, syncPendingSimulations, syncAllAdminData,
         downloadAllTrips, downloadAllEnrollments, downloadAllSoapReports, downloadAllSimulations, downloadTripData,
         pendingReportsCount: pendingReports?.length || 0,
-        pendingEnrollmentsCount: pendingEnrollments?.length || 0
+        pendingEnrollmentsCount: pendingEnrollments?.length || 0,
+        lastSyncAt: localStorage.getItem('last_sync_at'),
     };
 };

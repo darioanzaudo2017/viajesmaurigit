@@ -17,6 +17,7 @@ import AdminUsersPage from './pages/admin/AdminUsersPage';
 import UniversityPage from './pages/UniversityPage';
 import UniversityNewsPage from './pages/UniversityNewsPage';
 import { supabase } from './api/supabase';
+import { recoverStuckSyncingRecords } from './api/db';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import Navbar from './components/layout/Navbar';
 import BottomNavbar from './components/layout/BottomNavbar';
@@ -36,6 +37,10 @@ function App() {
   });
   const { isOnline, syncAllAdminData } = useOfflineSync();
   const hasSynced = useRef(false);
+
+  useEffect(() => {
+    recoverStuckSyncingRecords().catch(console.error);
+  }, []);
 
   useEffect(() => {
     console.log('[Theme] Switching to:', isDarkMode ? 'dark' : 'light');
@@ -126,12 +131,17 @@ function App() {
       }
     };
 
-    // Check current session
+    // Check current session — si no hay sesión activa, intentar restaurar desde caché (offline o token vencido)
     supabase.auth.getSession().then(({ data: { session } }) => {
-      fetchProfile(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user);
+      } else {
+        // Sin sesión: puede ser token vencido sin red. Restaurar desde caché para modo offline.
+        fetchProfile(null);
+      }
     });
 
-    // Listen for changes
+    // Cuando recupera red, Supabase puede refrescar el token automáticamente y disparar TOKEN_REFRESHED
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'SIGNED_OUT') {
         localStorage.removeItem('cached_session_user');
@@ -139,10 +149,15 @@ function App() {
         setUser(null);
         return;
       }
+      if (_event === 'TOKEN_REFRESHED' && session?.user) {
+        // Token renovado al volver a tener red — actualizar perfil desde Supabase
+        fetchProfile(session.user);
+        return;
+      }
       if (session?.user) {
         fetchProfile(session.user);
       }
-      // If no session but not signed out, preserve current user (offline)
+      // Si no hay sesión y no es SIGNED_OUT, preservar el usuario actual (offline)
     });
 
     return () => subscription.unsubscribe();
