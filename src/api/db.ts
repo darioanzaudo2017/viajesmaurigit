@@ -91,6 +91,11 @@ export interface LocalUniversitySimulation {
     created_at: string;
 }
 
+export interface LocalAuthEntry {
+    key: string;
+    value: string;
+}
+
 export class TrekDatabase extends Dexie {
     trips!: Table<LocalTrip>;
     registrations!: Table<LocalRegistration>;
@@ -99,6 +104,7 @@ export class TrekDatabase extends Dexie {
     medicalRecords!: Table<LocalMedicalRecord>;
     soapReports!: Table<LocalSoapReport>;
     universitySimulations!: Table<LocalUniversitySimulation>;
+    authSession!: Table<LocalAuthEntry>;
 
     constructor() {
         super('TrekPWA_DB');
@@ -184,6 +190,18 @@ export class TrekDatabase extends Dexie {
             soapReports: 'id, inscripcion_id, status',
             maestroProblemasSoap: 'id, problema',
             universitySimulations: 'id, user_id, status, viaje_id, alumno_nombre, created_at'
+        });
+        // v10: authSession stores Supabase auth tokens in IndexedDB (more durable than localStorage on mobile)
+        this.version(10).stores({
+            trips: 'id, fecha_inicio, estado',
+            registrations: '++id, trip_id, user_id, status',
+            conditions: 'id, condicion',
+            enrollments: 'id, viaje_id, user_id, sync_status',
+            medicalRecords: 'user_id',
+            soapReports: 'id, inscripcion_id, status',
+            maestroProblemasSoap: 'id, problema',
+            universitySimulations: 'id, user_id, status, viaje_id, alumno_nombre, created_at',
+            authSession: 'key'
         });
     }
 }

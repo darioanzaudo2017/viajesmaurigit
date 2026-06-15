@@ -46,6 +46,8 @@ const AuthPage: React.FC<AuthPageProps> = ({ onSuccess }) => {
                 message = 'Email o contraseña incorrectos';
             } else if (err.message.includes('User already registered')) {
                 message = 'Este correo ya está registrado';
+            } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('fetch')) {
+                message = 'Sin conexión. Para iniciar sesión necesitás tener red. Si ya iniciaste sesión antes, la app funciona offline automáticamente.';
             } else {
                 message = err.message;
             }

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Logo from '../common/Logo';
+import { supabase } from '../../api/supabase';
 
 interface NavbarProps {
     activeTab: string;
@@ -11,6 +12,14 @@ interface NavbarProps {
     isDarkMode?: boolean;
 }
 
+// Devuelve las horas que faltan para que expire el token JWT actual, o null si no hay sesión
+const getTokenHoursLeft = async (): Promise<number | null> => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session?.expires_at) return null;
+    const msLeft = data.session.expires_at * 1000 - Date.now();
+    return msLeft / (1000 * 60 * 60);
+};
+
 const Navbar: React.FC<NavbarProps> = ({
     activeTab,
     setActiveTab,
@@ -20,6 +29,20 @@ const Navbar: React.FC<NavbarProps> = ({
     user,
     isDarkMode = true
 }) => {
+    const [tokenWarning, setTokenWarning] = useState(false);
+
+    useEffect(() => {
+        if (!user) { setTokenWarning(false); return; }
+        // Revisar expiración al montar y cada 30 minutos
+        const check = async () => {
+            const hours = await getTokenHoursLeft();
+            // Avisar si quedan menos de 24 horas (antes de salir a la montaña)
+            setTokenWarning(hours !== null && hours < 24);
+        };
+        check();
+        const interval = setInterval(check, 30 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [user]);
     // Determinar si mostrar botón atrás
     const showBack = onBack || (activeTab !== 'home' && activeTab !== 'admin_dashboard');
 
@@ -83,6 +106,19 @@ const Navbar: React.FC<NavbarProps> = ({
             </div>
 
             <div className="flex items-center gap-3 sm:gap-6">
+                {/* Aviso token por vencer */}
+                {tokenWarning && (
+                    <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 rounded-lg px-2.5 py-1">
+                        <span className="material-symbols-outlined text-amber-400 text-sm">warning</span>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-amber-400 hidden sm:block">
+                            Sesión por vencer — abrí la app con señal antes de subir
+                        </p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-amber-400 sm:hidden">
+                            Sesión por vencer
+                        </p>
+                    </div>
+                )}
+
                 {/* Status Online (Subtle) */}
                 <div className="items-center gap-2 hidden md:flex">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></div>

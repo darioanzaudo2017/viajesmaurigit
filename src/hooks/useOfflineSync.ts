@@ -37,6 +37,10 @@ export const useOfflineSync = () => {
         const handleOnline = async () => {
             const real = await checkRealConnectivity();
             setIsOnline(real);
+            if (real) {
+                // Al recuperar señal, renovar el token inmediatamente para que no expire en la montaña
+                supabase.auth.refreshSession().catch(() => {});
+            }
         };
         const handleOffline = () => setIsOnline(false);
         window.addEventListener('online', handleOnline);

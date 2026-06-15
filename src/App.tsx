@@ -18,6 +18,7 @@ import UniversityPage from './pages/UniversityPage';
 import UniversityNewsPage from './pages/UniversityNewsPage';
 import { supabase } from './api/supabase';
 import { recoverStuckSyncingRecords } from './api/db';
+import { idbAuthStorage } from './api/authStorage';
 import { useOfflineSync } from './hooks/useOfflineSync';
 import Navbar from './components/layout/Navbar';
 import BottomNavbar from './components/layout/BottomNavbar';
@@ -94,10 +95,10 @@ function App() {
     const fetchProfile = async (sessionUser: any) => {
       if (!sessionUser) {
         // Try to restore from cache if offline
-        const cachedSessionUser = localStorage.getItem('cached_session_user');
+        const cachedSessionUser = await idbAuthStorage.getItem('cached_session_user');
         if (cachedSessionUser) {
           const restoredUser = JSON.parse(cachedSessionUser);
-          const cachedProfile = localStorage.getItem('cached_user_profile');
+          const cachedProfile = await idbAuthStorage.getItem('cached_user_profile');
           const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
           console.log('[App] Session null — restoring from cache:', restoredUser.email, 'role:', profile?.role);
           setUser({ ...restoredUser, profile });
@@ -116,15 +117,15 @@ function App() {
 
         if (error) throw error;
 
-        // Cache profile AND session user to localStorage for offline use
+        // Cache profile AND session user to IndexedDB for offline use
         if (profile) {
-          localStorage.setItem('cached_user_profile', JSON.stringify(profile));
-          localStorage.setItem('cached_session_user', JSON.stringify(sessionUser));
+          await idbAuthStorage.setItem('cached_user_profile', JSON.stringify(profile));
+          await idbAuthStorage.setItem('cached_session_user', JSON.stringify(sessionUser));
         }
         setUser({ ...sessionUser, profile });
       } catch {
         // Offline or fetch failed — use cached profile
-        const cachedProfile = localStorage.getItem('cached_user_profile');
+        const cachedProfile = await idbAuthStorage.getItem('cached_user_profile');
         const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
         console.log('[App] Using cached profile (offline):', profile?.role);
         setUser({ ...sessionUser, profile });
@@ -144,8 +145,8 @@ function App() {
     // Cuando recupera red, Supabase puede refrescar el token automáticamente y disparar TOKEN_REFRESHED
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (_event === 'SIGNED_OUT') {
-        localStorage.removeItem('cached_session_user');
-        localStorage.removeItem('cached_user_profile');
+        idbAuthStorage.removeItem('cached_session_user');
+        idbAuthStorage.removeItem('cached_user_profile');
         setUser(null);
         return;
       }
@@ -334,8 +335,8 @@ function App() {
             isDarkMode={isDarkMode}
             toggleTheme={toggleTheme}
             onLogout={() => {
-              localStorage.removeItem('cached_session_user');
-              localStorage.removeItem('cached_user_profile');
+              idbAuthStorage.removeItem('cached_session_user');
+              idbAuthStorage.removeItem('cached_user_profile');
               supabase.auth.signOut();
               setActiveTab('home');
               setSidebarOpen(false);
