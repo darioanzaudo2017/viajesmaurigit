@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../api/supabase';
+import { idbGet } from '../api/authStorage';
 import SoapForm from '../components/soap/SoapForm';
 import type { SoapReport } from '../components/soap/SoapForm';
 import { generateMedicalPDF } from '../utils/pdfGenerator';
@@ -79,13 +80,14 @@ const UniversityPage: React.FC<UniversityPageProps> = ({ user }) => {
                     await syncAndDownload(isOnline);
                 }
             } else if (!isOnline) {
-                // If offline and no user from props, check last known session directly as last resort
-                const cachedProfile = localStorage.getItem('cached_user_profile');
-                const profile = cachedProfile ? JSON.parse(cachedProfile) : null;
+                // Sin sesión y sin señal: restaurar desde IndexedDB (más durable que localStorage en móviles)
+                const cachedProfileRaw = await idbGet('cached_user_profile');
+                const profile = cachedProfileRaw ? JSON.parse(cachedProfileRaw) : null;
                 if (profile) {
                     setIsUniversityUser(!!profile.is_university || profile.role === 'admin');
                     setIsAdmin(profile.role === 'admin');
                     setCurrentUserId(profile.id);
+                    await syncAndDownload(false);
                 }
             }
             setLoading(false);
