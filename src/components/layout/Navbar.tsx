@@ -12,12 +12,10 @@ interface NavbarProps {
     isDarkMode?: boolean;
 }
 
-// Devuelve las horas que faltan para que expire el token JWT actual, o null si no hay sesión
-const getTokenHoursLeft = async (): Promise<number | null> => {
+// Solo avisa si no hay sesión activa (refresh token vencido o nunca logueado)
+const checkSessionMissing = async (): Promise<boolean> => {
     const { data } = await supabase.auth.getSession();
-    if (!data.session?.expires_at) return null;
-    const msLeft = data.session.expires_at * 1000 - Date.now();
-    return msLeft / (1000 * 60 * 60);
+    return !data.session;
 };
 
 const Navbar: React.FC<NavbarProps> = ({
@@ -33,11 +31,10 @@ const Navbar: React.FC<NavbarProps> = ({
 
     useEffect(() => {
         if (!user) { setTokenWarning(false); return; }
-        // Revisar expiración al montar y cada 30 minutos
+        // Revisar cada 30 minutos si la sesión sigue activa
         const check = async () => {
-            const hours = await getTokenHoursLeft();
-            // Avisar si quedan menos de 24 horas (antes de salir a la montaña)
-            setTokenWarning(hours !== null && hours < 24);
+            const missing = await checkSessionMissing();
+            setTokenWarning(missing);
         };
         check();
         const interval = setInterval(check, 30 * 60 * 1000);
