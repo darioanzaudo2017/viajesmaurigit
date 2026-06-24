@@ -11,7 +11,8 @@ export const useMedicalProfile = (userId: string) => {
         try {
             setLoading(true);
 
-            if (navigator.onLine) {
+            // Intentar siempre desde Supabase; si falla por red, caer a Dexie
+            try {
                 const { data: medData, error: sbError } = await supabase
                     .from('fichas_medicas')
                     .select('*')
@@ -29,30 +30,24 @@ export const useMedicalProfile = (userId: string) => {
                 if (medData) {
                     const fullProfile = { ...medData, user: profileData };
                     setProfile(fullProfile);
-                    // Update cache
                     await db.medicalRecords.put({ user_id: userId, data: fullProfile });
                 } else {
-                    setProfile(null);
+                    // Sin ficha en servidor — igual revisar caché local por si se guardó offline
+                    const cached = await db.medicalRecords.get(userId);
+                    setProfile(cached?.data ?? null);
                 }
-            } else {
-                // FALLBACK TO DEXIE
+            } catch {
+                // Red no disponible o Supabase pausado — usar caché de IndexedDB
                 const cached = await db.medicalRecords.get(userId);
                 if (cached) {
                     setProfile(cached.data);
+                    console.log('[MedicalProfile] Usando caché offline para:', userId);
                 } else {
                     setProfile(null);
                 }
             }
         } catch (err: any) {
             console.error('Error fetching medical profile:', err);
-            // Fallback to Dexie cache on any error (e.g. network fail while "online")
-            try {
-                const cached = await db.medicalRecords.get(userId);
-                if (cached) {
-                    setProfile(cached.data);
-                    console.log('[MedicalProfile] Using cached data after error');
-                }
-            } catch { /* ignore cache errors */ }
             setError(err.message);
         } finally {
             setLoading(false);
