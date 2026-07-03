@@ -133,11 +133,17 @@ function App() {
     };
 
     // Check current session — si no hay sesión activa, intentar restaurar desde caché (offline o token vencido)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         fetchProfile(session.user);
       } else {
-        // Sin sesión: puede ser token vencido sin red. Restaurar desde caché para modo offline.
+        // Sin sesión de Supabase: puede ser que hydrateAuthFromIDB no terminó a tiempo.
+        // Intentar restaurar directamente desde IndexedDB como último recurso.
+        const { idbGet: idbGetDirect } = await import('./api/authStorage');
+        const cachedToken = await idbGetDirect('cached_session_user');
+        if (cachedToken && localStorage.getItem('cached_session_user') === null) {
+          localStorage.setItem('cached_session_user', cachedToken);
+        }
         fetchProfile(null);
       }
     });

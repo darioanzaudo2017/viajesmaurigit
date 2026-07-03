@@ -108,27 +108,26 @@
   <script type="module" src="/src/main.tsx"></script>
 
   <script>
-    // Wait for fonts to be fully loaded, then fade out splash
-    document.fonts.ready.then(function() {
+    // Eliminar splash cuando la app esté lista o tras 2s máximo (offline: fuentes externas nunca cargan)
+    function removeSplash() {
       var splash = document.getElementById('splash-screen');
       if (splash) {
         splash.classList.add('fade-out');
-        setTimeout(function() {
-          splash.remove();
-        }, 500);
+        setTimeout(function() { splash.remove(); }, 400);
       }
-    });
+    }
 
-    // Safety timeout: remove splash after 4 seconds max (in case fonts fail)
-    setTimeout(function() {
-      var splash = document.getElementById('splash-screen');
-      if (splash) {
-        splash.classList.add('fade-out');
-        setTimeout(function() {
-          splash.remove();
-        }, 500);
-      }
-    }, 4000);
+    // Timeout máximo 2s — no esperar fuentes externas que no cargan offline
+    var splashTimeout = setTimeout(removeSplash, 2000);
+
+    // Si las fuentes cargan antes de 2s, mejor experiencia visual
+    Promise.race([
+      document.fonts.ready,
+      new Promise(function(r) { setTimeout(r, 1500); })
+    ]).then(function() {
+      clearTimeout(splashTimeout);
+      removeSplash();
+    });
   </script>
 </body>
 
